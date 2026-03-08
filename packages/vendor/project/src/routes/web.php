@@ -60,6 +60,7 @@ Route::resource('projects', ProjectController::class);
             Route::get('/comments', [TaskController::class, 'comments'])->name('comments');
             Route::post('/comments', [TaskController::class, 'addComment'])->name('add-comment');
             
+        Route::get('/files/{file}/download', [TaskController::class, 'downloadFile'])->name('download');
             // Routes pour les dates techniques
             Route::patch('/test-date', [TaskController::class, 'updateTestDate'])->name('update-test-date');
             Route::patch('/integration-date', [TaskController::class, 'updateIntegrationDate'])->name('update-integration-date');
