@@ -1,0 +1,9 @@
+php artisan db:seed --class=ContinentSeeder
+php artisan db:seed --class=AfricaCountriesSeeder
+php artisan db:seed --class=EuropeCountriesSeeder
+php artisan db:seed --class=AsiaCountriesSeeder
+php artisan db:seed --class=NorthAmericaCountriesSeeder
+php artisan db:seed --class=SouthAmericaCountriesSeeder
+php artisan db:seed --class=OceaniaCountriesSeeder
+
+php artisan db:seed --class=CanadaProvincesSeeder
