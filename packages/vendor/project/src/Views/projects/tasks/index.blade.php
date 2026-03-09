@@ -1708,30 +1708,6 @@ td .user-info {
     }
 }
 
-/* ===== EXEMPLE D'INTÉGRATION DANS VOTRE TABLEAU ===== */
-
-/*
-Utilisation dans votre HTML :
-
-<td>
-    @if($task->user)
-        <div class="user-info">
-            <div class="user-avatar-sm" style="background: {{ Helper::getUserColor($task->user->name) }}">
-                {{ Helper::getInitials($task->user->name) }}
-            </div>
-            <div class="user-details">
-                <div class="user-name">{{ $task->user->name }}</div>
-                <small class="user-email">{{ $task->user->email }}</small>
-            </div>
-        </div>
-    @else
-        <span class="no-user-assigned">Non assigné</span>
-    @endif
-</td>
-*/
-
-/* ===== STYLES SUPPLEMENTAIRES POUR LES TABLEAUX MODERNES ===== */
-
 .modern-table td {
     padding: 16px 12px;
     vertical-align: middle;
