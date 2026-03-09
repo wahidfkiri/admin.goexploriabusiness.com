@@ -1597,6 +1597,10 @@ const addCustomStyles = () => {
             box-shadow: none;
         }
         
+        .comment-text {
+            // white-space: pre-wrap;
+            word-wrap: break-word;
+        }
     `;
     document.head.appendChild(style);
 };
