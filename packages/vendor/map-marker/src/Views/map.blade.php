@@ -222,47 +222,55 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // ==================== CONFIGURATION ====================
-            const mapElement = document.getElementById('map');
-            let map, markers = [], allPoints = [], currentBounds = null;
-            
-            // Couleurs par catégorie
-            const categoryColors = {
-                'restaurant': '#FF6B6B',
-                'hotel': '#4ECDC4',
-                'commerce': '#45B7D1',
-                'sante': '#96CEB4',
-                'education': '#FFE194',
-                'culture': '#DDA0DD',
-                'sport': '#FFA07A',
-                'loisirs': '#90EE90',
-                'transport': '#A9A9A9',
-                'immobilier': '#1b4f6b',
-                'service': '#B0C4DE',
-                'autre': '#6c757d'
-            };
-            
-            // Icônes par catégorie
-            const categoryIcons = {
-                'restaurant': 'fa-utensils',
-                'hotel': 'fa-hotel',
-                'commerce': 'fa-shop',
-                'sante': 'fa-hospital',
-                'education': 'fa-school',
-                'culture': 'fa-museum',
-                'sport': 'fa-dumbbell',
-                'loisirs': 'fa-tree',
-                'transport': 'fa-bus',
-                'immobilier': 'fa-building',
-                'service': 'fa-gear',
-                'autre': 'fa-map-pin'
-            };
+    document.addEventListener('DOMContentLoaded', function() {
+        // ==================== CONFIGURATION ====================
+        const mapElement = document.getElementById('map');
+        let map, markers = [], allPoints = [], currentBounds = null;
+        let mapMoveTimeout = null;
+        let mapZoomTimeout = null;
+        
+        // Couleurs par catégorie
+        const categoryColors = {
+            'restaurant': '#FF6B6B',
+            'hotel': '#4ECDC4',
+            'commerce': '#45B7D1',
+            'sante': '#96CEB4',
+            'education': '#FFE194',
+            'culture': '#DDA0DD',
+            'sport': '#FFA07A',
+            'loisirs': '#90EE90',
+            'transport': '#A9A9A9',
+            'immobilier': '#1b4f6b',
+            'service': '#B0C4DE',
+            'autre': '#6c757d'
+        };
+        
+        // Icônes par catégorie
+        const categoryIcons = {
+            'restaurant': 'fa-utensils',
+            'hotel': 'fa-hotel',
+            'commerce': 'fa-shop',
+            'sante': 'fa-hospital',
+            'education': 'fa-school',
+            'culture': 'fa-museum',
+            'sport': 'fa-dumbbell',
+            'loisirs': 'fa-tree',
+            'transport': 'fa-bus',
+            'immobilier': 'fa-building',
+            'service': 'fa-gear',
+            'autre': 'fa-map-pin'
+        };
 
-            // ==================== INITIALISATION DE LA CARTE ====================
-            function initMap() {
-                if (!mapElement) return;
-                
+        // ==================== INITIALISATION DE LA CARTE ====================
+        function initMap() {
+            if (!mapElement) return;
+            
+            // Vérifier si la carte est déjà initialisée
+            if (map) {
+                map.remove();
+            }
+            
+            try {
                 // Centrer sur une position par défaut (Montréal)
                 map = L.map('map').setView([45.5089, -73.5617], 12);
                 
@@ -271,71 +279,111 @@
                     attribution: '© OpenStreetMap contributors'
                 }).addTo(map);
                 
+                // Initialiser currentBounds
+                setTimeout(() => {
+                    currentBounds = map.getBounds();
+                }, 100);
+                
                 // Charger les points
                 loadMapPoints();
                 
-                // Gestionnaire d'événements pour le déplacement de la carte
+                // Gestionnaire pour le déplacement de la carte (avec debounce)
                 map.on('moveend', function() {
-                    currentBounds = map.getBounds();
-                    updateVisibleCount();
-                    loadPointsList();
+                    if (mapMoveTimeout) clearTimeout(mapMoveTimeout);
+                    
+                    mapMoveTimeout = setTimeout(() => {
+                        try {
+                            currentBounds = map.getBounds();
+                            updateVisibleCount();
+                            loadPointsList();
+                        } catch (e) {
+                            console.error('Erreur moveend:', e);
+                        }
+                        mapMoveTimeout = null;
+                    }, 300);
                 });
                 
+                // Gestionnaire pour le zoom (sans appel à loadPointsList)
                 map.on('zoomend', function() {
-                    currentBounds = map.getBounds();
+                    if (mapZoomTimeout) clearTimeout(mapZoomTimeout);
+                    
+                    mapZoomTimeout = setTimeout(() => {
+                        try {
+                            currentBounds = map.getBounds();
+                            updateVisibleCount();
+                        } catch (e) {
+                            console.error('Erreur zoomend:', e);
+                        }
+                        mapZoomTimeout = null;
+                    }, 300);
                 });
+                
+            } catch (e) {
+                console.error('Erreur initMap:', e);
             }
+        }
 
-            // ==================== CHARGEMENT DES POINTS ====================
-            function loadMapPoints(filters = {}) {
-                showMapLoading();
-                
-                // Récupérer les filtres
-                const params = new URLSearchParams();
-                
-                if (filters.category) params.append('category', filters.category);
-                if (filters.ville) params.append('ville', filters.ville);
-                if (filters.search) params.append('search', filters.search);
-                if (filters.has_video) params.append('has_video', filters.has_video);
-                if (filters.has_details) params.append('has_details', filters.has_details);
-                
-                // Récupérer les limites de la carte pour optimiser
+        // ==================== CHARGEMENT DES POINTS ====================
+        function loadMapPoints(filters = {}) {
+            showMapLoading();
+            
+            // Récupérer les filtres
+            const params = new URLSearchParams();
+            
+            if (filters.category) params.append('category', filters.category);
+            if (filters.ville) params.append('ville', filters.ville);
+            if (filters.search) params.append('search', filters.search);
+            if (filters.has_video) params.append('has_video', 'yes');
+            if (filters.has_details) params.append('has_details', 'yes');
+            
+            // Récupérer les limites de la carte pour optimiser
+            try {
                 if (currentBounds) {
                     params.append('bounds[ne][lat]', currentBounds.getNorthEast().lat);
                     params.append('bounds[ne][lng]', currentBounds.getNorthEast().lng);
                     params.append('bounds[sw][lat]', currentBounds.getSouthWest().lat);
                     params.append('bounds[sw][lng]', currentBounds.getSouthWest().lng);
                 }
-                
-                fetch(`/api/map-points?${params.toString()}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            allPoints = data.points;
-                            renderMarkers(allPoints);
-                            updateStats(data);
-                            updateLegendCounts(allPoints);
-                            hideMapLoading();
-                        } else {
-                            console.error('Erreur:', data.message);
-                            hideMapLoading();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Erreur de chargement:', error);
-                        hideMapLoading();
-                    });
+            } catch (e) {
+                console.error('Erreur bounds:', e);
             }
+            
+            fetch(`/api/map-points?${params.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allPoints = data.points || [];
+                        renderMarkers(allPoints);
+                        updateStats(data);
+                        updateLegendCounts(allPoints);
+                        loadPointsList();
+                    } else {
+                        console.error('Erreur:', data.message);
+                    }
+                    hideMapLoading();
+                })
+                .catch(error => {
+                    console.error('Erreur de chargement:', error);
+                    hideMapLoading();
+                });
+        }
 
-            // ==================== AFFICHAGE DES MARQUEURS ====================
-            function renderMarkers(points) {
-                // Supprimer les anciens marqueurs
-                markers.forEach(marker => map.removeLayer(marker));
+        // ==================== AFFICHAGE DES MARQUEURS ====================
+        function renderMarkers(points) {
+            // Supprimer les anciens marqueurs
+            if (markers.length > 0) {
+                markers.forEach(marker => {
+                    try {
+                        map.removeLayer(marker);
+                    } catch (e) {}
+                });
                 markers = [];
-                
-                if (!points || points.length === 0) return;
-                
-                points.forEach(point => {
+            }
+            
+            if (!points || points.length === 0 || !map) return;
+            
+            points.forEach(point => {
+                try {
                     // Créer une icône personnalisée
                     const color = categoryColors[point.category] || '#6c757d';
                     const icon = categoryIcons[point.category] || 'fa-map-pin';
@@ -362,223 +410,303 @@
                     // Stocker le marqueur
                     marker.pointData = point;
                     markers.push(marker);
-                });
-                
-                updateVisibleCount();
-            }
+                    
+                } catch (e) {
+                    console.error('Erreur création marqueur:', e);
+                }
+            });
+            
+            updateVisibleCount();
+        }
 
-            // ==================== CRÉATION DU POPUP ====================
-            function createPopupContent(point) {
-                let content = `
-                    <div class="map-popup">
-                        <div class="popup-header" style="border-left-color: ${categoryColors[point.category] || '#6c757d'}">
-                            <h4>${point.title}</h4>
-                            <span class="popup-category">
-                                <i class="fas ${categoryIcons[point.category] || 'fa-map-pin'} me-1"></i>
-                                ${point.category_label || point.category}
-                            </span>
-                        </div>
-                `;
-                
-                // Image ou vidéo
-                if (point.youtube_id) {
-                    content += `
-                        <div class="popup-media">
-                            <img src="https://img.youtube.com/vi/${point.youtube_id}/hqdefault.jpg" 
-                                 alt="Video thumbnail"
-                                 class="popup-video-thumb"
-                                 onclick="playVideoInModal('${point.youtube_id}')">
-                            <button class="popup-play-btn" onclick="playVideoInModal('${point.youtube_id}')">
-                                <i class="fas fa-play"></i>
-                            </button>
-                        </div>
-                    `;
-                } else if (point.image) {
-                    content += `
-                        <div class="popup-media">
-                            <img src="${point.image}" alt="${point.title}" class="popup-image">
-                        </div>
-                    `;
-                }
-                
-                // Description
-                if (point.description) {
-                    content += `<div class="popup-description">${point.description}</div>`;
-                }
-                
-                // Adresse
-                if (point.adresse || point.ville) {
-                    content += `
-                        <div class="popup-address">
-                            <i class="fas fa-map-pin me-1"></i>
-                            ${point.adresse ? point.adresse + ', ' : ''}${point.ville || ''}
-                        </div>
-                    `;
-                }
-                
-                // Boutons d'action
-                content += `<div class="popup-actions">`;
-                
-                if (point.has_details && point.details_url) {
-                    content += `
-                        <a href="${point.details_url}" class="popup-btn popup-btn-details">
-                            <i class="fas fa-info-circle me-1"></i> Plus de détails
-                        </a>
-                    `;
-                }
-                
+        // ==================== CRÉATION DU POPUP ====================
+        function createPopupContent(point) {
+            if (!point) return '<div>Erreur</div>';
+            
+            const color = categoryColors[point.category] || '#6c757d';
+            const icon = categoryIcons[point.category] || 'fa-map-pin';
+            
+            let content = `
+                <div class="map-popup">
+                    <div class="popup-header" style="border-left-color: ${color}">
+                        <h4>${escapeHtml(point.title || 'Sans titre')}</h4>
+                        <span class="popup-category">
+                            <i class="fas ${icon} me-1"></i>
+                            ${point.category_label || point.category || 'Autre'}
+                        </span>
+                    </div>
+            `;
+            
+            // Image ou vidéo
+            if (point.youtube_id) {
                 content += `
-                        <button class="popup-btn popup-btn-directions" onclick="getDirections(${point.lat}, ${point.lng})">
-                            <i class="fas fa-directions me-1"></i> Itinéraire
+                    <div class="popup-media">
+                        <img src="https://img.youtube.com/vi/${point.youtube_id}/hqdefault.jpg" 
+                             alt="Video thumbnail"
+                             class="popup-video-thumb"
+                             onclick="playVideoInModal('${point.youtube_id}')">
+                        <button class="popup-play-btn" onclick="playVideoInModal('${point.youtube_id}')">
+                            <i class="fas fa-play"></i>
                         </button>
                     </div>
-                </div>`;
-                
-                return content;
+                `;
+            } else if (point.image) {
+                content += `
+                    <div class="popup-media">
+                        <img src="${point.image}" alt="${escapeHtml(point.title)}" class="popup-image">
+                    </div>
+                `;
             }
+            
+            // Description
+            if (point.description) {
+                content += `<div class="popup-description">${escapeHtml(point.description)}</div>`;
+            }
+            
+            // Adresse
+            if (point.adresse || point.ville) {
+                content += `
+                    <div class="popup-address">
+                        <i class="fas fa-map-pin me-1"></i>
+                        ${point.adresse ? escapeHtml(point.adresse) + ', ' : ''}${escapeHtml(point.ville || '')}
+                    </div>
+                `;
+            }
+            
+            // Boutons d'action
+            content += `<div class="popup-actions">`;
+            
+            if (point.has_details && point.details_url) {
+                content += `
+                    <a href="${point.details_url}" class="popup-btn popup-btn-details">
+                        <i class="fas fa-info-circle me-1"></i> Plus de détails
+                    </a>
+                `;
+            }
+            
+            content += `
+                    <button class="popup-btn popup-btn-directions" onclick="getDirections(${point.lat}, ${point.lng})">
+                        <i class="fas fa-directions me-1"></i> Itinéraire
+                    </button>
+                </div>
+            </div>`;
+            
+            return content;
+        }
 
-            // ==================== CHARGEMENT DE LA LISTE DES POINTS ====================
-            function loadPointsList() {
-                const grid = document.getElementById('pointsGrid');
-                if (!grid) return;
+        // ==================== CHARGEMENT DE LA LISTE DES POINTS ====================
+        function loadPointsList() {
+            const grid = document.getElementById('pointsGrid');
+            if (!grid) return;
+            
+            // Vérifier que la carte et les points existent
+            if (!map || !allPoints || allPoints.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-points">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h4>Aucun point disponible</h4>
+                        <p>Les points apparaîtront ici</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Récupérer les limites actuelles de la carte
+            try {
+                if (!currentBounds) {
+                    currentBounds = map.getBounds();
+                }
+            } catch (e) {
+                console.error('Erreur lors de la récupération des limites:', e);
+                return;
+            }
+            
+            // Filtrer les points visibles
+            const visiblePoints = [];
+            for (let i = 0; i < allPoints.length; i++) {
+                const point = allPoints[i];
+                try {
+                    if (point && point.lat !== undefined && point.lng !== undefined) {
+                        if (currentBounds.contains([point.lat, point.lng])) {
+                            visiblePoints.push(point);
+                        }
+                    }
+                } catch (e) {
+                    // Ignorer les points qui causent des erreurs
+                }
+            }
+            
+            if (visiblePoints.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-points">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h4>Aucun point dans cette zone</h4>
+                        <p>Déplacez la carte ou ajustez les filtres</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            const maxDisplay = 6;
+            const displayPoints = visiblePoints.slice(0, maxDisplay);
+            
+            displayPoints.forEach(point => {
+                const color = categoryColors[point.category] || '#6c757d';
+                const icon = categoryIcons[point.category] || 'fa-map-pin';
                 
+                html += `
+                    <div class="point-card" onclick="flyToPoint(${point.lat}, ${point.lng})">
+                        <div class="point-card-media">
+                            ${point.youtube_id ? 
+                                `<img src="https://img.youtube.com/vi/${point.youtube_id}/hqdefault.jpg" alt="${escapeHtml(point.title)}">` :
+                                point.image ? 
+                                `<img src="${point.image}" alt="${escapeHtml(point.title)}">` :
+                                `<div class="point-card-placeholder" style="background: ${color}20">
+                                    <i class="fas ${icon}" style="color: ${color}"></i>
+                                 </div>`
+                            }
+                        </div>
+                        <div class="point-card-content">
+                            <h5>${escapeHtml(point.title || 'Sans titre')}</h5>
+                            <span class="point-card-category" style="color: ${color}">
+                                <i class="fas ${icon} me-1"></i>${point.category_label || point.category || 'Autre'}
+                            </span>
+                            <p>${escapeHtml(point.description || '')}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            if (visiblePoints.length > maxDisplay) {
+                html += `
+                    <div class="point-card more-card" onclick="showAllPoints()">
+                        <i class="fas fa-plus-circle"></i>
+                        <p>+${visiblePoints.length - maxDisplay} autres points</p>
+                    </div>
+                `;
+            }
+            
+            grid.innerHTML = html;
+        }
+
+        // ==================== MISE À JOUR DES STATISTIQUES ====================
+        function updateStats(data) {
+            const totalPoints = document.getElementById('totalPoints');
+            if (totalPoints) totalPoints.textContent = data.total || 0;
+            
+            updateVisibleCount();
+        }
+        
+        function updateVisibleCount() {
+            const visiblePoints = document.getElementById('visiblePoints');
+            if (!visiblePoints || !map || !allPoints || allPoints.length === 0) {
+                if (visiblePoints) visiblePoints.textContent = '0';
+                return;
+            }
+            
+            try {
                 if (!currentBounds) {
                     currentBounds = map.getBounds();
                 }
                 
-                const visiblePoints = allPoints.filter(point => {
-                    return currentBounds.contains([point.lat, point.lng]);
-                });
-                
-                if (visiblePoints.length === 0) {
-                    grid.innerHTML = `
-                        <div class="empty-points">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <h4>Aucun point dans cette zone</h4>
-                            <p>Déplacez la carte ou ajustez les filtres</p>
-                        </div>
-                    `;
-                    return;
+                let count = 0;
+                for (let i = 0; i < allPoints.length; i++) {
+                    const point = allPoints[i];
+                    try {
+                        if (point && point.lat !== undefined && point.lng !== undefined) {
+                            if (currentBounds.contains([point.lat, point.lng])) {
+                                count++;
+                            }
+                        }
+                    } catch (e) {
+                        // Ignorer les erreurs
+                    }
                 }
-                
-                let html = '';
-                visiblePoints.slice(0, 6).forEach(point => {
-                    const color = categoryColors[point.category] || '#6c757d';
-                    const icon = categoryIcons[point.category] || 'fa-map-pin';
-                    
-                    html += `
-                        <div class="point-card" onclick="flyToPoint(${point.lat}, ${point.lng})">
-                            <div class="point-card-media">
-                                ${point.youtube_id ? 
-                                    `<img src="https://img.youtube.com/vi/${point.youtube_id}/hqdefault.jpg" alt="${point.title}">` :
-                                    point.image ? 
-                                    `<img src="${point.image}" alt="${point.title}">` :
-                                    `<div class="point-card-placeholder" style="background: ${color}20">
-                                        <i class="fas ${icon}" style="color: ${color}"></i>
-                                     </div>`
-                                }
-                            </div>
-                            <div class="point-card-content">
-                                <h5>${point.title}</h5>
-                                <span class="point-card-category" style="color: ${color}">
-                                    <i class="fas ${icon} me-1"></i>${point.category_label || point.category}
-                                </span>
-                                <p>${point.description || ''}</p>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                if (visiblePoints.length > 6) {
-                    html += `
-                        <div class="point-card more-card">
-                            <i class="fas fa-plus-circle"></i>
-                            <p>+${visiblePoints.length - 6} autres points</p>
-                        </div>
-                    `;
-                }
-                
-                grid.innerHTML = html;
-            }
-
-            // ==================== MISE À JOUR DES STATISTIQUES ====================
-            function updateStats(data) {
-                const totalPoints = document.getElementById('totalPoints');
-                if (totalPoints) totalPoints.textContent = data.total || 0;
-                
-                updateVisibleCount();
-            }
-            
-            function updateVisibleCount() {
-                const visiblePoints = document.getElementById('visiblePoints');
-                if (!visiblePoints || !map || !allPoints) return;
-                
-                if (!currentBounds) currentBounds = map.getBounds();
-                
-                const count = allPoints.filter(point => {
-                    return currentBounds.contains([point.lat, point.lng]);
-                }).length;
                 
                 visiblePoints.textContent = count;
+            } catch (e) {
+                console.error('Erreur updateVisibleCount:', e);
+                visiblePoints.textContent = '0';
             }
-            
-            function updateLegendCounts(points) {
-                const counts = {};
-                points.forEach(point => {
+        }
+        
+        function updateLegendCounts(points) {
+            const counts = {};
+            points.forEach(point => {
+                if (point.category) {
                     counts[point.category] = (counts[point.category] || 0) + 1;
-                });
-                
-                for (const [category, count] of Object.entries(counts)) {
-                    const element = document.getElementById(`count-${category}`);
-                    if (element) element.textContent = count;
                 }
+            });
+            
+            for (const [category, count] of Object.entries(counts)) {
+                const element = document.getElementById(`count-${category}`);
+                if (element) element.textContent = count;
             }
+        }
 
-            // ==================== FILTRES ====================
-            function applyFilters() {
-                const filters = {
-                    category: document.getElementById('categoryFilter')?.value,
-                    ville: document.getElementById('villeFilter')?.value,
-                    search: document.getElementById('searchInput')?.value,
-                    has_video: document.getElementById('hasVideoFilter')?.checked ? 'yes' : null,
-                    has_details: document.getElementById('hasDetailsFilter')?.checked ? 'yes' : null
-                };
-                
-                // Nettoyer les filtres vides
-                Object.keys(filters).forEach(key => {
-                    if (!filters[key]) delete filters[key];
-                });
-                
-                loadMapPoints(filters);
-            }
+        // ==================== FILTRES ====================
+        function applyFilters() {
+            const filters = {
+                category: document.getElementById('categoryFilter')?.value,
+                ville: document.getElementById('villeFilter')?.value,
+                search: document.getElementById('searchInput')?.value,
+                has_video: document.getElementById('hasVideoFilter')?.checked,
+                has_details: document.getElementById('hasDetailsFilter')?.checked
+            };
             
-            function resetFilters() {
-                document.getElementById('categoryFilter').value = '';
-                document.getElementById('villeFilter').value = '';
-                document.getElementById('searchInput').value = '';
-                document.getElementById('hasVideoFilter').checked = false;
-                document.getElementById('hasDetailsFilter').checked = false;
-                
-                loadMapPoints({});
-            }
+            // Nettoyer les filtres vides
+            Object.keys(filters).forEach(key => {
+                if (!filters[key] || filters[key] === '') delete filters[key];
+            });
+            
+            loadMapPoints(filters);
+        }
+        
+        function resetFilters() {
+            const categoryFilter = document.getElementById('categoryFilter');
+            const villeFilter = document.getElementById('villeFilter');
+            const searchInput = document.getElementById('searchInput');
+            const hasVideoFilter = document.getElementById('hasVideoFilter');
+            const hasDetailsFilter = document.getElementById('hasDetailsFilter');
+            
+            if (categoryFilter) categoryFilter.value = '';
+            if (villeFilter) villeFilter.value = '';
+            if (searchInput) searchInput.value = '';
+            if (hasVideoFilter) hasVideoFilter.checked = false;
+            if (hasDetailsFilter) hasDetailsFilter.checked = false;
+            
+            loadMapPoints({});
+        }
 
-            // ==================== UTILITAIRES ====================
-            function showMapLoading() {
-                const loader = document.getElementById('mapLoading');
-                if (loader) loader.style.display = 'flex';
-            }
+        // ==================== UTILITAIRES ====================
+        function showMapLoading() {
+            const loader = document.getElementById('mapLoading');
+            if (loader) loader.style.display = 'flex';
+        }
+        
+        function hideMapLoading() {
+            const loader = document.getElementById('mapLoading');
+            if (loader) loader.style.display = 'none';
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Fonctions globales pour les appels depuis les popups
+        window.playVideoInModal = function(videoId) {
+            if (!videoId) return;
             
-            function hideMapLoading() {
-                const loader = document.getElementById('mapLoading');
-                if (loader) loader.style.display = 'none';
-            }
+            const modalBody = document.getElementById('modalBody');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalDetailsBtn = document.getElementById('modalDetailsBtn');
             
-            // Fonctions globales pour les appels depuis les popups
-            window.playVideoInModal = function(videoId) {
-                const modalBody = document.getElementById('modalBody');
-                const modalTitle = document.getElementById('modalTitle');
-                
-                modalTitle.textContent = 'Aperçu Vidéo';
+            if (modalTitle) modalTitle.textContent = 'Aperçu Vidéo';
+            if (modalBody) {
                 modalBody.innerHTML = `
                     <div class="video-container">
                         <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
@@ -586,34 +714,58 @@
                                 allowfullscreen></iframe>
                     </div>
                 `;
-                
-                document.getElementById('modalDetailsBtn').style.display = 'none';
-                
+            }
+            
+            if (modalDetailsBtn) modalDetailsBtn.style.display = 'none';
+            
+            try {
                 const modal = new bootstrap.Modal(document.getElementById('pointModal'));
                 modal.show();
-            };
-            
-            window.getDirections = function(lat, lng) {
+            } catch (e) {
+                console.error('Erreur modal:', e);
+            }
+        };
+        
+        window.getDirections = function(lat, lng) {
+            if (lat && lng) {
                 window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
-            };
-            
-            window.flyToPoint = function(lat, lng) {
+            }
+        };
+        
+        window.flyToPoint = function(lat, lng) {
+            if (map && lat && lng) {
                 map.flyTo([lat, lng], 16);
-            };
+            }
+        };
+        
+        window.showAllPoints = function() {
+            if (map) {
+                map.setView(map.getCenter(), map.getZoom() - 1);
+            }
+        };
 
-            // ==================== GESTIONNAIRES D'ÉVÉNEMENTS ====================
-            // Bouton recentrer
-            document.getElementById('recenterBtn')?.addEventListener('click', () => {
-                map.setView([45.5089, -73.5617], 12);
+        // ==================== GESTIONNAIRES D'ÉVÉNEMENTS ====================
+        // Bouton recentrer
+        const recenterBtn = document.getElementById('recenterBtn');
+        if (recenterBtn) {
+            recenterBtn.addEventListener('click', () => {
+                if (map) {
+                    map.setView([45.5089, -73.5617], 12);
+                }
             });
-            
-            // Bouton ma position
-            document.getElementById('myLocationBtn')?.addEventListener('click', () => {
+        }
+        
+        // Bouton ma position
+        const myLocationBtn = document.getElementById('myLocationBtn');
+        if (myLocationBtn) {
+            myLocationBtn.addEventListener('click', () => {
                 if (navigator.geolocation) {
                     showMapLoading();
                     navigator.geolocation.getCurrentPosition(
                         position => {
-                            map.flyTo([position.coords.latitude, position.coords.longitude], 15);
+                            if (map) {
+                                map.flyTo([position.coords.latitude, position.coords.longitude], 15);
+                            }
                             hideMapLoading();
                         },
                         error => {
@@ -625,31 +777,52 @@
                     alert('Géolocalisation non supportée');
                 }
             });
-            
-            // Toggle sidebar
-            document.getElementById('toggleSidebarBtn')?.addEventListener('click', () => {
-                document.getElementById('mapSidebar').classList.toggle('active');
+        }
+        
+        // Toggle sidebar
+        const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+        const mapSidebar = document.getElementById('mapSidebar');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        
+        if (toggleSidebarBtn && mapSidebar) {
+            toggleSidebarBtn.addEventListener('click', () => {
+                mapSidebar.classList.toggle('active');
             });
-            
-            document.getElementById('closeSidebarBtn')?.addEventListener('click', () => {
-                document.getElementById('mapSidebar').classList.remove('active');
+        }
+        
+        if (closeSidebarBtn && mapSidebar) {
+            closeSidebarBtn.addEventListener('click', () => {
+                mapSidebar.classList.remove('active');
             });
-            
-            // Filtres
-            document.getElementById('applyFilters')?.addEventListener('click', applyFilters);
-            document.getElementById('resetFilters')?.addEventListener('click', resetFilters);
-            
-            // Recherche avec debounce
-            let searchTimeout;
-            document.getElementById('searchInput')?.addEventListener('input', function() {
+        }
+        
+        // Filtres
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        const resetFiltersBtn = document.getElementById('resetFilters');
+        
+        if (applyFiltersBtn) {
+            applyFiltersBtn.addEventListener('click', applyFilters);
+        }
+        
+        if (resetFiltersBtn) {
+            resetFiltersBtn.addEventListener('click', resetFilters);
+        }
+        
+        // Recherche avec debounce
+        const searchInput = document.getElementById('searchInput');
+        let searchTimeout;
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(applyFilters, 500);
             });
+        }
 
-            // Initialisation
-            initMap();
-        });
-    </script>
+        // Initialisation
+        initMap();
+    });
+</script>
 
     <style>
         /* ==================== STYLES DE LA CARTE ==================== */

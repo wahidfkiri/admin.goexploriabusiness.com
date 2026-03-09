@@ -145,12 +145,20 @@
       <ul class="submenu">
         <li>
           <a href="{{ route('projects.index') }}" class="submenu-item">
-            <span class="submenu-text">Gestion des projets</span>
+             <i class="fas fa-cube submenu-icon"></i>
+            <span class="submenu-text ms-2">Gestion des projets</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ route('tasks.index') }}" class="submenu-item">
+             <i class="fas fa-tasks submenu-icon"></i>
+            <span class="submenu-text ms-2">Liste des taches</span>
           </a>
         </li>
         <li>
           <a href="{{ route('projects.calendar') }}" class="submenu-item">
-            <span class="submenu-text">Calendrier des projets</span>
+             <i class="fas fa-calendar-alt submenu-icon"></i>
+            <span class="submenu-text ms-2">Calendrier des projets</span>
           </a>
         </li>
       </ul>

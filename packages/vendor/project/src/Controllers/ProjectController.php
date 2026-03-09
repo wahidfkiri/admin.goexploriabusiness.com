@@ -1053,7 +1053,7 @@ public function store(Request $request)
             ]);
         }
         
-        return view('projects.tasks', compact('project', 'tasks'));
+        return view('project::projects.tasks.index', compact('project', 'tasks'));
     }
 
     /**

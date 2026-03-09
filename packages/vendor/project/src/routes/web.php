@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Vendor\Project\Controllers\ProjectController;
 use Illuminate\Support\Facades\Auth;
 use Vendor\Project\Controllers\TaskController;
+use Vendor\Project\Controllers\ProjectTaskController;
 
 
 Auth::routes();
@@ -21,7 +22,7 @@ Route::prefix('projects')->name('projects.')->group(function() {
     Route::get('/calendar', [ProjectController::class, 'calendar'])->name('calendar');
     // Routes pour un projet spécifique
     Route::prefix('{project}')->group(function() {
-        Route::get('tasks', [ProjectController::class, 'tasks'])->name('tasks');
+        Route::get('tasks', [ProjectTaskController::class, 'index'])->name('tasks');
         Route::get('timeline', [ProjectController::class, 'timeline'])->name('timeline');
         Route::get('gantt', [ProjectController::class, 'gantt'])->name('gantt');
         Route::post('duplicate', [ProjectController::class, 'duplicate'])->name('duplicate');

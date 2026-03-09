@@ -10,12 +10,12 @@
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb-custom">
                     <li class="breadcrumb-item">
-                        <a href="{{ url('tasks.index') }}">
+                        <a href="{{ route('tasks.index') }}">
                             <i class="fas fa-tasks me-1"></i>Tâches
                         </a>
                     </li>
                     <li class="breadcrumb-item">
-                        <a href="{{ url('projects.show', $task->project_id) }}">
+                        <a href="{{ route('projects.show', $task->project_id) }}">
                             <i class="fas fa-project-diagram me-1"></i>{{ Str::limit($task->project->name ?? 'Projet', 30) }}
                         </a>
                     </li>
@@ -38,7 +38,7 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
-                                <a class="dropdown-item" href="{{ url('tasks.edit', $task->id) }}">
+                                <a class="dropdown-item" href="{{ route('tasks.edit', $task->id) }}">
                                     <i class="fas fa-edit me-2"></i>Modifier
                                 </a>
                             </li>
@@ -56,7 +56,7 @@
                         </ul>
                     </div>
                     
-                    <a href="{{ url('tasks.edit', $task->id) }}" class="btn btn-primary">
+                    <a href="{{ route('tasks.edit', $task->id) }}" class="btn btn-primary">
                         <i class="fas fa-edit me-2"></i>Modifier
                     </a>
                 </div>
@@ -105,7 +105,7 @@
                                     <i class="fas fa-project-diagram me-2"></i>Projet
                                 </div>
                                 <div class="detail-value">
-                                    <a href="{{ url('projects.show', $task->project_id) }}" class="project-link">
+                                    <a href="{{ route('projects.show', $task->project_id) }}" class="project-link">
                                         {{ $task->project->name ?? 'N/A' }}
                                     </a>
                                 </div>

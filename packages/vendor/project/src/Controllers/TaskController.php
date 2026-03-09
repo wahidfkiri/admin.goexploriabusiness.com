@@ -29,37 +29,100 @@ class TaskController extends Controller
         $this->middleware('verified')->only(['create', 'store', 'edit', 'update', 'destroy']);
     }
 
-    /**
-     * Display a listing of the tasks.
-     */
     public function index(Request $request)
-    {
-        if ($request->ajax()) {
-            return $this->getTasksData($request);
+{
+    if ($request->ajax()) {
+        $query = Task::with(['project', 'user', 'etablissement']);
+        
+        // Appliquer les filtres
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
         }
         
-        $projects = Project::where('etablissement_id', Auth::user()->etablissement_id)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        if ($request->filled('project_id')) {
+            $query->where('project_id', $request->project_id);
+        }
         
-        $users = User::where('is_active', true)
-            ->where('etablissement_id', Auth::user()->etablissement_id)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
         
-        $statuses = [
-            'pending' => 'En attente',
-            'in_progress' => 'En cours',
-            'test' => 'En test',
-            'integrated' => 'Intégré',
-            'delivered' => 'Livré',
-            'approved' => 'Approuvé',
-            'cancelled' => 'Annulé',
-        ];
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
         
-        return view('tasks.index', compact('projects', 'users', 'statuses'));
+        if ($request->filled('etablissement_id')) {
+            $query->where('etablissement_id', $request->etablissement_id);
+        }
+        
+        // Filtre de date
+        if ($request->filled('date_range')) {
+            switch($request->date_range) {
+                case 'today':
+                    $query->whereDate('due_date', today());
+                    break;
+                case 'week':
+                    $query->whereBetween('due_date', [now()->startOfWeek(), now()->endOfWeek()]);
+                    break;
+                case 'month':
+                    $query->whereMonth('due_date', now()->month);
+                    break;
+                case 'overdue':
+                    $query->where('due_date', '<', now())
+                          ->whereNotIn('status', ['approved', 'delivered', 'cancelled']);
+                    break;
+            }
+        }
+        
+        $tasks = $query->paginate(10);
+        
+        // Grouper par projet
+        $groupedByProject = $tasks->groupBy(function($task) {
+            return $task->project->name ?? 'Sans projet';
+        })->map(function($group) {
+            return [
+                'project' => $group->first()->project,
+                'tasks' => $group->map(function($task) {
+                    return array_merge($task->toArray(), [
+                        'progress' => $task->getProgress(),
+                        'is_overdue' => $task->isOverdue(),
+                        'status_formatted' => $task->formatted_status,
+                        'status_color' => $task->status_color
+                    ]);
+                })
+            ];
+        });
+        
+        return response()->json([
+            'success' => true,
+            'grouped_by_project' => $groupedByProject,
+            'tasks' => $tasks,
+            'current_page' => $tasks->currentPage(),
+            'last_page' => $tasks->lastPage(),
+            'per_page' => $tasks->perPage(),
+            'total' => $tasks->total(),
+            'prev_page_url' => $tasks->previousPageUrl(),
+            'next_page_url' => $tasks->nextPageUrl()
+        ]);
     }
+    
+    // Vue normale
+    $projects = Project::all();
+    $users = User::all();
+    $etablissements = Etablissement::all();
+    $statuses = [
+        'pending' => 'En attente',
+        'in_progress' => 'En cours',
+        'test' => 'En test',
+        'integrated' => 'Intégré',
+        'delivered' => 'Livré',
+        'approved' => 'Approuvé',
+        'cancelled' => 'Annulé'
+    ];
+    
+    return view('project::tasks.index', compact('projects', 'users', 'etablissements', 'statuses'));
+}
+
 
     /**
      * Get tasks data for AJAX requests.
@@ -235,15 +298,33 @@ class TaskController extends Controller
         }
     }
 
+
+    public function statistics()
+{
+    $tasks = Task::all();
+    
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'total' => $tasks->count(),
+            'in_progress' => $tasks->where('status', 'in_progress')->count(),
+            'pending' => $tasks->where('status', 'pending')->count(),
+            'completed' => $tasks->whereIn('status', ['approved', 'delivered'])->count(),
+            'overdue' => $tasks->filter(function($task) {
+                return $task->isOverdue();
+            })->count()
+        ]
+    ]);
+}
     /**
      * Get task statistics.
      */
-    public function statistics(Request $request)
+    public function statisticsData(Request $request)
     {
         try {
             $etablissementId = Auth::user()->etablissement_id;
             
-            $query = Task::where('etablissement_id', $etablissementId);
+            $query = Task::query();
             
             if ($request->filled('project_id')) {
                 $query->where('project_id', $request->project_id);
