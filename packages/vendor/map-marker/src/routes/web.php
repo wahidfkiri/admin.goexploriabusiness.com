@@ -12,4 +12,5 @@ Route::middleware(['web','auth'])->group(function () {
 
     // API endpoints for map
     Route::get('/api/map-points', [MapPointController::class, 'getMapPoints'])->name('api.map-points');
+    Route::get('/api/map', [MapPointController::class, 'map'])->name('map-points.map');
 });

@@ -412,6 +412,49 @@ public function store(Request $request)
         ]);
     }
 
+    public function map()
+{
+    $totalPoints = MapPoint::count();
+    
+    $categories = MapPoint::select('category')
+        ->selectRaw('count(*) as total')
+        ->groupBy('category')
+        ->get()
+        ->map(function($item) {
+            return [
+                'category' => $item->category,
+                'category_label' => $this->getCategoryLabel($item->category),
+                'color' => $this->getCategoryColor($item->category),
+                'icon' => $this->getCategoryIcon($item->category),
+                'total' => $item->total
+            ];
+        })->toArray(); // <- Important: toArray() pour être sûr
+    
+    $villes = MapPoint::select('ville')
+        ->selectRaw('count(*) as total')
+        ->whereNotNull('ville')
+        ->groupBy('ville')
+        ->orderBy('total', 'desc')
+        ->get()
+        ->map(function($item) {
+            return [
+                'ville' => $item->ville,
+                'total' => $item->total
+            ];
+        })->toArray();
+    
+    $categoriesCount = count($categories);
+    $villesCount = count($villes);
+    
+    return view('map-marker::map', compact(
+        'totalPoints', 
+        'categories', 
+        'villes', 
+        'categoriesCount', 
+        'villesCount'
+    ));
+}
+
     /**
      * Helper: Extract YouTube ID from URL
      */

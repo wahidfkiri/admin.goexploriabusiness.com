@@ -638,7 +638,7 @@
         const previewPoint = (pointId) => {
             // This would open the map centered on this point
             // You can redirect to the map page with the point highlighted
-            window.location.href = `/map?point=${pointId}`;
+            window.location.href = `/api/map?point=${pointId}`;
         };
 
         // Show delete confirmation modal
