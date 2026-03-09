@@ -74,7 +74,7 @@ class TaskController extends Controller
             }
         }
         
-        $tasks = $query->paginate(10);
+        $tasks = $query->paginate(20);
         
         // Grouper par projet
         $groupedByProject = $tasks->groupBy(function($task) {
