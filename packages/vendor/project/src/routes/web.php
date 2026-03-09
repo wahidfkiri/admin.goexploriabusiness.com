@@ -63,7 +63,7 @@ Route::resource('projects', ProjectController::class);
             Route::put('/comments/{comment}', [TaskController::class, 'updateComment'])->name('update-comment');
             Route::delete('/comments/{comment}', [TaskController::class, 'deleteComment'])->name('delete-comment');
             
-        Route::get('/files/{file}/download', [TaskController::class, 'downloadFile'])->name('download');
+        Route::get('/file/{file}/download', [TaskController::class, 'downloadFile'])->name('download');
             // Routes pour les dates techniques
             Route::patch('/test-date', [TaskController::class, 'updateTestDate'])->name('update-test-date');
             Route::patch('/integration-date', [TaskController::class, 'updateIntegrationDate'])->name('update-integration-date');
