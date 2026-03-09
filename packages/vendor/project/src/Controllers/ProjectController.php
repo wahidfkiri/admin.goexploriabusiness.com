@@ -1036,7 +1036,7 @@ public function store(Request $request)
       //  $this->authorize('view', $project);
         
         $tasks = $project->tasks()
-            ->with(['user', 'creator'])
+            ->with(['user'])
             ->when($request->status, function($query, $status) {
                 return $query->where('status', $status);
             })
