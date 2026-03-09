@@ -1598,7 +1598,7 @@ const addCustomStyles = () => {
         }
         
         .comment-text {
-            // white-space: pre-wrap;
+            white-space: pre-wrap;
             word-wrap: break-word;
         }
     `;
