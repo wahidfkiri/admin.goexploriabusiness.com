@@ -52,7 +52,8 @@
             "Vendor\\Theme\\": "packages/vendor/theme/src",
             "Vendor\\Template\\": "packages/vendor/template/src",
             "Vendor\\Project\\": "packages/vendor/project/src",
-            "Vendor\\Ecommerce\\": "packages/vendor/ecommerce/src"
+            "Vendor\\Ecommerce\\": "packages/vendor/ecommerce/src",
+            "Vendor\\MapMarker\\": "packages/vendor/map-marker/src"
         }
     },
     "autoload-dev": {
