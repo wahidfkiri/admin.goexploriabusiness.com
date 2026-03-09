@@ -60,6 +60,8 @@ Route::resource('projects', ProjectController::class);
             Route::post('/assign', [TaskController::class, 'assign'])->name('assign');
             Route::get('/comments', [TaskController::class, 'comments'])->name('comments');
             Route::post('/comments', [TaskController::class, 'addComment'])->name('add-comment');
+            Route::put('/comments/{comment}', [TaskController::class, 'updateComment'])->name('update-comment');
+            Route::delete('/comments/{comment}', [TaskController::class, 'deleteComment'])->name('delete-comment');
             
         Route::get('/files/{file}/download', [TaskController::class, 'downloadFile'])->name('download');
             // Routes pour les dates techniques

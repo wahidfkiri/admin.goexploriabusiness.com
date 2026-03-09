@@ -441,59 +441,88 @@
         </div>
         
         <!-- Comments Section -->
-        <div class="detail-card mt-4">
-            <div class="detail-card-header">
-                <h3 class="detail-card-title">
-                    <i class="fas fa-comments me-2"></i>Commentaires
-                </h3>
-                <button class="btn btn-sm btn-primary" onclick="toggleCommentForm()">
-                    <i class="fas fa-plus me-1"></i>Ajouter
-                </button>
-            </div>
-            
-            <div class="detail-card-body">
-                <!-- Comment Form (Initially Hidden) -->
-                <div class="comment-form-container" id="commentForm" style="display: none;">
-                    <form id="addCommentForm">
-                        @csrf
-                        <div class="mb-3">
-                            <textarea class="form-control-modern" id="commentContent" rows="3" placeholder="Écrivez votre commentaire..." required></textarea>
-                        </div>
-                        <div class="text-end">
-                            <button type="button" class="btn btn-sm btn-secondary me-2" onclick="toggleCommentForm()">Annuler</button>
-                            <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="fas fa-paper-plane me-1"></i>Publier
-                            </button>
-                        </div>
-                    </form>
+<div class="detail-card mt-4">
+    <div class="detail-card-header">
+        <h3 class="detail-card-title">
+            <i class="fas fa-comments me-2"></i>Commentaires et détails
+        </h3>
+        <button class="btn btn-sm btn-primary" onclick="toggleCommentForm()">
+            <i class="fas fa-plus me-1"></i>Ajouter
+        </button>
+    </div>
+    
+    <div class="detail-card-body">
+        <!-- Comment Form (Initially Hidden) -->
+        <div class="comment-form-container" id="commentForm" style="display: none;">
+            <form id="addCommentForm">
+                @csrf
+                <div class="mb-3">
+                    <textarea class="form-control-modern" id="commentContent" rows="3" placeholder="Écrivez votre commentaire..." required></textarea>
                 </div>
-                
-                <!-- Comments List -->
-                <div class="comments-list" id="commentsList">
-                    @forelse($task->comments ?? [] as $comment)
-                        <div class="comment-item" id="comment-{{ $comment->id }}">
-                            <div class="comment-avatar" style="background: {{ \App\Helpers\Helper::getUserColor($comment->user->name ?? 'System') }}">
-                                {{ \App\Helpers\Helper::getInitials($comment->user->name ?? 'System') }}
-                            </div>
-                            <div class="comment-content">
-                                <div class="comment-header">
-                                    <span class="comment-author">{{ $comment->user->name ?? 'Système' }}</span>
-                                    <span class="comment-date">{{ $comment->created_at->diffForHumans() }}</span>
-                                </div>
-                                <div class="comment-text">
-                                    {{ $comment->content }}
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="empty-comments">
-                            <i class="fas fa-comment-dots"></i>
-                            <p>Aucun commentaire pour le moment</p>
-                        </div>
-                    @endforelse
+                <div class="text-end">
+                    <button type="button" class="btn btn-sm btn-secondary me-2" onclick="toggleCommentForm()">Annuler</button>
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-paper-plane me-1"></i>Publier
+                    </button>
                 </div>
-            </div>
+            </form>
         </div>
+
+        <!-- Edit Comment Form (Initially Hidden) -->
+        <div class="comment-form-container" id="editCommentForm" style="display: none;">
+            <form id="updateCommentForm">
+                @csrf
+                @method('PUT')
+                <input type="hidden" id="editCommentId">
+                <div class="mb-3">
+                    <textarea class="form-control-modern" id="editCommentContent" rows="3" placeholder="Modifiez votre commentaire..." required></textarea>
+                </div>
+                <div class="text-end">
+                    <button type="button" class="btn btn-sm btn-secondary me-2" onclick="cancelEditComment()">Annuler</button>
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-save me-1"></i>Mettre à jour
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Comments List -->
+        <div class="comments-list" id="commentsList">
+            @forelse($task->comments ?? [] as $comment)
+                <div class="comment-item" id="comment-{{ $comment->id }}">
+                    <div class="comment-avatar" style="background: {{ \App\Helpers\Helper::getUserColor($comment->user->name ?? 'System') }}">
+                        {{ \App\Helpers\Helper::getInitials($comment->user->name ?? 'System') }}
+                    </div>
+                    <div class="comment-content">
+                        <div class="comment-header">
+                            <span class="comment-author">{{ $comment->user->name ?? 'Système' }}</span>
+                            <span class="comment-date">{{ $comment->created_at->diffForHumans() }}</span>
+                            
+                            @if(auth()->id() == $comment->user_id)
+                                <div class="comment-actions ms-auto">
+                                    <button class="btn btn-sm btn-link text-primary p-0 me-2" onclick="editComment({{ $comment->id }}, '{{ addslashes($comment->content) }}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteComment({{ $comment->id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            @endif
+                        </div>
+                        <div class="comment-text" id="comment-text-{{ $comment->id }}">
+                            {{ $comment->content }}
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="empty-comments">
+                    <i class="fas fa-comment-dots"></i>
+                    <p>Aucun commentaire pour le moment</p>
+                </div>
+            @endforelse
+        </div>
+    </div>
+</div>
     </main>
     
     <!-- DELETE MODAL -->
@@ -779,230 +808,884 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <script>
-        // Configuration
-        const taskId = {{ $task->id }};
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            setupAjax();
-            initCircularProgress();
-        });
+<script>
+// ============================================
+// CONFIGURATION GLOBALE
+// ============================================
+const taskId = {{ $task->id }};
+const currentUserId = {{ auth()->id() ?? 'null' }};
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-        // AJAX setup
-        const setupAjax = () => {
-            $.ajaxSetup({
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-        };
+// Variables globales
+let editModal = null;
+let currentTaskData = {};
+let deleteModal = null;
 
-        // Circular Progress
-        const initCircularProgress = () => {
-            const progressElement = document.querySelector('.circular-progress');
-            const progress = parseInt(progressElement.dataset.progress) || 0;
-            
-            const circumference = 2 * Math.PI * 54; // radius = 54
-            const offset = circumference - (progress / 100) * circumference;
-            
-            // Create SVG
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('viewBox', '0 0 120 120');
-            svg.setAttribute('class', 'circular-progress-svg');
-            
-            const bgCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            bgCircle.setAttribute('cx', '60');
-            bgCircle.setAttribute('cy', '60');
-            bgCircle.setAttribute('r', '54');
-            bgCircle.setAttribute('fill', 'none');
-            bgCircle.setAttribute('stroke', '#e9ecef');
-            bgCircle.setAttribute('stroke-width', '8');
-            
-            const progressCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            progressCircle.setAttribute('cx', '60');
-            progressCircle.setAttribute('cy', '60');
-            progressCircle.setAttribute('r', '54');
-            progressCircle.setAttribute('fill', 'none');
-            progressCircle.setAttribute('stroke', getProgressColor(progress));
-            progressCircle.setAttribute('stroke-width', '8');
-            progressCircle.setAttribute('stroke-linecap', 'round');
-            progressCircle.setAttribute('stroke-dasharray', circumference);
-            progressCircle.setAttribute('stroke-dashoffset', offset);
-            progressCircle.setAttribute('transform', 'rotate(-90 60 60)');
-            
-            svg.appendChild(bgCircle);
-            svg.appendChild(progressCircle);
-            
-            progressElement.innerHTML = '';
-            progressElement.appendChild(svg);
-        };
+// ============================================
+// INITIALISATION
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser les modals Bootstrap
+    editModal = new bootstrap.Modal(document.getElementById('editTaskModal'));
+    deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    
+    // Configurer AJAX
+    setupAjax();
+    
+    // Initialiser les composants
+    initCircularProgress();
+    initCommentForms();
+    setupEditButton();
+    setupCostCalculation();
+    setupEditForm();
+    
+    // Ajouter les animations CSS
+    addCustomStyles();
+});
 
-        // Toggle comment form
-        const toggleCommentForm = () => {
-            const form = document.getElementById('commentForm');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        };
+// Configuration AJAX
+const setupAjax = () => {
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    });
+};
 
-        // Add comment
-        document.getElementById('addCommentForm')?.addEventListener('submit', function(e) {
+// ============================================
+// GESTION DES COMMENTAIRES
+// ============================================
+
+// Initialiser les formulaires de commentaires
+const initCommentForms = () => {
+    // Formulaire d'ajout
+    const addForm = document.getElementById('addCommentForm');
+    if (addForm) {
+        addForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
-            const content = document.getElementById('commentContent').value.trim();
-            
-            if (!content) {
-                showAlert('warning', 'Veuillez écrire un commentaire');
-                return;
-            }
-            
-            const submitBtn = this.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Envoi...';
-            
-            $.ajax({
-                url: `/tasks/${taskId}/comments`,
-                type: 'POST',
-                data: { content: content },
-                success: function(response) {
-                    if (response.success) {
-                        addCommentToList(response.data);
-                        document.getElementById('commentContent').value = '';
-                        toggleCommentForm();
-                        showAlert('success', 'Commentaire ajouté');
-                    }
-                },
-                error: function() {
-                    showAlert('danger', 'Erreur lors de l\'ajout du commentaire');
-                },
-                complete: function() {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Publier';
-                }
-            });
+            submitComment();
         });
+    }
+    
+    // Formulaire de modification
+    const editForm = document.getElementById('updateCommentForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateComment();
+        });
+    }
+};
 
-        // Add comment to list
-        const addCommentToList = (comment) => {
-            const commentsList = document.getElementById('commentsList');
-            const emptyState = commentsList.querySelector('.empty-comments');
-            
-            if (emptyState) {
-                emptyState.remove();
+// Afficher/masquer le formulaire de commentaire
+const toggleCommentForm = () => {
+    const form = document.getElementById('commentForm');
+    const editForm = document.getElementById('editCommentForm');
+    
+    // Cacher le formulaire d'édition s'il est visible
+    if (editForm.style.display === 'block') {
+        editForm.style.display = 'none';
+    }
+    
+    // Basculer le formulaire d'ajout
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    
+    // Focus sur le textarea
+    if (form.style.display === 'block') {
+        document.getElementById('commentContent').focus();
+    }
+};
+
+// Éditer un commentaire
+const editComment = (commentId, content) => {
+    // Cacher le formulaire d'ajout
+    document.getElementById('commentForm').style.display = 'none';
+    
+    // Afficher le formulaire d'édition
+    const editForm = document.getElementById('editCommentForm');
+    editForm.style.display = 'block';
+    
+    // Remplir le formulaire
+    document.getElementById('editCommentId').value = commentId;
+    document.getElementById('editCommentContent').value = content;
+    
+    // Scroller vers le formulaire
+    editForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Focus sur le textarea
+    document.getElementById('editCommentContent').focus();
+};
+
+// Annuler l'édition
+const cancelEditComment = () => {
+    document.getElementById('editCommentForm').style.display = 'none';
+    document.getElementById('editCommentId').value = '';
+    document.getElementById('editCommentContent').value = '';
+};
+
+// Soumettre un nouveau commentaire
+const submitComment = () => {
+    const content = document.getElementById('commentContent').value.trim();
+    
+    if (!content) {
+        showToast('warning', 'Veuillez écrire un commentaire');
+        return;
+    }
+    
+    const submitBtn = document.querySelector('#addCommentForm button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Envoi...';
+    
+    $.ajax({
+        url: `/tasks/${taskId}/comments`,
+        type: 'POST',
+        data: { content: content },
+        success: function(response) {
+            if (response.success) {
+                addCommentToList(response.data);
+                document.getElementById('commentContent').value = '';
+                toggleCommentForm();
+                showToast('success', 'Commentaire ajouté avec succès');
             }
+        },
+        error: function(xhr) {
+            let message = 'Erreur lors de l\'ajout du commentaire';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                message = xhr.responseJSON.message;
+            }
+            showToast('danger', message);
+        },
+        complete: function() {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+};
+
+// Mettre à jour un commentaire
+const updateComment = () => {
+    const commentId = document.getElementById('editCommentId').value;
+    const content = document.getElementById('editCommentContent').value.trim();
+    
+    if (!content) {
+        showToast('warning', 'Veuillez écrire un commentaire');
+        return;
+    }
+    
+    const submitBtn = document.querySelector('#updateCommentForm button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Mise à jour...';
+    
+    $.ajax({
+        url: `/tasks/${taskId}/comments/${commentId}`,
+        type: 'PUT',
+        data: { content: content },
+        success: function(response) {
+            if (response.success) {
+                // Mettre à jour le texte du commentaire
+                const commentText = document.getElementById(`comment-text-${commentId}`);
+                if (commentText) {
+                    commentText.textContent = content;
+                    
+                    // Ajouter un effet de surbrillance
+                    commentText.style.backgroundColor = '#fff3cd';
+                    commentText.style.transition = 'background-color 1s ease';
+                    setTimeout(() => {
+                        commentText.style.backgroundColor = 'transparent';
+                    }, 1000);
+                }
+                
+                // Cacher le formulaire
+                cancelEditComment();
+                
+                showToast('success', 'Commentaire mis à jour avec succès');
+            }
+        },
+        error: function(xhr) {
+            if (xhr.status === 403) {
+                showToast('danger', 'Vous n\'êtes pas autorisé à modifier ce commentaire');
+            } else {
+                let message = 'Erreur lors de la mise à jour';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                showToast('danger', message);
+            }
+        },
+        complete: function() {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+};
+
+// Supprimer un commentaire
+const deleteComment = (commentId) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ? Cette action est irréversible.')) {
+        return;
+    }
+    
+    const commentElement = document.getElementById(`comment-${commentId}`);
+    if (!commentElement) return;
+    
+    // Animation de suppression
+    commentElement.style.transition = 'all 0.3s ease';
+    commentElement.style.transform = 'translateX(20px)';
+    commentElement.style.opacity = '0';
+    
+    $.ajax({
+        url: `/tasks/${taskId}/comments/${commentId}`,
+        type: 'DELETE',
+        success: function(response) {
+            if (response.success) {
+                setTimeout(() => {
+                    commentElement.remove();
+                    
+                    // Vérifier s'il reste des commentaires
+                    const commentsList = document.getElementById('commentsList');
+                    if (commentsList.children.length === 0) {
+                        commentsList.innerHTML = `
+                            <div class="empty-comments">
+                                <i class="fas fa-comment-dots"></i>
+                                <p>Aucun commentaire pour le moment</p>
+                            </div>
+                        `;
+                    }
+                    
+                    showToast('success', 'Commentaire supprimé avec succès');
+                }, 300);
+            }
+        },
+        error: function(xhr) {
+            // Restaurer l'élément
+            commentElement.style.transform = '';
+            commentElement.style.opacity = '1';
             
-            const commentHtml = `
-                <div class="comment-item" id="comment-${comment.id}">
-                    <div class="comment-avatar" style="background: ${getUserColor(comment.user?.name || 'System')}">
-                        ${getInitials(comment.user?.name || 'S')}
-                    </div>
-                    <div class="comment-content">
-                        <div class="comment-header">
-                            <span class="comment-author">${comment.user?.name || 'Système'}</span>
-                            <span class="comment-date">À l'instant</span>
-                        </div>
-                        <div class="comment-text">
-                            ${comment.content}
-                        </div>
-                    </div>
+            if (xhr.status === 403) {
+                showToast('danger', 'Vous n\'êtes pas autorisé à supprimer ce commentaire');
+            } else {
+                let message = 'Erreur lors de la suppression';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                showToast('danger', message);
+            }
+        }
+    });
+};
+
+// Ajouter un commentaire à la liste
+const addCommentToList = (comment) => {
+    const commentsList = document.getElementById('commentsList');
+    const emptyState = commentsList.querySelector('.empty-comments');
+    
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    const isCurrentUser = comment.user_id === currentUserId;
+    const actionButtons = isCurrentUser ? `
+        <div class="comment-actions ms-auto">
+            <button class="btn btn-sm btn-link text-primary p-0 me-2" onclick="editComment(${comment.id}, '${escapeJsString(comment.content)}')" title="Modifier">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteComment(${comment.id})" title="Supprimer">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    ` : '';
+    
+    const userInitials = getInitials(comment.user?.name || 'S');
+    const userColor = getUserColor(comment.user?.name || 'System');
+    
+    const commentHtml = `
+        <div class="comment-item" id="comment-${comment.id}" style="animation: slideIn 0.3s ease;">
+            <div class="comment-avatar" style="background: ${userColor}">
+                ${userInitials}
+            </div>
+            <div class="comment-content">
+                <div class="comment-header">
+                    <span class="comment-author">${escapeHtml(comment.user?.name || 'Système')}</span>
+                    <span class="comment-date">À l'instant</span>
+                    ${actionButtons}
                 </div>
-            `;
-            
-            commentsList.insertAdjacentHTML('afterbegin', commentHtml);
-        };
+                <div class="comment-text" id="comment-text-${comment.id}">
+                    ${escapeHtml(comment.content)}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    commentsList.insertAdjacentHTML('afterbegin', commentHtml);
+};
 
-        // Duplicate task
-        const duplicateTask = (id) => {
-            if (!confirm('Voulez-vous dupliquer cette tâche ?')) return;
-            
-            $.ajax({
-                url: `/tasks/${id}/duplicate`,
-                type: 'POST',
-                success: function(response) {
-                    if (response.success) {
-                        showAlert('success', 'Tâche dupliquée avec succès');
-                        setTimeout(() => {
-                            window.location.href = response.redirect;
-                        }, 1500);
+// ============================================
+// GESTION DES TÂCHES
+// ============================================
+
+// Configurer le bouton d'édition
+const setupEditButton = () => {
+    const editBtn = document.querySelector('a[href*="edit"]');
+    if (editBtn) {
+        editBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            loadTaskData();
+        });
+    }
+};
+
+// Charger les données de la tâche
+const loadTaskData = () => {
+    // Afficher le chargement
+    document.getElementById('editModalLoading').style.display = 'block';
+    document.getElementById('editTaskForm').style.display = 'none';
+    
+    // Ouvrir le modal
+    editModal.show();
+    
+    // Récupérer les données via AJAX
+    $.ajax({
+        url: `/tasks/${taskId}/edit`,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                currentTaskData = response.data;
+                populateEditForm(response.data);
+            } else {
+                showToast('danger', 'Erreur lors du chargement des données');
+                editModal.hide();
+            }
+        },
+        error: function(xhr) {
+            console.error('Error loading task data:', xhr);
+            let message = 'Erreur de chargement des données';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                message = xhr.responseJSON.message;
+            }
+            showToast('danger', message);
+            editModal.hide();
+        },
+        complete: function() {
+            document.getElementById('editModalLoading').style.display = 'none';
+            document.getElementById('editTaskForm').style.display = 'block';
+        }
+    });
+};
+
+// Remplir le formulaire avec les données
+const populateEditForm = (data) => {
+    // Informations de base
+    setFieldValue('edit_name', data.name);
+    setFieldValue('edit_project_id', data.project_id);
+    setFieldValue('edit_user_id', data.user_id);
+    setFieldValue('edit_status', data.status);
+    setFieldValue('edit_priority', data.priority);
+    setFieldValue('edit_tags', data.tags || '');
+    setFieldValue('edit_details', data.details);
+    
+    // Dates
+    setFieldValue('edit_due_date', data.due_date);
+    setFieldValue('edit_delivery_date', data.delivery_date);
+    setFieldValue('edit_estimated_hours', data.estimated_hours);
+    setFieldValue('edit_hourly_rate', data.hourly_rate);
+    setFieldValue('edit_estimated_cost', data.estimated_cost);
+    
+    // Technique
+    setFieldValue('edit_test_date', data.test_date);
+    setFieldValue('edit_integration_date', data.integration_date);
+    setFieldValue('edit_push_prod_date', data.push_prod_date);
+    setFieldValue('edit_module_url', data.module_url);
+    setFieldValue('edit_test_details', data.test_details);
+    
+    // Gestionnaires
+    setFieldValue('edit_general_manager_id', data.general_manager_id);
+    setFieldValue('edit_client_manager_id', data.client_manager_id);
+    setFieldValue('edit_country', data.country);
+    setFieldValue('edit_location', data.location);
+    setFieldValue('edit_contract_number', data.contract_number);
+    setFieldValue('edit_contact_name', data.contact_name);
+    
+    // Calculer le coût initial
+    calculateEstimatedCost();
+};
+
+// Helper pour set la valeur d'un champ
+const setFieldValue = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) {
+        element.value = value || '';
+    }
+};
+
+// Configurer le calcul automatique du coût
+const setupCostCalculation = () => {
+    const hoursInput = document.getElementById('edit_estimated_hours');
+    const rateInput = document.getElementById('edit_hourly_rate');
+    
+    if (hoursInput && rateInput) {
+        hoursInput.addEventListener('input', calculateEstimatedCost);
+        rateInput.addEventListener('input', calculateEstimatedCost);
+    }
+};
+
+// Calculer le coût estimé
+const calculateEstimatedCost = () => {
+    const hours = parseFloat(document.getElementById('edit_estimated_hours').value) || 0;
+    const rate = parseFloat(document.getElementById('edit_hourly_rate').value) || 0;
+    const cost = hours * rate;
+    
+    const costField = document.getElementById('edit_estimated_cost');
+    if (costField) {
+        costField.value = cost.toFixed(2);
+    }
+};
+
+// Configurer la soumission du formulaire
+const setupEditForm = () => {
+    const form = document.getElementById('editTaskForm');
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Désactiver le bouton
+        const submitBtn = document.getElementById('saveTaskBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...';
+        
+        // Récupérer les données du formulaire
+        const formData = new FormData(form);
+        
+        // Ajouter la méthode PUT
+        formData.append('_method', 'PUT');
+        
+        // Envoyer la requête
+        $.ajax({
+            url: `/tasks/${taskId}`,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    showToast('success', 'Tâche mise à jour avec succès');
+                    editModal.hide();
+                    
+                    // Recharger la page après un délai
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    if (response.errors) {
+                        handleValidationErrors(response.errors);
+                    } else {
+                        showToast('danger', response.message || 'Erreur lors de la mise à jour');
                     }
-                },
-                error: function() {
-                    showAlert('danger', 'Erreur lors de la duplication');
                 }
-            });
-        };
-
-        // Show delete confirmation
-        const showDeleteConfirmation = (id) => {
-            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            modal.show();
-            
-            document.getElementById('confirmDeleteBtn').onclick = function() {
-                deleteTask(id);
-            };
-        };
-
-        // Delete task
-        const deleteTask = (id) => {
-            const deleteBtn = document.getElementById('confirmDeleteBtn');
-            deleteBtn.disabled = true;
-            deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Suppression...';
-            
-            $.ajax({
-                url: `/tasks/${id}`,
-                type: 'DELETE',
-                success: function(response) {
-                    if (response.success) {
-                        showAlert('success', response.message);
-                        setTimeout(() => {
-                            window.location.href = '{{ url("tasks.index") }}';
-                        }, 1500);
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    handleValidationErrors(xhr.responseJSON.errors);
+                } else {
+                    let message = 'Erreur lors de la mise à jour';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        message = xhr.responseJSON.message;
                     }
-                },
-                error: function() {
-                    showAlert('danger', 'Erreur lors de la suppression');
-                    deleteBtn.disabled = false;
-                    deleteBtn.innerHTML = '<i class="fas fa-trash me-2"></i>Supprimer';
+                    showToast('danger', message);
                 }
-            });
-        };
+            },
+            complete: function() {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+    });
+};
 
-        // Show alert
-        const showAlert = (type, message) => {
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
-            alert.style.zIndex = '9999';
-            alert.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
+// Gérer les erreurs de validation
+const handleValidationErrors = (errors) => {
+    // Réinitialiser les erreurs
+    document.querySelectorAll('.is-invalid').forEach(el => {
+        el.classList.remove('is-invalid');
+    });
+    document.querySelectorAll('.invalid-feedback').forEach(el => {
+        el.remove();
+    });
+    
+    // Afficher les nouvelles erreurs
+    for (let field in errors) {
+        const input = document.getElementById(`edit_${field}`);
+        if (input) {
+            input.classList.add('is-invalid');
             
-            document.body.appendChild(alert);
+            const feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback';
+            feedback.textContent = errors[field][0];
             
-            setTimeout(() => {
-                if (alert.parentNode) alert.remove();
-            }, 5000);
-        };
+            input.parentNode.appendChild(feedback);
+        }
+    }
+    
+    showToast('warning', 'Veuillez corriger les erreurs dans le formulaire');
+};
 
-        // Helper functions
-        const getInitials = (name) => {
-            if (!name) return '?';
-            return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-        };
+// Dupliquer une tâche
+const duplicateTask = (id) => {
+    if (!confirm('Voulez-vous dupliquer cette tâche ?')) return;
+    
+    $.ajax({
+        url: `/tasks/${id}/duplicate`,
+        type: 'POST',
+        success: function(response) {
+            if (response.success) {
+                showToast('success', 'Tâche dupliquée avec succès');
+                setTimeout(() => {
+                    window.location.href = response.redirect || `/tasks/${response.data.id}`;
+                }, 1500);
+            }
+        },
+        error: function(xhr) {
+            let message = 'Erreur lors de la duplication';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                message = xhr.responseJSON.message;
+            }
+            showToast('danger', message);
+        }
+    });
+};
 
-        const getUserColor = (name) => {
-            const colors = ['#45b7d1', '#96ceb4', '#feca57', '#ff6b6b', '#9b59b6'];
-            const index = (name?.length || 0) % colors.length;
-            return colors[index];
-        };
+// Afficher la confirmation de suppression
+const showDeleteConfirmation = (id) => {
+    deleteModal.show();
+    
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        deleteTask(id);
+    };
+};
 
-        const getProgressColor = (progress) => {
-            if (progress < 30) return '#ef476f';
-            if (progress < 70) return '#ffd166';
-            return '#06b48a';
-        };
-    </script>
+// Supprimer une tâche
+const deleteTask = (id) => {
+    const deleteBtn = document.getElementById('confirmDeleteBtn');
+    const originalText = deleteBtn.innerHTML;
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Suppression...';
+    
+    $.ajax({
+        url: `/tasks/${id}`,
+        type: 'DELETE',
+        success: function(response) {
+            if (response.success) {
+                showToast('success', response.message || 'Tâche supprimée avec succès');
+                setTimeout(() => {
+                    window.location.href = '{{ route("tasks.index") }}';
+                }, 1500);
+            }
+        },
+        error: function(xhr) {
+            let message = 'Erreur lors de la suppression';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                message = xhr.responseJSON.message;
+            }
+            showToast('danger', message);
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalText;
+        }
+    });
+};
+
+// ============================================
+// COMPOSANTS UI
+// ============================================
+
+// Initialiser le cercle de progression
+const initCircularProgress = () => {
+    const progressElement = document.querySelector('.circular-progress');
+    if (!progressElement) return;
+    
+    const progress = parseInt(progressElement.dataset.progress) || 0;
+    
+    const circumference = 2 * Math.PI * 54; // radius = 54
+    const offset = circumference - (progress / 100) * circumference;
+    
+    // Créer SVG
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 120 120');
+    svg.setAttribute('class', 'circular-progress-svg');
+    
+    const bgCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    bgCircle.setAttribute('cx', '60');
+    bgCircle.setAttribute('cy', '60');
+    bgCircle.setAttribute('r', '54');
+    bgCircle.setAttribute('fill', 'none');
+    bgCircle.setAttribute('stroke', '#e9ecef');
+    bgCircle.setAttribute('stroke-width', '8');
+    
+    const progressCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    progressCircle.setAttribute('cx', '60');
+    progressCircle.setAttribute('cy', '60');
+    progressCircle.setAttribute('r', '54');
+    progressCircle.setAttribute('fill', 'none');
+    progressCircle.setAttribute('stroke', getProgressColor(progress));
+    progressCircle.setAttribute('stroke-width', '8');
+    progressCircle.setAttribute('stroke-linecap', 'round');
+    progressCircle.setAttribute('stroke-dasharray', circumference);
+    progressCircle.setAttribute('stroke-dashoffset', offset);
+    progressCircle.setAttribute('transform', 'rotate(-90 60 60)');
+    
+    svg.appendChild(bgCircle);
+    svg.appendChild(progressCircle);
+    
+    progressElement.innerHTML = '';
+    progressElement.appendChild(svg);
+};
+
+// Afficher un toast
+const showToast = (type, message) => {
+    const toastEl = document.getElementById('successToast');
+    if (!toastEl) return;
+    
+    const toastBody = document.getElementById('toastMessage');
+    const toastHeader = toastEl.querySelector('.toast-header');
+    const icon = toastHeader.querySelector('i');
+    
+    // Configurer les couleurs et icônes selon le type
+    const config = {
+        success: { bg: 'bg-success', icon: 'fa-check-circle', text: 'Succès' },
+        danger: { bg: 'bg-danger', icon: 'fa-exclamation-circle', text: 'Erreur' },
+        warning: { bg: 'bg-warning', icon: 'fa-exclamation-triangle', text: 'Attention' },
+        info: { bg: 'bg-info', icon: 'fa-info-circle', text: 'Information' }
+    };
+    
+    const typeConfig = config[type] || config.info;
+    
+    toastHeader.className = `toast-header ${typeConfig.bg} text-white`;
+    icon.className = `fas ${typeConfig.icon} me-2`;
+    toastBody.textContent = message;
+    
+    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    toast.show();
+};
+
+// ============================================
+// FONCTIONS UTILITAIRES
+// ============================================
+
+// Échapper les caractères HTML
+const escapeHtml = (text) => {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+};
+
+// Échapper les caractères pour les chaînes JavaScript
+const escapeJsString = (str) => {
+    if (!str) return '';
+    return str.replace(/\\/g, '\\\\')
+              .replace(/'/g, "\\'")
+              .replace(/"/g, '\\"')
+              .replace(/\n/g, '\\n')
+              .replace(/\r/g, '\\r');
+};
+
+// Obtenir les initiales d'un nom
+const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ')
+               .map(n => n[0])
+               .join('')
+               .toUpperCase()
+               .substring(0, 2);
+};
+
+// Obtenir une couleur basée sur un nom
+const getUserColor = (name) => {
+    const colors = [
+        '#45b7d1', '#96ceb4', '#feca57', '#ff6b6b', '#9b59b6',
+        '#3498db', '#e67e22', '#2ecc71', '#e74c3c', '#f1c40f'
+    ];
+    const index = (name?.length || 0) % colors.length;
+    return colors[index];
+};
+
+// Obtenir la couleur de progression
+const getProgressColor = (progress) => {
+    if (progress < 30) return '#ef476f';
+    if (progress < 70) return '#ffd166';
+    return '#06b48a';
+};
+
+// Ajouter des styles personnalisés
+const addCustomStyles = () => {
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .comment-actions {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .comment-item:hover .comment-actions {
+            opacity: 1;
+        }
+        
+        .comment-actions .btn-link {
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 0.25rem 0.5rem;
+        }
+        
+        .comment-actions .btn-link:hover {
+            transform: scale(1.1);
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+        }
+        
+        .comment-item {
+            transition: all 0.3s ease;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .comment-item.deleting {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        
+        .is-invalid {
+            border-color: #dc3545 !important;
+        }
+        
+        .invalid-feedback {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+        
+        .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .toast-container {
+            z-index: 9999;
+        }
+        
+        .btn-link:focus {
+            box-shadow: none;
+        }
+        
+        .comment-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    `;
+    document.head.appendChild(style);
+};
+
+// ============================================
+// VALIDATION EN TEMPS RÉEL
+// ============================================
+
+// Validation des champs requis
+document.querySelectorAll('#editTaskForm [required]').forEach(input => {
+    input.addEventListener('invalid', function(e) {
+        e.preventDefault();
+        this.classList.add('is-invalid');
+    });
+    
+    input.addEventListener('input', function() {
+        if (this.value) {
+            this.classList.remove('is-invalid');
+            const feedback = this.parentNode.querySelector('.invalid-feedback');
+            if (feedback) feedback.remove();
+        }
+    });
+});
+
+// ============================================
+// CONFIRMATION AVANT DE QUITTER
+// ============================================
+let formChanged = false;
+
+document.querySelectorAll('#editTaskForm input, #editTaskForm select, #editTaskForm textarea').forEach(input => {
+    input.addEventListener('change', () => {
+        formChanged = true;
+    });
+});
+
+document.getElementById('editTaskModal').addEventListener('hide.bs.modal', function(e) {
+    if (formChanged) {
+        if (!confirm('Vous avez des modifications non enregistrées. Voulez-vous vraiment quitter ?')) {
+            e.preventDefault();
+        }
+    }
+});
+
+document.getElementById('editTaskModal').addEventListener('hidden.bs.modal', function() {
+    formChanged = false;
+});
+
+// ============================================
+// GESTION DES DATES
+// ============================================
+
+// Formater une date pour l'affichage
+const formatDate = (dateString) => {
+    if (!dateString) return 'Non définie';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
+// Formater une date pour input datetime-local
+const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Exposer les fonctions globalement
+window.toggleCommentForm = toggleCommentForm;
+window.editComment = editComment;
+window.cancelEditComment = cancelEditComment;
+window.deleteComment = deleteComment;
+window.duplicateTask = duplicateTask;
+window.showDeleteConfirmation = showDeleteConfirmation;
+window.formatDate = formatDate;
+</script>
 
     <script>
 // Configuration supplémentaire

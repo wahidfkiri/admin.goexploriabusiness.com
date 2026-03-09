@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Etablissement;
 use App\Models\TaskFile;
 use Illuminate\Http\Request;
+use App\Models\TaskComment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -1196,6 +1197,48 @@ public function update(Request $request, Task $task)
             ], 500);
         }
     }
+
+    public function updateComment(Request $request,Task $task, TaskComment $comment)
+    {
+        $request->validate([
+            'content' => 'required|string'
+        ]);
+        
+        try {
+            $comment->content = $request->content;
+            $comment->save();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Commentaire mis à jour avec succès',
+                'data' => $comment
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour du commentaire'
+            ], 500);
+        }
+    }   
+
+    public function deleteComment(Task $task, TaskComment $comment)
+    {
+        try {
+            $comment->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Commentaire supprimé avec succès'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression du commentaire'
+            ], 500);
+        }
+    }   
 
     /**
      * Update test date.
