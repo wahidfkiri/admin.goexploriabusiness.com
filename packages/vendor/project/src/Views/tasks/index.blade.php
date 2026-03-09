@@ -1584,5 +1584,477 @@
                 margin-bottom: 5px;
             }
         }
+        /* ===== COMPOSANTS D'AVATAR ===== */
+
+/* Petit avatar (32x32) - Utilisé dans les tableaux */
+.user-avatar-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px; /* Coins légèrement arrondis pour un look moderne */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    flex-shrink: 0; /* Empêche l'avatar de rétrécir */
+}
+
+.user-avatar-sm:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Avatar moyen (40x40) - Pour les cartes et en-têtes */
+.user-avatar-md {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    text-transform: uppercase;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.user-avatar-md:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+}
+
+/* Grand avatar (50x50) - Pour les profils */
+.user-avatar-lg {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.user-avatar-lg:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+/* Très grand avatar (70x70) - Pour les pages de détail */
+.user-avatar-xl {
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.8rem;
+    text-transform: uppercase;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.user-avatar-xl:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+/* Avatar avec bordure */
+.user-avatar-bordered {
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.user-avatar-bordered:hover {
+    border-color: var(--primary-color);
+}
+
+/* Avatar avec statut en ligne */
+.user-avatar-with-status {
+    position: relative;
+}
+
+.user-avatar-status {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.user-avatar-status.online {
+    background-color: #2ecc71;
+}
+
+.user-avatar-status.offline {
+    background-color: #95a5a6;
+}
+
+.user-avatar-status.busy {
+    background-color: #e74c3c;
+}
+
+.user-avatar-status.away {
+    background-color: #f39c12;
+}
+
+/* ===== COMPOSANTS D'INFORMATION UTILISATEUR ===== */
+
+/* Container d'information utilisateur (avatar + détails) */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Version compacte pour les tableaux */
+.user-info-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Détails de l'utilisateur */
+.user-details {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #2c3e50;
+    margin-bottom: 2px;
+}
+
+.user-email {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+.user-role {
+    font-size: 0.75rem;
+    color: #95a5a6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Version pour les cartes */
+.user-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #eaeaea;
+    transition: all 0.3s ease;
+}
+
+.user-card:hover {
+    background: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+.user-card .user-info {
+    flex: 1;
+}
+
+.user-card .user-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-card .user-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.user-card .user-meta-item i {
+    width: 16px;
+    color: var(--primary-color);
+}
+
+/* ===== COMPOSANTS POUR LES TABLEAUX ===== */
+
+/* Container pour les informations dans les tableaux */
+.table-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.table-user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.table-user-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #2c3e50;
+}
+
+.table-user-email {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+/* ===== VARIANTES DE COULEURS POUR AVATARS ===== */
+
+/* Couleurs prédéfinies pour les avatars */
+.avatar-blue {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.avatar-green {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+.avatar-yellow {
+    background: linear-gradient(135deg, #f1c40f, #f39c12);
+}
+
+.avatar-orange {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+}
+
+.avatar-red {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.avatar-purple {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+}
+
+.avatar-pink {
+    background: linear-gradient(135deg, #e84393, #c2185b);
+}
+
+.avatar-teal {
+    background: linear-gradient(135deg, #1abc9c, #16a085);
+}
+
+.avatar-gray {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+}
+
+.avatar-dark {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+}
+
+/* ===== ANIMATIONS ===== */
+
+@keyframes avatarPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+    }
+}
+
+.avatar-pulse {
+    animation: avatarPulse 2s infinite;
+}
+
+@keyframes avatarGlow {
+    0% {
+        filter: brightness(1);
+    }
+    50% {
+        filter: brightness(1.1);
+    }
+    100% {
+        filter: brightness(1);
+    }
+}
+
+.avatar-glow {
+    animation: avatarGlow 2s infinite;
+}
+
+/* ===== EXEMPLES D'UTILISATION DANS LE TABLEAU ===== */
+
+/* Style pour la cellule du tableau contenant l'utilisateur */
+td .user-info {
+    min-width: 150px;
+}
+
+/* Style pour quand il n'y a pas d'utilisateur assigné */
+.no-user-assigned {
+    color: #95a5a6;
+    font-style: italic;
+    font-size: 0.9rem;
+    padding: 8px 0;
+}
+
+/* ===== VERSION RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+    .user-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .user-details {
+        width: 100%;
+    }
+    
+    .user-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .user-card .user-meta-item {
+        justify-content: center;
+    }
+    
+    td .user-info {
+        min-width: auto;
+    }
+    
+    .table-user-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+
+.modern-table td {
+    padding: 16px 12px;
+    vertical-align: middle;
+}
+
+.modern-table .user-info {
+    margin: -8px 0; /* Ajustement pour l'alignement */
+}
+
+/* Ligne de survol */
+.modern-table tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.modern-table tbody tr:hover .user-avatar-sm {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* ===== BADGES DE STATUT POUR LES UTILISATEURS ===== */
+
+.user-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.user-badge-admin {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+.user-badge-manager {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    color: white;
+}
+
+.user-badge-user {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    color: white;
+}
+
+/* ===== TOOLTIP PERSONNALISÉ POUR LES AVATARS ===== */
+
+.user-avatar-sm[data-tooltip] {
+    position: relative;
+    cursor: help;
+}
+
+.user-avatar-sm[data-tooltip]:before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+.user-avatar-sm[data-tooltip]:hover:before {
+    opacity: 1;
+}
+
+/* ===== GROUPE D'AVATARS (POUR LES ASSIGNATIONS MULTIPLES) ===== */
+
+.avatar-group {
+    display: flex;
+    align-items: center;
+}
+
+.avatar-group .user-avatar-sm {
+    margin-right: -8px;
+    border: 2px solid white;
+    transition: transform 0.2s ease;
+}
+
+.avatar-group .user-avatar-sm:hover {
+    transform: translateY(-3px);
+    z-index: 10;
+}
+
+.avatar-group-count {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #495057;
+    border: 2px solid white;
+    margin-left: 4px;
+}
     </style>
 @endsection
