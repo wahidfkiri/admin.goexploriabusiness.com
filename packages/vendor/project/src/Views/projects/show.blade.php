@@ -788,7 +788,7 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="edit-files-tab" data-bs-toggle="tab" data-bs-target="#edit-files" type="button" role="tab">
                                 <i class="fas fa-paperclip me-2"></i>Fichiers
-                                <span class="badge bg-primary ms-2" id="filesCount">0</span>
+                                <span class="badge bg-primary ms-2" id="filesCount"></span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -2093,26 +2093,30 @@
         
         // Pour le mode édition uniquement
         async loadExistingFiles(taskId) {
-            if (this.context !== 'edit') return;
-            
-            try {
-                const response = await $.ajax({
-                    url: `/tasks/${taskId}/files`,
-                    type: 'GET',
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    }
-                });
-                
-                if (response.success) {
-                    this.existingFiles = response.data;
-                    this.displayExistingFiles();
-                    $('#filesCount').text(this.existingFiles.length);
-                }
-            } catch (error) {
-                console.error('Error loading files:', error);
+    if (this.context !== 'edit') return;
+    
+    try {
+        const response = await $.ajax({
+            url: `/tasks/${taskId}/files`,
+            type: 'GET',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
+        });
+        
+        if (response.success) {
+            this.existingFiles = response.data;
+            this.displayExistingFiles();
+            console.log('Existing files loaded:', response.total_files);
+            // Utiliser total_files au lieu de total
+            $('#filesCount').text(response.total_files || 0);
         }
+    } catch (error) {
+        console.error('Error loading files:', error);
+    }
+}
+
+
         
         displayExistingFiles() {
             const container = document.getElementById('existingFilesList');

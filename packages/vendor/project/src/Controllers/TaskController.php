@@ -1836,35 +1836,40 @@ public function update(Request $request, Task $task)
      * Get all files for a task.
      */
     public function getFiles(Task $task)
-    {
-        $files = $task->files()
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function($file) {
-                return $this->formatFileData($file);
-            });
+{
+    $files = $task->files()
+        ->with('user')
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function($file) {
+            return $this->formatFileData($file);
+        });
 
-        $stats = [
-            'total' => $files->count(),
-            'total_size' => $this->formatBytes($task->files->sum('file_size')),
-            'images' => $task->files()->get()->filter(function($f) { 
-                return $this->isImage($f->file_extension); 
-            })->count(),
-            'documents' => $task->files()->get()->filter(function($f) { 
-                return in_array(strtolower($f->file_extension), ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx']); 
-            })->count(),
-            'public' => $task->files()->where('is_public', true)->count(),
-            'temporary' => $task->files()->where('is_temporary', true)->count(),
-            'expired' => $task->files()->where('expires_at', '<', now())->count(),
-        ];
+    $totalCount = $files->count();
+    
+    $stats = [
+        'total' => $totalCount,  // AJOUTER CETTE LIGNE
+        'total_files' => $totalCount,
+        'total_size' => $this->formatBytes($task->files->sum('file_size')),
+        'images' => $task->files()->get()->filter(function($f) { 
+            return $this->isImage($f->file_extension); 
+        })->count(),
+        'documents' => $task->files()->get()->filter(function($f) { 
+            return in_array(strtolower($f->file_extension), ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx']); 
+        })->count(),
+        'public' => $task->files()->where('is_public', true)->count(),
+        'temporary' => $task->files()->where('is_temporary', true)->count(),
+        'expired' => $task->files()->where('expires_at', '<', now())->count(),
+    ];
 
-        return response()->json([
-            'success' => true,
-            'data' => $files,
-            'stats' => $stats
-        ]);
-    }
+    return response()->json([
+        'success' => true,
+        'data' => $files,
+        'stats' => $stats,
+        'total_files' => $totalCount,
+        'total' => $totalCount,  // AJOUTER CETTE LIGNE POUR LA COMPATIBILITÉ
+    ]);
+}
 
     /**
      * Clean up expired temporary files.
