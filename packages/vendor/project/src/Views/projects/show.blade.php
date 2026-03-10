@@ -2144,6 +2144,9 @@
                             <a href="${file.download_url || '#'}" class="existing-file-download" target="_blank" title="Télécharger">
                                 <i class="fas fa-download"></i>
                             </a>
+                            <a href="${file.preview_url || '#'}" class="existing-file-preview" target="_blank" title="Aperçu">
+                                <i class="fas fa-eye"></i>
+                            </a>
                             <button class="existing-file-delete" onclick="window.editFileManager.deleteFile(${file.id})" title="Supprimer">
                                 <i class="fas fa-trash"></i>
                             </button>

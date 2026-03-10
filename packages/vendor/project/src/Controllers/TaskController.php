@@ -1769,7 +1769,7 @@ public function update(Request $request, Task $task)
             abort(404);
         }
 
-        $path = storage_path('app/' . $file->file_path);
+        $path = public_path('storage/' . $file->file_path);
 
         if (!file_exists($path)) {
             abort(404, 'Fichier non trouvé');
