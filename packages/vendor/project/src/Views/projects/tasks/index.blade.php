@@ -273,12 +273,12 @@
                                     </td>
                                     <td>
                                         <div class="task-actions-modern">
-                                            <button class="action-btn-modern view-btn-modern" title="Voir détails" onclick="showTaskDetails({{ $task->id }})">
+                                            <a href="{{ route('tasks.show', $task) }}" class="action-btn-modern view-btn-modern" title="Voir détails">
                                                 <i class="fas fa-eye"></i>
-                                            </button>
-                                            <a href="{{ url('projects.tasks.edit', [$project, $task]) }}" class="action-btn-modern edit-btn-modern" title="Modifier">
-                                                <i class="fas fa-edit"></i>
                                             </a>
+                                            <!-- <a href="{{ url('projects.tasks.edit', [$project, $task]) }}" class="action-btn-modern edit-btn-modern" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a> -->
                                             <button class="action-btn-modern delete-btn-modern" title="Supprimer" onclick="showDeleteConfirmation({{ $task->id }})">
                                                 <i class="fas fa-trash"></i>
                                             </button>

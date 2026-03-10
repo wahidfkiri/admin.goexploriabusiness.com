@@ -1,10 +1,10 @@
 {
-    "name": "vendor/project",
+    "name": "vendor/plugins",
     "description": "A Laravel package for testing purposes",
     "type": "library",
     "autoload": {
       "psr-4": {
-        "Vendor\\Project\\": "src/"
+        "Vendor\\Plugins\\": "src/"
       }
     },
     "require": {
@@ -14,7 +14,7 @@
     "extra": {
       "laravel": {
         "providers": [
-          "Vendor\\Project\\ProjectServiceProvider"
+          "Vendor\\Plugins\\PluginsServiceProvider"
         ]
       }
     }

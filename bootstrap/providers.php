@@ -20,4 +20,5 @@ return [
     Vendor\Users\UsersServiceProvider::class,
     Vendor\Website\WebsiteServiceProvider::class,
     Vendor\MapMarker\MapMarkerServiceProvider::class,
+    Vendor\Plugins\PluginsServiceProvider::class,
 ];
