@@ -343,7 +343,7 @@
                                                 </div>
                                             </div>
                                             <div class="activity-actions">
-                                                <form action="{{ route('etablissements.detach-activity', [$etablissement->id, $activity->id]) }}" method="POST" class="d-inline">
+                                                <form action="{{ url('etablissements.detach-activity', [$etablissement->id, $activity->id]) }}" method="POST" class="d-inline">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Êtes-vous sûr de vouloir détacher cette activité ?')">
