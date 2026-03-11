@@ -10,6 +10,7 @@ use App\Models\Etablissement;
 use App\Models\TaskFile;
 use Illuminate\Http\Request;
 use App\Models\TaskComment;
+use App\Models\TaskCommentFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -1167,78 +1168,364 @@ public function update(Request $request, Task $task)
         ]);
     }
 
-    /**
-     * Add a comment to a task.
-     */
-    public function addComment(Request $request, Task $task)
-    {
-        $request->validate([
-            'content' => 'required|string'
+  /**
+ * Add a comment to a task with file attachments.
+ */
+public function addComment(Request $request, Task $task)
+{
+    $request->validate([
+        'content' => 'required|string',
+        'attachments.*' => 'nullable|file|max:10240|mimes:jpeg,png,jpg,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip' // 10MB max
+    ]);
+    
+    try {
+        DB::beginTransaction();
+        
+        $comment = $task->comments()->create([
+            'user_id' => Auth::id(),
+            'content' => $request->content
         ]);
         
-        try {
-            $comment = $task->comments()->create([
-                'user_id' => Auth::id(),
-                'content' => $request->content
-            ]);
-            
-            $comment->load('user');
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Commentaire ajouté avec succès',
-                'data' => $comment
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de l\'ajout du commentaire'
-            ], 500);
+        // Handle file uploads
+        $uploadedFiles = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $originalName = $file->getClientOriginalName();
+                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                
+                // Store file in a dedicated folder for each comment
+                $path = $file->storeAs(
+                    'task-comments/' . $comment->id,
+                    $filename,
+                    'public'
+                );
+
+                $commentFile = $comment->files()->create([
+                    'filename' => $filename,
+                    'original_filename' => $originalName,
+                    'filepath' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'disk' => 'public',
+                    'metadata' => json_encode([
+                        'uploaded_by' => Auth::user()->name,
+                        'uploaded_at' => now()->toDateTimeString(),
+                        'user_id' => Auth::id()
+                    ])
+                ]);
+                
+                $uploadedFiles[] = $commentFile;
+            }
         }
+        
+        DB::commit();
+        
+        // Load relationships
+        $comment->load(['user', 'files']);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Commentaire ajouté avec succès' . (count($uploadedFiles) > 0 ? ' (' . count($uploadedFiles) . ' fichier(s) joint(s))' : ''),
+            'data' => $comment
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        \Log::error('Error adding comment with files: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de l\'ajout du commentaire: ' . $e->getMessage()
+        ], 500);
     }
+}
 
-    public function updateComment(Request $request,Task $task, TaskComment $comment)
-    {
-        $request->validate([
-            'content' => 'required|string'
+/**
+ * Update a comment with new file attachments.
+ */
+public function updateComment(Request $request, Task $task, TaskComment $comment)
+{
+    // Check if user owns the comment
+    if ($comment->user_id !== Auth::id()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Vous n\'êtes pas autorisé à modifier ce commentaire'
+        ], 403);
+    }
+    
+    $request->validate([
+        'content' => 'required|string',
+        'attachments.*' => 'nullable|file|max:10240|mimes:jpeg,png,jpg,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip'
+    ]);
+    
+    try {
+        DB::beginTransaction();
+        
+        // Update comment content
+        $comment->content = $request->content;
+        $comment->save();
+        
+        // Handle new file uploads
+        $uploadedFiles = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $originalName = $file->getClientOriginalName();
+                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                
+                $path = $file->storeAs(
+                    'task-comments/' . $comment->id,
+                    $filename,
+                    'public'
+                );
+
+                $commentFile = $comment->files()->create([
+                    'filename' => $filename,
+                    'original_filename' => $originalName,
+                    'filepath' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'disk' => 'public',
+                    'metadata' => json_encode([
+                        'uploaded_by' => Auth::user()->name,
+                        'uploaded_at' => now()->toDateTimeString(),
+                        'user_id' => Auth::id()
+                    ])
+                ]);
+                
+                $uploadedFiles[] = $commentFile;
+            }
+        }
+        
+        DB::commit();
+        
+        // Load relationships
+        $comment->load(['user', 'files']);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Commentaire mis à jour avec succès' . (count($uploadedFiles) > 0 ? ' (' . count($uploadedFiles) . ' nouveau(x) fichier(s) ajouté(s))' : ''),
+            'data' => $comment
         ]);
         
-        try {
-            $comment->content = $request->content;
-            $comment->save();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Commentaire mis à jour avec succès',
-                'data' => $comment
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la mise à jour du commentaire'
-            ], 500);
-        }
-    }   
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        \Log::error('Error updating comment with files: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la mise à jour du commentaire: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
-    public function deleteComment(Task $task, TaskComment $comment)
-    {
-        try {
-            $comment->delete();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Commentaire supprimé avec succès'
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la suppression du commentaire'
-            ], 500);
+/**
+ * Delete a comment and its associated files.
+ */
+public function deleteComment(Task $task, TaskComment $comment)
+{
+    // Check if user owns the comment
+    if ($comment->user_id !== Auth::id()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Vous n\'êtes pas autorisé à supprimer ce commentaire'
+        ], 403);
+    }
+    
+    try {
+        DB::beginTransaction();
+        
+        // Get all files before deletion
+        $files = $comment->files;
+        
+        // Delete physical files from storage
+        foreach ($files as $file) {
+            if (Storage::disk($file->disk)->exists($file->filepath)) {
+                Storage::disk($file->disk)->delete($file->filepath);
+            }
         }
-    }   
+        
+        // Delete the comment (files will be automatically deleted via cascade)
+        $comment->delete();
+        
+        // Try to delete the empty directory
+        $directory = 'task-comments/' . $comment->id;
+        if (Storage::disk('public')->exists($directory)) {
+            $remainingFiles = Storage::disk('public')->files($directory);
+            if (empty($remainingFiles)) {
+                Storage::disk('public')->deleteDirectory($directory);
+            }
+        }
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Commentaire et ses ' . $files->count() . ' fichier(s) supprimés avec succès'
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        \Log::error('Error deleting comment with files: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la suppression du commentaire: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Download a file from a comment.
+ */
+public function downloadCommentFile(Task $task, TaskComment $comment, TaskCommentFile $file)
+{
+    // Verify file belongs to comment
+    if ($file->task_comment_id !== $comment->id) {
+        abort(404);
+    }
+    
+    // Check if user has access to the task
+    // You can add additional authorization logic here
+    
+    if (!Storage::disk($file->disk)->exists($file->filepath)) {
+        abort(404);
+    }
+    
+    return Storage::disk($file->disk)->download(
+        $file->filepath,
+        $file->original_filename
+    );
+}
+
+/**
+ * Delete a specific file from a comment.
+ */
+public function deleteCommentFile(Task $task, TaskComment $comment, TaskCommentFile $file)
+{
+    // Check if user owns the comment
+    if ($comment->user_id !== Auth::id()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Vous n\'êtes pas autorisé à supprimer ce fichier'
+        ], 403);
+    }
+    
+    // Verify file belongs to comment
+    if ($file->task_comment_id !== $comment->id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Fichier non trouvé'
+        ], 404);
+    }
+    
+    try {
+        DB::beginTransaction();
+        
+        // Delete physical file
+        if (Storage::disk($file->disk)->exists($file->filepath)) {
+            Storage::disk($file->disk)->delete($file->filepath);
+        }
+        
+        // Delete database record
+        $file->delete();
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Fichier supprimé avec succès'
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        \Log::error('Error deleting comment file: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la suppression du fichier'
+        ], 500);
+    }
+}
+
+/**
+ * Preview a file from a comment (for images) or return file info.
+ */
+public function previewCommentFile(Task $task, TaskComment $comment, TaskCommentFile $file)
+{
+    // Verify file belongs to comment
+    if ($file->task_comment_id !== $comment->id) {
+        abort(404);
+    }
+    
+    // Check if user has access to the task
+    // You can add additional authorization logic here
+    
+    if (!Storage::disk($file->disk)->exists($file->filepath)) {
+        abort(404);
+    }
+    
+    // If it's an image, return the image for preview
+    if ($file->is_image) {
+        return Storage::disk($file->disk)->response($file->filepath);
+    }
+    
+    // For other files, return file information
+    return response()->json([
+        'success' => true,
+        'file' => [
+            'id' => $file->id,
+            'name' => $file->original_filename,
+            'size' => $file->file_size,
+            'mime_type' => $file->mime_type,
+            'is_image' => $file->is_image,
+            'is_pdf' => $file->is_pdf,
+            'is_document' => $file->is_document,
+            'url' => $file->url,
+            'thumbnail_url' => $file->thumbnail_url,
+            'icon' => $file->file_icon,
+            'created_at' => $file->created_at->format('d/m/Y H:i'),
+            'uploaded_by' => json_decode($file->metadata, true)['uploaded_by'] ?? 'Inconnu'
+        ]
+    ]);
+}
+
+/**
+ * Get temporary URL for file preview (for large files).
+ */
+public function getTemporaryPreviewUrl(Task $task, TaskComment $comment, TaskCommentFile $file)
+{
+    // Verify file belongs to comment
+    if ($file->task_comment_id !== $comment->id) {
+        abort(404);
+    }
+    
+    if (!Storage::disk($file->disk)->exists($file->filepath)) {
+        abort(404);
+    }
+    
+    // Generate temporary URL for preview (valid for 5 minutes)
+    if ($file->is_image || $file->is_pdf) {
+        $temporaryUrl = Storage::disk($file->disk)->temporaryUrl(
+            $file->filepath,
+            now()->addMinutes(5)
+        );
+        
+        return response()->json([
+            'success' => true,
+            'temporary_url' => $temporaryUrl,
+            'expires_at' => now()->addMinutes(5)->toDateTimeString()
+        ]);
+    }
+    
+    return response()->json([
+        'success' => false,
+        'message' => 'Ce type de fichier ne peut pas être prévisualisé'
+    ], 400);
+}
 
     /**
      * Update test date.

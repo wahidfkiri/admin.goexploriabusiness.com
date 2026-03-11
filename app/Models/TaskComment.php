@@ -44,4 +44,22 @@ class TaskComment extends Model
     {
         return strip_tags($this->content);
     }
+
+    /**
+     * Nouvelle relation avec les fichiers
+     */
+    public function files()
+    {
+        return $this->hasMany(TaskCommentFile::class);
+    }
+
+
+    /**
+     * Méthode utilitaire pour obtenir tous les fichiers
+     */
+    public function getAllFilesAttribute()
+    {
+        return $this->files;
+    }
+
 }

@@ -62,8 +62,19 @@ Route::resource('projects', ProjectController::class);
             Route::post('/comments', [TaskController::class, 'addComment'])->name('add-comment');
             Route::put('/comments/{comment}', [TaskController::class, 'updateComment'])->name('update-comment');
             Route::delete('/comments/{comment}', [TaskController::class, 'deleteComment'])->name('delete-comment');
+
             
-        Route::get('/file/{file}/download', [TaskController::class, 'downloadFile'])->name('download');
+            // File specific routes
+            Route::delete('/comments/{comment}/files/{file}', [TaskController::class, 'deleteCommentFile'])->name('comments.files.delete');
+            Route::get('/comments/{comment}/files/{file}/download', [TaskController::class, 'downloadCommentFile'])->name('comments.files.download');
+             // Preview routes
+            Route::get('/comments/{comment}/files/{file}/preview', 
+             [TaskController::class, 'previewCommentFile'])->name('comments.files.preview');
+    
+            Route::get('/comments/{comment}/files/{file}/temporary-url', 
+              [TaskController::class, 'getTemporaryPreviewUrl'])->name('comments.files.temporary-url');
+            
+            Route::get('/file/{file}/download', [TaskController::class, 'downloadFile'])->name('download');
             // Routes pour les dates techniques
             Route::patch('/test-date', [TaskController::class, 'updateTestDate'])->name('update-test-date');
             Route::patch('/integration-date', [TaskController::class, 'updateIntegrationDate'])->name('update-integration-date');
