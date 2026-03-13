@@ -653,7 +653,7 @@ public function store(Request $request)
         ];
         
         // Tâches récentes
-        $recentTasks = $project->tasks()->with('user')->latest()->limit(5)->get();
+        $recentTasks = $project->tasks()->with('user')->latest()->get();
         
         // Timeline des activités
         $activities = $project->latest()->limit(10)->get();

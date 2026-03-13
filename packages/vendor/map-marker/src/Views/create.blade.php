@@ -109,34 +109,34 @@
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                         <!-- Après le select category -->
-<div class="category-preview" id="categoryPreview" style="display: none;">
-    <span class="category-badge" id="categoryPreviewBadge">
-        <i class="fas" id="categoryPreviewIcon"></i>
-        <span id="categoryPreviewLabel"></span>
-    </span>
-</div>
+                                        <div class="category-preview" id="categoryPreview" style="display: none;">
+                                            <span class="category-badge" id="categoryPreviewBadge">
+                                                <i class="fas" id="categoryPreviewIcon"></i>
+                                                <span id="categoryPreviewLabel"></span>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="form-group-modern">
-    <label for="description" class="form-label-modern">
-        Description courte <small class="text-muted">(pour le popup)</small>
-    </label>
-    <textarea class="form-control-modern @error('description') is-invalid @enderror" 
-              id="description" 
-              name="description" 
-              rows="3"
-              maxlength="200"
-              placeholder="Brève description qui apparaîtra dans le popup...">{{ old('description') }}</textarea>
-    <div class="d-flex justify-content-between mt-1">
-        <small class="form-text-modern">Maximum 200 caractères</small>
-        <small class="text-muted" id="charCount">0/200</small>
-    </div>
-    @error('description')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
-</div>
+                                <label for="description" class="form-label-modern">
+                                    Description courte <small class="text-muted">(pour le popup)</small>
+                                </label>
+                                <textarea class="form-control-modern @error('description') is-invalid @enderror" 
+                                          id="description" 
+                                          name="description" 
+                                          rows="3"
+                                          maxlength="200"
+                                          placeholder="Brève description qui apparaîtra dans le popup...">{{ old('description') }}</textarea>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small class="form-text-modern">Maximum 200 caractères</small>
+                                    <small class="text-muted" id="charCount">0/200</small>
+                                </div>
+                                @error('description')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                     </div>
                     
@@ -406,34 +406,394 @@
                                               rows="8">{{ old('details.long_description') }}</textarea>
                                 </div>
                                 
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group-modern">
-                                            <label for="details_facebook" class="form-label-modern">
-                                                <i class="fab fa-facebook me-1" style="color: #1877f2;"></i> Facebook
-                                            </label>
-                                            <input type="url" 
-                                                   class="form-control-modern" 
-                                                   id="details_facebook" 
-                                                   name="details[facebook]" 
-                                                   value="{{ old('details.facebook') }}"
-                                                   placeholder="https://facebook.com/...">
+                                <!-- Réseaux sociaux - Version complète -->
+                                <div class="social-media-section mt-4">
+                                    <h4 class="form-subsection-title">
+                                        <i class="fas fa-share-alt me-2" style="color: var(--primary-color);"></i>
+                                        Réseaux sociaux
+                                    </h4>
+                                    
+                                    <div class="row">
+                                        <!-- Facebook -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_facebook" class="form-label-modern">
+                                                    <i class="fab fa-facebook me-1" style="color: #1877f2;"></i> Facebook
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_facebook" 
+                                                       name="details[facebook]" 
+                                                       value="{{ old('details.facebook') }}"
+                                                       placeholder="https://facebook.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Instagram -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_instagram" class="form-label-modern">
+                                                    <i class="fab fa-instagram me-1" style="color: #e4405f;"></i> Instagram
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_instagram" 
+                                                       name="details[instagram]" 
+                                                       value="{{ old('details.instagram') }}"
+                                                       placeholder="https://instagram.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Twitter/X -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_twitter" class="form-label-modern">
+                                                    <i class="fab fa-x-twitter me-1" style="color: #000000;"></i> X (Twitter)
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_twitter" 
+                                                       name="details[twitter]" 
+                                                       value="{{ old('details.twitter') }}"
+                                                       placeholder="https://twitter.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- LinkedIn -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_linkedin" class="form-label-modern">
+                                                    <i class="fab fa-linkedin me-1" style="color: #0a66c2;"></i> LinkedIn
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_linkedin" 
+                                                       name="details[linkedin]" 
+                                                       value="{{ old('details.linkedin') }}"
+                                                       placeholder="https://linkedin.com/company/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- YouTube -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_youtube" class="form-label-modern">
+                                                    <i class="fab fa-youtube me-1" style="color: #ff0000;"></i> YouTube
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_youtube" 
+                                                       name="details[youtube]" 
+                                                       value="{{ old('details.youtube') }}"
+                                                       placeholder="https://youtube.com/c/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- TikTok -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_tiktok" class="form-label-modern">
+                                                    <i class="fab fa-tiktok me-1" style="color: #000000;"></i> TikTok
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_tiktok" 
+                                                       name="details[tiktok]" 
+                                                       value="{{ old('details.tiktok') }}"
+                                                       placeholder="https://tiktok.com/@...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Pinterest -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_pinterest" class="form-label-modern">
+                                                    <i class="fab fa-pinterest me-1" style="color: #bd081c;"></i> Pinterest
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_pinterest" 
+                                                       name="details[pinterest]" 
+                                                       value="{{ old('details.pinterest') }}"
+                                                       placeholder="https://pinterest.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Snapchat -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_snapchat" class="form-label-modern">
+                                                    <i class="fab fa-snapchat me-1" style="color: #fffc00;"></i> Snapchat
+                                                </label>
+                                                <input type="text" 
+                                                       class="form-control-modern" 
+                                                       id="details_snapchat" 
+                                                       name="details[snapchat]" 
+                                                       value="{{ old('details.snapchat') }}"
+                                                       placeholder="@username">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- WhatsApp -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_whatsapp" class="form-label-modern">
+                                                    <i class="fab fa-whatsapp me-1" style="color: #25d366;"></i> WhatsApp
+                                                </label>
+                                                <input type="text" 
+                                                       class="form-control-modern" 
+                                                       id="details_whatsapp" 
+                                                       name="details[whatsapp]" 
+                                                       value="{{ old('details.whatsapp') }}"
+                                                       placeholder="+221 77 123 45 67">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Telegram -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_telegram" class="form-label-modern">
+                                                    <i class="fab fa-telegram me-1" style="color: #0088cc;"></i> Telegram
+                                                </label>
+                                                <input type="text" 
+                                                       class="form-control-modern" 
+                                                       id="details_telegram" 
+                                                       name="details[telegram]" 
+                                                       value="{{ old('details.telegram') }}"
+                                                       placeholder="@username">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Discord -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_discord" class="form-label-modern">
+                                                    <i class="fab fa-discord me-1" style="color: #5865f2;"></i> Discord
+                                                </label>
+                                                <input type="text" 
+                                                       class="form-control-modern" 
+                                                       id="details_discord" 
+                                                       name="details[discord]" 
+                                                       value="{{ old('details.discord') }}"
+                                                       placeholder="https://discord.gg/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Twitch -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_twitch" class="form-label-modern">
+                                                    <i class="fab fa-twitch me-1" style="color: #9146ff;"></i> Twitch
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_twitch" 
+                                                       name="details[twitch]" 
+                                                       value="{{ old('details.twitch') }}"
+                                                       placeholder="https://twitch.tv/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Reddit -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_reddit" class="form-label-modern">
+                                                    <i class="fab fa-reddit me-1" style="color: #ff4500;"></i> Reddit
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_reddit" 
+                                                       name="details[reddit]" 
+                                                       value="{{ old('details.reddit') }}"
+                                                       placeholder="https://reddit.com/user/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Github (pour établissements tech) -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_github" class="form-label-modern">
+                                                    <i class="fab fa-github me-1" style="color: #333;"></i> GitHub
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_github" 
+                                                       name="details[github]" 
+                                                       value="{{ old('details.github') }}"
+                                                       placeholder="https://github.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Medium -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_medium" class="form-label-modern">
+                                                    <i class="fab fa-medium me-1" style="color: #00ab6c;"></i> Medium
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_medium" 
+                                                       name="details[medium]" 
+                                                       value="{{ old('details.medium') }}"
+                                                       placeholder="https://medium.com/@...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Tumblr -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_tumblr" class="form-label-modern">
+                                                    <i class="fab fa-tumblr me-1" style="color: #34526f;"></i> Tumblr
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_tumblr" 
+                                                       name="details[tumblr]" 
+                                                       value="{{ old('details.tumblr') }}"
+                                                       placeholder="https://tumblr.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Vimeo -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_vimeo" class="form-label-modern">
+                                                    <i class="fab fa-vimeo me-1" style="color: #1ab7ea;"></i> Vimeo
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_vimeo" 
+                                                       name="details[vimeo]" 
+                                                       value="{{ old('details.vimeo') }}"
+                                                       placeholder="https://vimeo.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Dribbble -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_dribbble" class="form-label-modern">
+                                                    <i class="fab fa-dribbble me-1" style="color: #ea4c89;"></i> Dribbble
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_dribbble" 
+                                                       name="details[dribbble]" 
+                                                       value="{{ old('details.dribbble') }}"
+                                                       placeholder="https://dribbble.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Behance -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_behance" class="form-label-modern">
+                                                    <i class="fab fa-behance me-1" style="color: #1769ff;"></i> Behance
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_behance" 
+                                                       name="details[behance]" 
+                                                       value="{{ old('details.behance') }}"
+                                                       placeholder="https://behance.net/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- SoundCloud -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_soundcloud" class="form-label-modern">
+                                                    <i class="fab fa-soundcloud me-1" style="color: #ff5500;"></i> SoundCloud
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_soundcloud" 
+                                                       name="details[soundcloud]" 
+                                                       value="{{ old('details.soundcloud') }}"
+                                                       placeholder="https://soundcloud.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Spotify -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_spotify" class="form-label-modern">
+                                                    <i class="fab fa-spotify me-1" style="color: #1db954;"></i> Spotify
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_spotify" 
+                                                       name="details[spotify]" 
+                                                       value="{{ old('details.spotify') }}"
+                                                       placeholder="https://open.spotify.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- TripAdvisor -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_tripadvisor" class="form-label-modern">
+                                                    <i class="fab fa-tripadvisor me-1" style="color: #00af87;"></i> TripAdvisor
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_tripadvisor" 
+                                                       name="details[tripadvisor]" 
+                                                       value="{{ old('details.tripadvisor') }}"
+                                                       placeholder="https://tripadvisor.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Foursquare -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_foursquare" class="form-label-modern">
+                                                    <i class="fab fa-foursquare me-1" style="color: #f94877;"></i> Foursquare
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_foursquare" 
+                                                       name="details[foursquare]" 
+                                                       value="{{ old('details.foursquare') }}"
+                                                       placeholder="https://foursquare.com/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Yelp -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_yelp" class="form-label-modern">
+                                                    <i class="fab fa-yelp me-1" style="color: #d32323;"></i> Yelp
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_yelp" 
+                                                       name="details[yelp]" 
+                                                       value="{{ old('details.yelp') }}"
+                                                       placeholder="https://yelp.com/biz/...">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Google Maps (établissement) -->
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-group-modern">
+                                                <label for="details_google_maps" class="form-label-modern">
+                                                    <i class="fab fa-google me-1" style="color: #4285f4;"></i> Google Maps
+                                                </label>
+                                                <input type="url" 
+                                                       class="form-control-modern" 
+                                                       id="details_google_maps" 
+                                                       name="details[google_maps]" 
+                                                       value="{{ old('details.google_maps') }}"
+                                                       placeholder="https://goo.gl/maps/...">
+                                            </div>
                                         </div>
                                     </div>
                                     
-                                    <div class="col-md-6">
-                                        <div class="form-group-modern">
-                                            <label for="details_instagram" class="form-label-modern">
-                                                <i class="fab fa-instagram me-1" style="color: #e4405f;"></i> Instagram
-                                            </label>
-                                            <input type="url" 
-                                                   class="form-control-modern" 
-                                                   id="details_instagram" 
-                                                   name="details[instagram]" 
-                                                   value="{{ old('details.instagram') }}"
-                                                   placeholder="https://instagram.com/...">
-                                        </div>
-                                    </div>
+                                    <small class="form-text-modern text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Remplissez uniquement les réseaux sociaux pertinents pour ce point d'intérêt.
+                                    </small>
                                 </div>
                             </div>
                         </div>
@@ -517,27 +877,26 @@
                     </div>
                 </div>
                 
-                <!-- FORM ACTIONS - BOUTONS DE SOUMISSION TOUJOURS VISIBLES -->
                 <!-- FORM ACTIONS - BOUTONS TOUJOURS VISIBLES -->
-<div class="form-actions">
-    <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ route('map-points.index') }}'">
-        <i class="fas fa-times me-2"></i>Annuler
-    </button>
-    
-    <div class="btn-group-center">
-        <button type="button" class="btn btn-outline-primary" id="prevTabBtn" style="display: none;">
-            <i class="fas fa-chevron-left me-2"></i>Précédent
-        </button>
-        
-        <button type="button" class="btn btn-outline-primary" id="nextTabBtn">
-            Suivant <i class="fas fa-chevron-right ms-2"></i>
-        </button>
-    </div>
-    
-    <button type="submit" class="btn btn-success" id="submitBtn">
-        <i class="fas fa-save me-2"></i>Créer le point
-    </button>
-</div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ route('map-points.index') }}'">
+                        <i class="fas fa-times me-2"></i>Annuler
+                    </button>
+                    
+                    <div class="btn-group-center">
+                        <button type="button" class="btn btn-outline-primary" id="prevTabBtn" style="display: none;">
+                            <i class="fas fa-chevron-left me-2"></i>Précédent
+                        </button>
+                        
+                        <button type="button" class="btn btn-outline-primary" id="nextTabBtn">
+                            Suivant <i class="fas fa-chevron-right ms-2"></i>
+                        </button>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success" id="submitBtn">
+                        <i class="fas fa-save me-2"></i>Créer le point
+                    </button>
+                </div>
             </form>
         </div>
     </main>
@@ -1509,44 +1868,46 @@
         .ms-auto {
             margin-left: auto;
         }
+        
         /* Centrage des boutons */
-.btn-group-center {
-    display: flex;
-    gap: 10px;
-    margin: 0 auto;
-}
+        .btn-group-center {
+            display: flex;
+            gap: 10px;
+            margin: 0 auto;
+        }
 
-/* Style des boutons */
-.btn-outline-primary {
-    border: 2px solid var(--primary-color);
-    background: transparent;
-    color: var(--primary-color);
-}
+        /* Social Media Section */
+        .social-media-section {
+            background: #f8fbfe;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 25px;
+        }
 
-.btn-outline-primary:hover {
-    background: var(--primary-color);
-    color: white;
-    transform: translateY(-2px);
-}
+        .form-subsection-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eef4f9;
+        }
 
-.btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-    color: white;
-}
+        /* Amélioration des champs de réseaux sociaux */
+        .col-lg-4 .form-group-modern {
+            margin-bottom: 15px;
+        }
 
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(27, 79, 107, 0.3);
-}
+        .col-lg-4 .form-label-modern {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
 
-.btn-success {
-    background: linear-gradient(135deg, #06b48a, #049a72);
-    color: white;
-}
-
-.btn-success:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(6, 180, 138, 0.3);
-}
+        .col-lg-4 .form-label-modern i {
+            font-size: 1.2rem;
+            width: 24px;
+        }
     </style>
 @endsection

@@ -493,14 +493,14 @@
                                 @endforeach
                             </div>
                             
-                            @if($project->tasks->count() > 5)
+                            <!-- @if($project->tasks->count() > 5)
                                 <div class="text-center p-3 border-top">
                                     <a href="{{ route('projects.tasks', $project) }}" class="btn btn-link">
                                         Voir toutes les tâches ({{ $project->tasks->count() }})
                                         <i class="fas fa-arrow-right ms-2"></i>
                                     </a>
                                 </div>
-                            @endif
+                            @endif -->
                         @else
                             <div class="empty-state-modern p-5">
                                 <div class="empty-icon-modern">

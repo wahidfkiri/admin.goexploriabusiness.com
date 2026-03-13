@@ -131,6 +131,14 @@
         <span class="menu-text">Templates</span>
       </a>
     </li> 
+    <li>
+      <a href="{{route('plugins.index')}}" class="menu-item">
+        <span class="menu-icon">
+          <i class="fas fa-bars"></i>
+        </span>
+        <span class="menu-text">Applications</span>
+      </a>
+    </li>
     <!-- <li class="menu-title">Contenu</li> -->
     <li class="has-submenu">
       <a href="#" class="menu-link">

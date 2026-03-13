@@ -21,9 +21,9 @@
                 <button class="btn btn-outline-secondary" id="toggleFilterBtn">
                     <i class="fas fa-sliders-h me-2"></i>Filtres
                 </button>
-                <a href="{{ url('projects.tasks.create', $project) }}" class="btn btn-primary">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
                     <i class="fas fa-plus-circle me-2"></i>Nouvelle Tâche
-                </a>
+                </button>
             </div>
         </div>
         
@@ -273,12 +273,12 @@
                                     </td>
                                     <td>
                                         <div class="task-actions-modern">
-                                            <a href="{{ route('tasks.show', $task) }}" class="action-btn-modern view-btn-modern" title="Voir détails">
+                                            <a href="#" onclick="showTaskDetails({{ $task->id }}); return false;" class="action-btn-modern view-btn-modern" title="Voir détails">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <!-- <a href="{{ url('projects.tasks.edit', [$project, $task]) }}" class="action-btn-modern edit-btn-modern" title="Modifier">
+                                            <button class="action-btn-modern edit-btn-modern" title="Modifier" onclick="editTask({{ $task->id }})">
                                                 <i class="fas fa-edit"></i>
-                                            </a> -->
+                                            </button>
                                             <button class="action-btn-modern delete-btn-modern" title="Supprimer" onclick="showDeleteConfirmation({{ $task->id }})">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -294,9 +294,9 @@
                                             </div>
                                             <h3 class="empty-title-modern">Aucune tâche trouvée</h3>
                                             <p class="empty-text-modern">Ce projet n'a pas encore de tâches.</p>
-                                            <a href="{{ url('projects.tasks.create', $project) }}" class="btn btn-primary">
+                                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
                                                 <i class="fas fa-plus-circle me-2"></i>Créer une tâche
-                                            </a>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -360,10 +360,441 @@
         </div>
         
         <!-- Floating Action Button -->
-        <a href="{{ url('projects.tasks.create', $project) }}" class="fab-modern">
+        <button class="fab-modern" data-bs-toggle="modal" data-bs-target="#addTaskModal">
             <i class="fas fa-plus"></i>
-        </a>
+        </button>
     </main>
+
+    <!-- ADD TASK MODAL -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTaskModalLabel">
+                        <i class="fas fa-plus-circle me-2"></i>Nouvelle Tâche
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addTaskForm" method="POST" action="{{ route('projects.tasks.store', $project) }}">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-12 mb-4">
+                                <h6 class="section-title">Informations de base</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Nom de la tâche <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="etablissement_id" class="form-label">Établissement <span class="text-danger">*</span></label>
+                                <select class="form-select" id="etablissement_id" name="etablissement_id" required>
+                                    <option value="">Sélectionner un établissement</option>
+                                    @foreach($etablissements as $etablissement)
+                                        <option value="{{ $etablissement->id }}">{{ $etablissement->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="contract_number" class="form-label">Numéro de contrat</label>
+                                <input type="text" class="form-control" id="contract_number" name="contract_number">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="contact_name" class="form-label">Nom du contact</label>
+                                <input type="text" class="form-control" id="contact_name" name="contact_name">
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="location" class="form-label">Localisation</label>
+                                <input type="text" class="form-control" id="location" name="location" placeholder="Adresse, ville...">
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="details" class="form-label">Détails de la tâche</label>
+                                <textarea class="form-control" id="details" name="details" rows="3"></textarea>
+                            </div>
+                            
+                            <!-- Dates Section -->
+                            <div class="col-md-12 mb-4 mt-3">
+                                <h6 class="section-title">Dates et échéances</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="due_date" class="form-label">Date d'échéance <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="due_date" name="due_date" required>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="delivery_date" class="form-label">Date de livraison</label>
+                                <input type="date" class="form-control" id="delivery_date" name="delivery_date">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="test_date" class="form-label">Date de test</label>
+                                <input type="date" class="form-control" id="test_date" name="test_date">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="integration_date" class="form-label">Date d'intégration</label>
+                                <input type="date" class="form-control" id="integration_date" name="integration_date">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="push_prod_date" class="form-label">Date push prod</label>
+                                <input type="date" class="form-control" id="push_prod_date" name="push_prod_date">
+                            </div>
+                            
+                            <!-- Assignment Section -->
+                            <div class="col-md-12 mb-4 mt-3">
+                                <h6 class="section-title">Assignation</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="user_id" class="form-label">Responsable principal <span class="text-danger">*</span></label>
+                                <select class="form-select" id="user_id" name="user_id" required>
+                                    <option value="">Sélectionner un responsable</option>
+                                    @foreach($users as $user)
+                                        <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="general_manager_id" class="form-label">Manager général</label>
+                                <select class="form-select" id="general_manager_id" name="general_manager_id">
+                                    <option value="">Sélectionner un manager</option>
+                                    @foreach($users as $user)
+                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="client_manager_id" class="form-label">Client manager</label>
+                                <select class="form-select" id="client_manager_id" name="client_manager_id">
+                                    <option value="">Sélectionner un client manager</option>
+                                    @foreach($users as $user)
+                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <!-- Status and Progress -->
+                            <div class="col-md-12 mb-4 mt-3">
+                                <h6 class="section-title">Statut et avancement</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="status" class="form-label">Statut <span class="text-danger">*</span></label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="pending">En attente</option>
+                                    <option value="in_progress">En cours</option>
+                                    <option value="test">En test</option>
+                                    <option value="integrated">Intégré</option>
+                                    <option value="delivered">Livré</option>
+                                    <option value="approved">Approuvé</option>
+                                    <option value="cancelled">Annulé</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="priority" class="form-label">Priorité</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="basse">Basse</option>
+                                    <option value="moyenne" selected>Moyenne</option>
+                                    <option value="haute">Haute</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="progress" class="form-label">Avancement (%)</label>
+                                <input type="number" class="form-control" id="progress" name="progress" min="0" max="100" value="0">
+                            </div>
+                            
+                            <!-- Cost and Hours -->
+                            <div class="col-md-12 mb-4 mt-3">
+                                <h6 class="section-title">Coûts et heures</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="estimated_hours" class="form-label">Heures estimées</label>
+                                <input type="number" class="form-control" id="estimated_hours" name="estimated_hours" min="0" step="0.5">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="hourly_rate" class="form-label">Taux horaire (€)</label>
+                                <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" min="0" step="0.01">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="estimated_cost" class="form-label">Coût estimé (€)</label>
+                                <input type="number" class="form-control" id="estimated_cost" name="estimated_cost" min="0" step="0.01">
+                            </div>
+                            
+                            <!-- Additional Details -->
+                            <div class="col-md-12 mb-4 mt-3">
+                                <h6 class="section-title">Informations complémentaires</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="test_details" class="form-label">Détails des tests</label>
+                                <textarea class="form-control" id="test_details" name="test_details" rows="2"></textarea>
+                            </div>
+                            
+                            <div class="col-md-8 mb-3">
+                                <label for="module_url" class="form-label">URL du module</label>
+                                <input type="url" class="form-control" id="module_url" name="module_url" placeholder="https://...">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_approved_by_manager" name="is_approved_by_manager">
+                                    <label class="form-check-label" for="is_approved_by_manager">
+                                        Approuvé par le manager
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Annuler
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="submitAddTask">
+                            <i class="fas fa-save me-2"></i>Créer la tâche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT TASK MODAL -->
+    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editTaskModalLabel">
+                        <i class="fas fa-edit me-2"></i>Modifier la tâche
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editTaskForm" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-12 mb-4">
+                                <h6 class="section-title">Informations de base</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="edit_name" class="form-label">Nom de la tâche <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="edit_name" name="name" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="edit_etablissement_id" class="form-label">Établissement <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit_etablissement_id" name="etablissement_id" required>
+                                    <option value="">Sélectionner un établissement</option>
+                                    @foreach($etablissements as $etablissement)
+                                        <option value="{{ $etablissement->id }}">{{ $etablissement->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="edit_contract_number" class="form-label">Numéro de contrat</label>
+                                <input type="text" class="form-control" id="edit_contract_number" name="contract_number">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="edit_contact_name" class="form-label">Nom du contact</label>
+                                <input type="text" class="form-control" id="edit_contact_name" name="contact_name">
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="edit_location" class="form-label">Localisation</label>
+                                <input type="text" class="form-control" id="edit_location" name="location" placeholder="Adresse, ville...">
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="edit_details" class="form-label">Détails de la tâche</label>
+                                <textarea class="form-control" id="edit_details" name="details" rows="3"></textarea>
+                            </div>
+                            
+                            <!-- Dates Section -->
+                            <div class="col-md-12 mb-4 mt-3">
+                                <h6 class="section-title">Dates et échéances</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="edit_due_date" class="form-label">Date d'échéance <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="edit_due_date" name="due_date" required>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="edit_delivery_date" class="form-label">Date de livraison</label>
+                                <input type="date" class="form-control" id="edit_delivery_date" name="delivery_date">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="edit_test_date" class="form-label">Date de test</label>
+                                <input type="date" class="form-control" id="edit_test_date" name="test_date">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="edit_integration_date" class="form-label">Date d'intégration</label>
+                                <input type="date" class="form-control" id="edit_integration_date" name="integration_date">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="edit_push_prod_date" class="form-label">Date push prod</label>
+                                <input type="date" class="form-control" id="edit_push_prod_date" name="push_prod_date">
+                            </div>
+                            
+                            <!-- Assignment Section -->
+                            <div class="col-md-12 mb-4 mt-3">
+                                <h6 class="section-title">Assignation</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="edit_user_id" class="form-label">Responsable principal <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit_user_id" name="user_id" required>
+                                    <option value="">Sélectionner un responsable</option>
+                                    @foreach($users as $user)
+                                        <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="edit_general_manager_id" class="form-label">Manager général</label>
+                                <select class="form-select" id="edit_general_manager_id" name="general_manager_id">
+                                    <option value="">Sélectionner un manager</option>
+                                    @foreach($users as $user)
+                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="edit_client_manager_id" class="form-label">Client manager</label>
+                                <select class="form-select" id="edit_client_manager_id" name="client_manager_id">
+                                    <option value="">Sélectionner un client manager</option>
+                                    @foreach($users as $user)
+                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <!-- Status and Progress -->
+                            <div class="col-md-12 mb-4 mt-3">
+                                <h6 class="section-title">Statut et avancement</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="edit_status" class="form-label">Statut <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit_status" name="status" required>
+                                    <option value="pending">En attente</option>
+                                    <option value="in_progress">En cours</option>
+                                    <option value="test">En test</option>
+                                    <option value="integrated">Intégré</option>
+                                    <option value="delivered">Livré</option>
+                                    <option value="approved">Approuvé</option>
+                                    <option value="cancelled">Annulé</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="edit_priority" class="form-label">Priorité</label>
+                                <select class="form-select" id="edit_priority" name="priority">
+                                    <option value="basse">Basse</option>
+                                    <option value="moyenne">Moyenne</option>
+                                    <option value="haute">Haute</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="edit_progress" class="form-label">Avancement (%)</label>
+                                <input type="number" class="form-control" id="edit_progress" name="progress" min="0" max="100">
+                            </div>
+                            
+                            <!-- Cost and Hours -->
+                            <div class="col-md-12 mb-4 mt-3">
+                                <h6 class="section-title">Coûts et heures</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="edit_estimated_hours" class="form-label">Heures estimées</label>
+                                <input type="number" class="form-control" id="edit_estimated_hours" name="estimated_hours" min="0" step="0.5">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="edit_hourly_rate" class="form-label">Taux horaire (€)</label>
+                                <input type="number" class="form-control" id="edit_hourly_rate" name="hourly_rate" min="0" step="0.01">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="edit_estimated_cost" class="form-label">Coût estimé (€)</label>
+                                <input type="number" class="form-control" id="edit_estimated_cost" name="estimated_cost" min="0" step="0.01">
+                            </div>
+                            
+                            <!-- Additional Details -->
+                            <div class="col-md-12 mb-4 mt-3">
+                                <h6 class="section-title">Informations complémentaires</h6>
+                                <hr class="mt-0">
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="edit_test_details" class="form-label">Détails des tests</label>
+                                <textarea class="form-control" id="edit_test_details" name="test_details" rows="2"></textarea>
+                            </div>
+                            
+                            <div class="col-md-8 mb-3">
+                                <label for="edit_module_url" class="form-label">URL du module</label>
+                                <input type="url" class="form-control" id="edit_module_url" name="module_url" placeholder="https://...">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="edit_is_approved_by_manager" name="is_approved_by_manager">
+                                    <label class="form-check-label" for="edit_is_approved_by_manager">
+                                        Approuvé par le manager
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Annuler
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="submitEditTask">
+                            <i class="fas fa-save me-2"></i>Mettre à jour
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     
     <!-- TASK DETAILS MODAL -->
     <div class="modal fade task-details-modal" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
@@ -380,9 +811,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                    <a href="#" class="btn btn-primary" id="editTaskFromModal">
+                    <button type="button" class="btn btn-primary" id="editTaskFromModal">
                         <i class="fas fa-edit me-2"></i>Modifier
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
@@ -433,10 +864,23 @@
         let projectId = {{ $project->id }};
         let allTasks = @json($tasks->items());
         let taskToDelete = null;
+        let currentEditTaskId = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
+            
+            // Add form submit handler for add task
+            document.getElementById('addTaskForm').addEventListener('submit', function(e) {
+                // Let the form submit normally
+                // You can add loading indicator here
+            });
+            
+            // Add form submit handler for edit task
+            document.getElementById('editTaskForm').addEventListener('submit', function(e) {
+                // Let the form submit normally
+                // You can add loading indicator here
+            });
         });
 
         // Show task details in modal
@@ -617,12 +1061,75 @@
                 </div>
             `;
             
-            // Update edit button link
-            document.getElementById('editTaskFromModal').href = `/projects/${projectId}/tasks/${task.id}/edit`;
+            // Update edit button to open edit modal with this task
+            document.getElementById('editTaskFromModal').onclick = function() {
+                // Close details modal
+                const detailsModal = bootstrap.Modal.getInstance(document.getElementById('taskDetailsModal'));
+                detailsModal.hide();
+                
+                // Open edit modal with this task
+                setTimeout(() => {
+                    editTask(task.id);
+                }, 500);
+            };
             
             // Show modal
             const detailsModal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
             detailsModal.show();
+        };
+
+        // Edit task - populate and show edit modal
+        const editTask = (taskId) => {
+            const task = allTasks.find(t => t.id === taskId);
+            
+            if (!task) {
+                showAlert('danger', 'Tâche non trouvée');
+                return;
+            }
+            
+            currentEditTaskId = taskId;
+            
+            // Set form action
+            document.getElementById('editTaskForm').action = `/projects/${projectId}/tasks/${taskId}`;
+            
+            // Populate form fields
+            document.getElementById('edit_name').value = task.name || '';
+            document.getElementById('edit_etablissement_id').value = task.etablissement_id || '';
+            document.getElementById('edit_contract_number').value = task.contract_number || '';
+            document.getElementById('edit_contact_name').value = task.contact_name || '';
+            document.getElementById('edit_location').value = task.location || '';
+            document.getElementById('edit_details').value = task.details || '';
+            
+            // Dates
+            document.getElementById('edit_due_date').value = task.due_date ? task.due_date.split(' ')[0] : '';
+            document.getElementById('edit_delivery_date').value = task.delivery_date ? task.delivery_date.split(' ')[0] : '';
+            document.getElementById('edit_test_date').value = task.test_date ? task.test_date.split(' ')[0] : '';
+            document.getElementById('edit_integration_date').value = task.integration_date ? task.integration_date.split(' ')[0] : '';
+            document.getElementById('edit_push_prod_date').value = task.push_prod_date ? task.push_prod_date.split(' ')[0] : '';
+            
+            // Assignments
+            document.getElementById('edit_user_id').value = task.user_id || '';
+            document.getElementById('edit_general_manager_id').value = task.general_manager_id || '';
+            document.getElementById('edit_client_manager_id').value = task.client_manager_id || '';
+            
+            // Status and progress
+            document.getElementById('edit_status').value = task.status || 'pending';
+            document.getElementById('edit_priority').value = task.priority || 'moyenne';
+            document.getElementById('edit_progress').value = task.progress || 0;
+            
+            // Costs
+            document.getElementById('edit_estimated_hours').value = task.estimated_hours || '';
+            document.getElementById('edit_hourly_rate').value = task.hourly_rate || '';
+            document.getElementById('edit_estimated_cost').value = task.estimated_cost || '';
+            
+            // Additional
+            document.getElementById('edit_test_details').value = task.test_details || '';
+            document.getElementById('edit_module_url').value = task.module_url || '';
+            document.getElementById('edit_is_approved_by_manager').checked = task.is_approved_by_manager || false;
+            
+            // Show modal
+            const editModal = new bootstrap.Modal(document.getElementById('editTaskModal'));
+            editModal.show();
         };
 
         // Show delete confirmation modal
@@ -770,12 +1277,6 @@
             return colors[status] || '#95a5a6';
         };
 
-        const getUserColor = (userName) => {
-            const colors = ['#45b7d1', '#96ceb4', '#feca57', '#ff6b6b', '#9b59b6'];
-            const index = (userName?.length || 0) % colors.length;
-            return colors[index];
-        };
-
         const getProgressColor = (progress) => {
             if (progress < 30) return '#ef476f';
             if (progress < 70) return '#ffd166';
@@ -795,15 +1296,6 @@
             
             const badgeColor = statusColors[status] || 'secondary';
             return `<span class="badge bg-${badgeColor}"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>${status}</span>`;
-        };
-
-        const getPriorityBadge = (priority) => {
-            const badges = {
-                'haute': '<span class="badge bg-danger"><i class="fas fa-arrow-up me-1"></i>Haute</span>',
-                'moyenne': '<span class="badge bg-warning"><i class="fas fa-minus me-1"></i>Moyenne</span>',
-                'basse': '<span class="badge bg-success"><i class="fas fa-arrow-down me-1"></i>Basse</span>'
-            };
-            return badges[priority] || badges['moyenne'];
         };
 
         const formatCurrency = (amount) => {
@@ -918,11 +1410,47 @@
                     deleteBtn.disabled = false;
                 });
             }
+            
+            // Reset edit modal when hidden
+            const editModal = document.getElementById('editTaskModal');
+            if (editModal) {
+                editModal.addEventListener('hidden.bs.modal', function() {
+                    currentEditTaskId = null;
+                });
+            }
         };
     </script>
 
     <style>
-        /* Styles spécifiques pour la page des tâches d'un projet */
+        /* Modal styles */
+        .modal-xl {
+            max-width: 90%;
+        }
+        
+        @media (min-width: 1200px) {
+            .modal-xl {
+                max-width: 1140px;
+            }
+        }
+        
+        .section-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 0.25rem;
+        }
+        
+        .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        /* Page Header Styles */
         .page-header-left {
             display: flex;
             align-items: center;
@@ -1344,477 +1872,483 @@
                 width: 100%;
                 margin-bottom: 5px;
             }
+            
+            .modal-xl {
+                max-width: 95%;
+                margin: 10px auto;
+            }
         }
+        
         /* ===== COMPOSANTS D'AVATAR ===== */
 
-/* Petit avatar (32x32) - Utilisé dans les tableaux */
-.user-avatar-sm {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px; /* Coins légèrement arrondis pour un look moderne */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 600;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    flex-shrink: 0; /* Empêche l'avatar de rétrécir */
-}
-
-.user-avatar-sm:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-/* Avatar moyen (40x40) - Pour les cartes et en-têtes */
-.user-avatar-md {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 600;
-    font-size: 1rem;
-    text-transform: uppercase;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-}
-
-.user-avatar-md:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 10px rgba(0,0,0,0.15);
-}
-
-/* Grand avatar (50x50) - Pour les profils */
-.user-avatar-lg {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 600;
-    font-size: 1.2rem;
-    text-transform: uppercase;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-}
-
-.user-avatar-lg:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-}
-
-/* Très grand avatar (70x70) - Pour les pages de détail */
-.user-avatar-xl {
-    width: 70px;
-    height: 70px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 600;
-    font-size: 1.8rem;
-    text-transform: uppercase;
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-}
-
-.user-avatar-xl:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-}
-
-/* Avatar avec bordure */
-.user-avatar-bordered {
-    border: 2px solid white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-.user-avatar-bordered:hover {
-    border-color: var(--primary-color);
-}
-
-/* Avatar avec statut en ligne */
-.user-avatar-with-status {
-    position: relative;
-}
-
-.user-avatar-status {
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    border: 2px solid white;
-}
-
-.user-avatar-status.online {
-    background-color: #2ecc71;
-}
-
-.user-avatar-status.offline {
-    background-color: #95a5a6;
-}
-
-.user-avatar-status.busy {
-    background-color: #e74c3c;
-}
-
-.user-avatar-status.away {
-    background-color: #f39c12;
-}
-
-/* ===== COMPOSANTS D'INFORMATION UTILISATEUR ===== */
-
-/* Container d'information utilisateur (avatar + détails) */
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-/* Version compacte pour les tableaux */
-.user-info-compact {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* Détails de l'utilisateur */
-.user-details {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.3;
-}
-
-.user-name {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: #2c3e50;
-    margin-bottom: 2px;
-}
-
-.user-email {
-    font-size: 0.8rem;
-    color: #7f8c8d;
-}
-
-.user-role {
-    font-size: 0.75rem;
-    color: #95a5a6;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Version pour les cartes */
-.user-card {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 12px;
-    border: 1px solid #eaeaea;
-    transition: all 0.3s ease;
-}
-
-.user-card:hover {
-    background: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transform: translateY(-2px);
-}
-
-.user-card .user-info {
-    flex: 1;
-}
-
-.user-card .user-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.user-card .user-meta-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    color: #666;
-}
-
-.user-card .user-meta-item i {
-    width: 16px;
-    color: var(--primary-color);
-}
-
-/* ===== COMPOSANTS POUR LES TABLEAUX ===== */
-
-/* Container pour les informations dans les tableaux */
-.table-user-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.table-user-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.table-user-name {
-    font-weight: 500;
-    font-size: 0.9rem;
-    color: #2c3e50;
-}
-
-.table-user-email {
-    font-size: 0.8rem;
-    color: #7f8c8d;
-}
-
-/* ===== VARIANTES DE COULEURS POUR AVATARS ===== */
-
-/* Couleurs prédéfinies pour les avatars */
-.avatar-blue {
-    background: linear-gradient(135deg, #3498db, #2980b9);
-}
-
-.avatar-green {
-    background: linear-gradient(135deg, #2ecc71, #27ae60);
-}
-
-.avatar-yellow {
-    background: linear-gradient(135deg, #f1c40f, #f39c12);
-}
-
-.avatar-orange {
-    background: linear-gradient(135deg, #e67e22, #d35400);
-}
-
-.avatar-red {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-}
-
-.avatar-purple {
-    background: linear-gradient(135deg, #9b59b6, #8e44ad);
-}
-
-.avatar-pink {
-    background: linear-gradient(135deg, #e84393, #c2185b);
-}
-
-.avatar-teal {
-    background: linear-gradient(135deg, #1abc9c, #16a085);
-}
-
-.avatar-gray {
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-}
-
-.avatar-dark {
-    background: linear-gradient(135deg, #34495e, #2c3e50);
-}
-
-/* ===== ANIMATIONS ===== */
-
-@keyframes avatarPulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
-    }
-}
-
-.avatar-pulse {
-    animation: avatarPulse 2s infinite;
-}
-
-@keyframes avatarGlow {
-    0% {
-        filter: brightness(1);
-    }
-    50% {
-        filter: brightness(1.1);
-    }
-    100% {
-        filter: brightness(1);
-    }
-}
-
-.avatar-glow {
-    animation: avatarGlow 2s infinite;
-}
-
-/* ===== EXEMPLES D'UTILISATION DANS LE TABLEAU ===== */
-
-/* Style pour la cellule du tableau contenant l'utilisateur */
-td .user-info {
-    min-width: 150px;
-}
-
-/* Style pour quand il n'y a pas d'utilisateur assigné */
-.no-user-assigned {
-    color: #95a5a6;
-    font-style: italic;
-    font-size: 0.9rem;
-    padding: 8px 0;
-}
-
-/* ===== VERSION RESPONSIVE ===== */
-
-@media (max-width: 768px) {
-    .user-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    
-    .user-details {
-        width: 100%;
-    }
-    
-    .user-card {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .user-card .user-meta-item {
-        justify-content: center;
-    }
-    
-    td .user-info {
-        min-width: auto;
-    }
-    
-    .table-user-info {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-}
-
-.modern-table td {
-    padding: 16px 12px;
-    vertical-align: middle;
-}
-
-.modern-table .user-info {
-    margin: -8px 0; /* Ajustement pour l'alignement */
-}
-
-/* Ligne de survol */
-.modern-table tbody tr:hover {
-    background-color: rgba(52, 152, 219, 0.05);
-}
-
-.modern-table tbody tr:hover .user-avatar-sm {
-    transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-/* ===== BADGES DE STATUT POUR LES UTILISATEURS ===== */
-
-.user-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.user-badge-admin {
-    background: linear-gradient(135deg, #3498db, #2980b9);
-    color: white;
-}
-
-.user-badge-manager {
-    background: linear-gradient(135deg, #e67e22, #d35400);
-    color: white;
-}
-
-.user-badge-user {
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-    color: white;
-}
-
-/* ===== TOOLTIP PERSONNALISÉ POUR LES AVATARS ===== */
-
-.user-avatar-sm[data-tooltip] {
-    position: relative;
-    cursor: help;
-}
-
-.user-avatar-sm[data-tooltip]:before {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 5px 10px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    border-radius: 4px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 1000;
-}
-
-.user-avatar-sm[data-tooltip]:hover:before {
-    opacity: 1;
-}
-
-/* ===== GROUPE D'AVATARS (POUR LES ASSIGNATIONS MULTIPLES) ===== */
-
-.avatar-group {
-    display: flex;
-    align-items: center;
-}
-
-.avatar-group .user-avatar-sm {
-    margin-right: -8px;
-    border: 2px solid white;
-    transition: transform 0.2s ease;
-}
-
-.avatar-group .user-avatar-sm:hover {
-    transform: translateY(-3px);
-    z-index: 10;
-}
-
-.avatar-group-count {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: #e9ecef;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #495057;
-    border: 2px solid white;
-    margin-left: 4px;
-}
+        /* Petit avatar (32x32) - Utilisé dans les tableaux */
+        .user-avatar-sm {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px; /* Coins légèrement arrondis pour un look moderne */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            flex-shrink: 0; /* Empêche l'avatar de rétrécir */
+        }
+
+        .user-avatar-sm:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Avatar moyen (40x40) - Pour les cartes et en-têtes */
+        .user-avatar-md {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            text-transform: uppercase;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .user-avatar-md:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+        }
+
+        /* Grand avatar (50x50) - Pour les profils */
+        .user-avatar-lg {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .user-avatar-lg:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Très grand avatar (70x70) - Pour les pages de détail */
+        .user-avatar-xl {
+            width: 70px;
+            height: 70px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .user-avatar-xl:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        /* Avatar avec bordure */
+        .user-avatar-bordered {
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .user-avatar-bordered:hover {
+            border-color: var(--primary-color);
+        }
+
+        /* Avatar avec statut en ligne */
+        .user-avatar-with-status {
+            position: relative;
+        }
+
+        .user-avatar-status {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .user-avatar-status.online {
+            background-color: #2ecc71;
+        }
+
+        .user-avatar-status.offline {
+            background-color: #95a5a6;
+        }
+
+        .user-avatar-status.busy {
+            background-color: #e74c3c;
+        }
+
+        .user-avatar-status.away {
+            background-color: #f39c12;
+        }
+
+        /* ===== COMPOSANTS D'INFORMATION UTILISATEUR ===== */
+
+        /* Container d'information utilisateur (avatar + détails) */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Version compacte pour les tableaux */
+        .user-info-compact {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Détails de l'utilisateur */
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.3;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #2c3e50;
+            margin-bottom: 2px;
+        }
+
+        .user-email {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: #95a5a6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Version pour les cartes */
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #eaeaea;
+            transition: all 0.3s ease;
+        }
+
+        .user-card:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+        .user-card .user-info {
+            flex: 1;
+        }
+
+        .user-card .user-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .user-card .user-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .user-card .user-meta-item i {
+            width: 16px;
+            color: var(--primary-color);
+        }
+
+        /* ===== COMPOSANTS POUR LES TABLEAUX ===== */
+
+        /* Container pour les informations dans les tableaux */
+        .table-user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-user-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #2c3e50;
+        }
+
+        .table-user-email {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+
+        /* ===== VARIANTES DE COULEURS POUR AVATARS ===== */
+
+        /* Couleurs prédéfinies pour les avatars */
+        .avatar-blue {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .avatar-green {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .avatar-yellow {
+            background: linear-gradient(135deg, #f1c40f, #f39c12);
+        }
+
+        .avatar-orange {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+        }
+
+        .avatar-red {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .avatar-purple {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+
+        .avatar-pink {
+            background: linear-gradient(135deg, #e84393, #c2185b);
+        }
+
+        .avatar-teal {
+            background: linear-gradient(135deg, #1abc9c, #16a085);
+        }
+
+        .avatar-gray {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+
+        .avatar-dark {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+        }
+
+        /* ===== ANIMATIONS ===== */
+
+        @keyframes avatarPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+            }
+        }
+
+        .avatar-pulse {
+            animation: avatarPulse 2s infinite;
+        }
+
+        @keyframes avatarGlow {
+            0% {
+                filter: brightness(1);
+            }
+            50% {
+                filter: brightness(1.1);
+            }
+            100% {
+                filter: brightness(1);
+            }
+        }
+
+        .avatar-glow {
+            animation: avatarGlow 2s infinite;
+        }
+
+        /* ===== EXEMPLES D'UTILISATION DANS LE TABLEAU ===== */
+
+        /* Style pour la cellule du tableau contenant l'utilisateur */
+        td .user-info {
+            min-width: 150px;
+        }
+
+        /* Style pour quand il n'y a pas d'utilisateur assigné */
+        .no-user-assigned {
+            color: #95a5a6;
+            font-style: italic;
+            font-size: 0.9rem;
+            padding: 8px 0;
+        }
+
+        /* ===== VERSION RESPONSIVE ===== */
+
+        @media (max-width: 768px) {
+            .user-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .user-details {
+                width: 100%;
+            }
+            
+            .user-card {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .user-card .user-meta-item {
+                justify-content: center;
+            }
+            
+            td .user-info {
+                min-width: auto;
+            }
+            
+            .table-user-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        .modern-table td {
+            padding: 16px 12px;
+            vertical-align: middle;
+        }
+
+        .modern-table .user-info {
+            margin: -8px 0; /* Ajustement pour l'alignement */
+        }
+
+        /* Ligne de survol */
+        .modern-table tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .modern-table tbody tr:hover .user-avatar-sm {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        /* ===== BADGES DE STATUT POUR LES UTILISATEURS ===== */
+
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user-badge-admin {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .user-badge-manager {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            color: white;
+        }
+
+        .user-badge-user {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+
+        /* ===== TOOLTIP PERSONNALISÉ POUR LES AVATARS ===== */
+
+        .user-avatar-sm[data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+
+        .user-avatar-sm[data-tooltip]:before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .user-avatar-sm[data-tooltip]:hover:before {
+            opacity: 1;
+        }
+
+        /* ===== GROUPE D'AVATARS (POUR LES ASSIGNATIONS MULTIPLES) ===== */
+
+        .avatar-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .avatar-group .user-avatar-sm {
+            margin-right: -8px;
+            border: 2px solid white;
+            transition: transform 0.2s ease;
+        }
+
+        .avatar-group .user-avatar-sm:hover {
+            transform: translateY(-3px);
+            z-index: 10;
+        }
+
+        .avatar-group-count {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #495057;
+            border: 2px solid white;
+            margin-left: 4px;
+        }
     </style>
 @endsection
