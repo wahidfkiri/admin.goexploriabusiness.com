@@ -370,7 +370,7 @@
                 <i class="fas fa-play"></i>
             </button>
             
-            <a href="#" class="action-btn view-btn" title="Voir détails">
+            <a href="{{route('map-points.index')}}" class="action-btn view-btn" title="Voir détails">
                 <i class="fas fa-eye"></i>
             </a>
             
@@ -1813,7 +1813,8 @@
                 5: 'Core System',
                 6: 'SEO Optimizer',
                 7: 'Social Media Integration',
-                8: 'Backup Manager'
+                8: 'Backup Manager',
+                
             };
             
             const moduleName = moduleNames[moduleId] || 'Module';
