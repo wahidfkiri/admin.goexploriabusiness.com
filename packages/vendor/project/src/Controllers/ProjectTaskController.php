@@ -13,7 +13,7 @@ class ProjectTaskController extends Controller
 {
     public function index(Project $project, Request $request)
     {
-        $query = $project->tasks()->with(['user', 'etablissement', 'creator']);
+        $query = $project->tasks()->with(['user', 'etablissement', 'creator'])->where('user_id', Auth::id());
         
         // Filtres
         if ($request->filled('search')) {

@@ -11,6 +11,7 @@ use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\WelcomeUserMail;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -18,59 +19,60 @@ class UserController extends Controller
      * Display a listing of the users.
      */
     public function index(Request $request)
-    {
-        // Get all roles for filter dropdown
-        $roles = Role::all();
+{
+    // Get all roles for filter dropdown
+    $roles = Role::all();
+    
+    // If AJAX request, return JSON
+    if ($request->ajax()) {
+        $query = User::with('roles')
+            ->whereDoesntHave('etablissement'); // This selects users with no etablissements
         
-        // If AJAX request, return JSON
-        if ($request->ajax()) {
-            $query = User::with('roles', 'etablissement');
-            
-            // Apply search filter
-            if ($request->has('search') && !empty($request->search)) {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
-                    $q->where('name', 'LIKE', "%{$search}%")
-                      ->orWhere('email', 'LIKE', "%{$search}%");
-                });
-            }
-            
-            // Apply role filter
-            if ($request->has('role') && !empty($request->role)) {
-                $query->whereHas('roles', function($q) use ($request) {
-                    $q->where('name', $request->role);
-                });
-            }
-            
-            // Apply status filter
-            if ($request->has('status') && !empty($request->status)) {
-                $query->where('is_active', $request->status === 'active');
-            }
-            
-            // Apply sorting
-            $sortBy = $request->get('sort_by', 'name');
-            $sortDirection = $request->get('sort_direction', 'asc');
-            $query->orderBy($sortBy, $sortDirection);
-            
-            // Paginate results
-            $perPage = $request->get('per_page', 10);
-            $users = $query->paginate($perPage);
-            
-            return response()->json([
-                'success' => true,
-                'data' => $users->items(),
-                'current_page' => $users->currentPage(),
-                'last_page' => $users->lastPage(),
-                'per_page' => $users->perPage(),
-                'total' => $users->total(),
-                'prev_page_url' => $users->previousPageUrl(),
-                'next_page_url' => $users->nextPageUrl(),
-            ]);
+        // Apply search filter
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%");
+            });
         }
         
-        // Return view for non-AJAX requests
-        return view('users::users.index', compact('roles'));
+        // Apply role filter
+        if ($request->has('role') && !empty($request->role)) {
+            $query->whereHas('roles', function($q) use ($request) {
+                $q->where('name', $request->role);
+            });
+        }
+        
+        // Apply status filter
+        if ($request->has('status') && !empty($request->status)) {
+            $query->where('is_active', $request->status === 'active');
+        }
+        
+        // Apply sorting
+        $sortBy = $request->get('sort_by', 'name');
+        $sortDirection = $request->get('sort_direction', 'asc');
+        $query->orderBy($sortBy, $sortDirection);
+        
+        // Paginate results
+        $perPage = $request->get('per_page', 10);
+        $users = $query->paginate($perPage);
+        
+        return response()->json([
+            'success' => true,
+            'data' => $users->items(),
+            'current_page' => $users->currentPage(),
+            'last_page' => $users->lastPage(),
+            'per_page' => $users->perPage(),
+            'total' => $users->total(),
+            'prev_page_url' => $users->previousPageUrl(),
+            'next_page_url' => $users->nextPageUrl(),
+        ]);
     }
+    
+    // Return view for non-AJAX requests
+    return view('users::users.index', compact('roles'));
+}
 
     /**
      * Store a newly created user.
@@ -222,12 +224,12 @@ public function store(Request $request)
     {
         try {
             // Prevent deactivating own account
-            if ($user->id === auth()->id() && $user->is_active) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Vous ne pouvez pas désactiver votre propre compte !'
-                ], 403);
-            }
+            // if ($user->id === auth()->id() && $user->is_active) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Vous ne pouvez pas désactiver votre propre compte !'
+            //     ], 403);
+            // }
             
             $user->is_active = !$user->is_active;
             $user->save();
@@ -253,39 +255,48 @@ public function store(Request $request)
      * Update user roles.
      */
     public function updateRoles(Request $request, User $user)
-    {
-        try {
-            $request->validate([
-                'roles' => 'array',
-                'roles.*' => 'exists:roles,id'
-            ]);
-            
-            // Prevent removing all roles from own account
-            if ($user->id === auth()->id() && empty($request->roles)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Vous devez avoir au moins un rôle !'
-                ], 403);
-            }
-            
-            // Sync roles
-            $roleIds = $request->input('roles', []);
-            $user->roles()->sync($roleIds);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Rôles mis à jour avec succès !',
-                'user' => $user->load('roles')
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la mise à jour des rôles',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+{
+    try {
+        $request->validate([
+            'role' => 'required|integer|exists:roles,id',
+        ]);
+        
+        // Prevent removing all roles from own account
+        // if ($user->id === auth()->id() && empty($request->roles)) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Vous devez avoir au moins un rôle !'
+        //     ], 403);
+        // }
+        
+        // Get the new role
+        $roleId = $request->input('role');
+        $newRole = Role::findById($roleId);
+        
+        // Remove all existing roles first
+        $user->roles()->detach();
+        
+        // Or if you're using Laravel Permission package:
+        // $user->syncRoles([]); // This removes all roles
+        
+        // Assign the new role
+        $user->assignRole($newRole->name);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Rôle mis à jour avec succès !',
+            'user' => $user->load('roles')
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error updating user roles', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la mise à jour du rôle',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Get all available roles.

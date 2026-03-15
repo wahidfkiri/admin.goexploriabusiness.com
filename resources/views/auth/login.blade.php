@@ -341,6 +341,12 @@
 
             <!-- Alert div pour succès/erreurs -->
             <div id="alertContainer" class="hidden"></div>
+            @if(session('error'))
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ session('error') }}
+                </div>
+            @endif
 
             <!-- Formulaire de Connexion -->
             <form id="loginForm" class="space-y-5">

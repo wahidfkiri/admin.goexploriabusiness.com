@@ -6,6 +6,7 @@
     <!-- <div class="logo-sub">Plateforme Builder Web</div> -->
   </div>
   <ul class="sidebar-menu">
+    @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin'))
     <li>
       <a href="{{route('dashboard')}}" class="menu-item active">
         <span class="menu-icon">
@@ -139,6 +140,7 @@
         <span class="menu-text">Applications</span>
       </a>
     </li>
+    @endif
     <!-- <li class="menu-title">Contenu</li> -->
     <li class="has-submenu">
       <a href="#" class="menu-link">
@@ -171,6 +173,7 @@
         </li>
       </ul>
     </li>
+    @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin'))
     <li class="has-submenu">
     <a href="#" class="menu-link">
         <span class="menu-icon">
@@ -354,6 +357,7 @@
         </li>
       </ul>
     </li>
+    @endif
     <li>
       <a class="menu-item" href="{{route('logout')}}" onclick="event.preventDefault();
                     document.getElementById('logout-form').submit();">

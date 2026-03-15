@@ -34,7 +34,11 @@ class TaskController extends Controller
     public function index(Request $request)
 {
     if ($request->ajax()) {
+        if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')){
         $query = Task::with(['project', 'user', 'etablissement']);
+        }else{
+        $query = Task::with(['project', 'user', 'etablissement'])->where('user_id', Auth::id());
+        }
         
         // Appliquer les filtres
         if ($request->filled('search')) {

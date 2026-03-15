@@ -608,9 +608,10 @@
             const userId = document.getElementById('userRolesId').value;
             const selectedRoles = Array.from(document.querySelectorAll('.role-checkbox:checked'))
                 .map(cb => cb.value);
+                const roleId = document.querySelector('.role-radio:checked')?.value;
             
             const data = {
-                roles: selectedRoles
+                role: roleId
             };
             
             $.ajax({
@@ -620,6 +621,7 @@
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
+                        console.log('Roles updated successfully', roleId);
                         showAlert('success', 'Rôles mis à jour avec succès !');
                         const modal = bootstrap.Modal.getInstance(document.getElementById('rolesModal'));
                         modal.hide();

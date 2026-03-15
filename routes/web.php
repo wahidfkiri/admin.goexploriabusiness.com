@@ -36,8 +36,6 @@ Route::get('/login', function () {
     return view('auth.login');
 })->name('login');
 
-// Route pour le dashboard (à protéger)
-Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard')->middleware('auth');
 
 // Route pour le dashboard (à protéger)
 Route::get('/home', function () {
@@ -62,9 +60,11 @@ Route::post('/logout', function () {
 
 
 // Éditeur (protégé)
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth','web','user.active'])->group(function () {
 
 
+// Route pour le dashboard (à protéger)
+Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard');
 
     
     // Profil utilisateur

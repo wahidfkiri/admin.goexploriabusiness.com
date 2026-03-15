@@ -12,8 +12,14 @@ use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
+
+public function __construct()
+{
+    $this->middleware(['auth', 'user.active']);
+}
     public function index()
     {
+        if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')) {
         // Récupérer les statistiques depuis la base de données
         $totalPays = Country::count();
         $totalEtablissements = Etablissement::count();
@@ -41,6 +47,9 @@ class HomeController extends Controller
             'recentActivities',
             'projects'
         ));
+        } else {
+            return redirect()->route('projects.index')->with('error', 'Vous n\'avez pas accès au tableau de bord.');
+        }
     }
     
     private function getRecentActivities()
