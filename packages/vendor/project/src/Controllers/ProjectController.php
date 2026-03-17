@@ -70,6 +70,10 @@ class ProjectController extends Controller
                     $q->select('id', 'project_id', 'status', 'estimated_hours', 'estimated_cost');
                 }
             ]);
+            if (!auth()->user() || !auth()->user()->hasRole('super-admin')) 
+                {
+                $query->where('user_id', Auth::id());
+                }
             // ->where('user_id', Auth::id());
             // ->where('etablissement_id', Auth::user()->etablissement_id);
             

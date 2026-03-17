@@ -92,4 +92,5 @@ class PaymentGateway extends Model
     {
         return $this->mode === 'live';
     }
+
 }

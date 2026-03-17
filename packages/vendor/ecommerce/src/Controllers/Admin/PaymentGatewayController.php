@@ -346,16 +346,16 @@ class PaymentGatewayController extends Controller
             $config = $request->input('config');
             
             // Récupérer les clés
-            if (isset($config['use_env']) && $config['use_env'] == '1') {
+          //  if (isset($config['use_env']) && $config['use_env'] == '1') {
                 $clientId = env('PAYPAL_CLIENT_ID');
                 $clientSecret = env('PAYPAL_CLIENT_SECRET');
                 $mode = env('PAYPAL_MODE', 'sandbox');
-            } else {
-                $gateway = PaymentGateway::where('code', 'paypal')->first();
-                $clientId = $gateway ? $gateway->getApiKey('client_id') : null;
-                $clientSecret = $gateway ? $gateway->getApiKey('client_secret') : null;
-                $mode = $gateway->mode ?? 'sandbox';
-            }
+            // } else {
+            //     $gateway = PaymentGateway::where('code', 'paypal')->first();
+            //     $clientId = $gateway ? $gateway->getApiKey('client_id') : null;
+            //     $clientSecret = $gateway ? $gateway->getApiKey('client_secret') : null;
+            //     $mode = $gateway->mode ?? 'sandbox';
+            // }
 
             if (!$clientId || !$clientSecret) {
                 return response()->json([
