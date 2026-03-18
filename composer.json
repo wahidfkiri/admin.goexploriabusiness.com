@@ -54,7 +54,8 @@
             "Vendor\\Project\\": "packages/vendor/project/src",
             "Vendor\\Ecommerce\\": "packages/vendor/ecommerce/src",
             "Vendor\\MapMarker\\": "packages/vendor/map-marker/src",
-            "Vendor\\Plugins\\": "packages/vendor/plugins/src"
+            "Vendor\\Plugins\\": "packages/vendor/plugins/src",
+            "Vendor\\MailMarketing\\": "packages/vendor/mail-marketing/src"
         }
     },
     "autoload-dev": {
