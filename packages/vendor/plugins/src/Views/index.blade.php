@@ -509,7 +509,7 @@
                                     <i class="fas fa-pause"></i>
                                 </button>
                                 
-                                <a href="{{route('mail-campaigns')}}" class="action-btn view-btn" title="Voir détails">
+                                <a href="{{url('mail-campaigns')}}" class="action-btn view-btn" title="Voir détails">
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 
