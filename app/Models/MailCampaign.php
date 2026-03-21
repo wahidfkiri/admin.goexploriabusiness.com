@@ -32,21 +32,25 @@ class MailCampaign extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * Relation avec les abonnés - Utilisation du modèle pivot personnalisé
+     */
     public function subscribers(): BelongsToMany
     {
-        return $this->belongsToMany(MailSubscriber::class, 'mail_campaign_subscriber')
-                    ->withPivot('sent_at', 'opened_at', 'clicked_at', 'failed_at')
-                    ->withTimestamps();
+        return $this->belongsToMany(
+            MailSubscriber::class,              // Modèle lié
+            'mail_campaign_subscriber',         // Table pivot
+            'campaign_id',                      // Clé étrangère du modèle actuel dans la pivot
+            'subscriber_id'                     // Clé étrangère du modèle lié dans la pivot
+        )
+        ->using(MailCampaignSubscriber::class)   // Utiliser le modèle pivot personnalisé
+        ->withPivot('sent_at', 'opened_at', 'clicked_at', 'failed_at')
+        ->withTimestamps();
     }
 
     public function trackingEvents()
     {
         return $this->hasMany(MailTrackingEvent::class, 'campaign_id');
-    }
-
-    public function missions()
-    {
-        return $this->hasMany(Mission::class, 'campagne_id');
     }
 
     public function scopeDraft($query)
@@ -67,6 +71,24 @@ class MailCampaign extends Model
             'opened' => $this->subscribers()->wherePivotNotNull('opened_at')->count(),
             'clicked' => $this->subscribers()->wherePivotNotNull('clicked_at')->count(),
             'failed' => $this->subscribers()->wherePivotNotNull('failed_at')->count(),
+        ];
+    }
+    
+    /**
+     * Récupère les statistiques avancées
+     */
+    public function getAdvancedStatsAttribute()
+    {
+        $totalSent = $this->subscribers()->wherePivotNotNull('sent_at')->count();
+        $totalOpened = $this->subscribers()->wherePivotNotNull('opened_at')->count();
+        $totalClicked = $this->subscribers()->wherePivotNotNull('clicked_at')->count();
+        
+        return [
+            'sent' => $totalSent,
+            'opened' => $totalOpened,
+            'clicked' => $totalClicked,
+            'open_rate' => $totalSent > 0 ? round(($totalOpened / $totalSent) * 100, 2) : 0,
+            'click_rate' => $totalSent > 0 ? round(($totalClicked / $totalSent) * 100, 2) : 0,
         ];
     }
 }

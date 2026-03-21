@@ -25,6 +25,11 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
+         // Nettoyer les logs de plus de 30 jours
+    $schedule->command('log:clean')->daily();
+    
+    // Vérifier les campagnes en échec
+    $schedule->command('mail:check-logs --errors-only')->daily();
     }
 
     /**

@@ -29,6 +29,12 @@ Route::middleware(['auth','web'])->group(function () {
         Route::get('/{campaign}/edit', [MailCampaignController::class, 'edit'])->name('edit');
         Route::put('/{campaign}', [MailCampaignController::class, 'update'])->name('update');
         Route::delete('/{campaign}', [MailCampaignController::class, 'destroy'])->name('destroy');
+
+         // ⚠️ RENOMMER cette route pour éviter la confusion
+        Route::get('/{campaign}/preview-email', [MailCampaignController::class, 'preview'])->name('preview-email');
+        
+        // ✅ Route de prévisualisation des thèmes (SANS paramètre campaign)
+        Route::post('/preview-theme', [MailCampaignController::class, 'previewTheme'])->name('preview-theme');
         
         // Actions spécifiques aux campagnes
         Route::post('/{campaign}/send', [MailCampaignController::class, 'send'])->name('send');

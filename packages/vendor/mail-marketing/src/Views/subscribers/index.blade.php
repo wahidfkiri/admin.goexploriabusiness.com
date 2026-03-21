@@ -189,8 +189,8 @@
                                 </td>
                                 <td>
                                     <div class="subscriber-info">
-                                        <div class="subscriber-avatar" style="background: {{ getAvatarColor($subscriber->email) }}">
-                                            {{ getInitials($subscriber->nom, $subscriber->prenom) }}
+                                        <div class="subscriber-avatar" style="background: {{ \Vendor\MailMarketing\Helpers\Helper::getAvatarColor($subscriber->email) }}">
+                                            {{ \Vendor\MailMarketing\Helpers\Helper::getInitials($subscriber->nom, $subscriber->prenom) }}
                                         </div>
                                         <div class="subscriber-details">
                                             <div class="subscriber-name">
@@ -253,7 +253,7 @@
                                             <i class="fas fa-mouse-pointer text-warning"></i>
                                             <span>{{ $clicked }}</span>
                                         </div>
-                                        <div class="engagement-rate" style="background: {{ getEngagementColor($openRate) }}">
+                                        <div class="engagement-rate" style="background: {{ \Vendor\MailMarketing\Helpers\Helper::getEngagementColor($openRate) }}">
                                             {{ $openRate }}%
                                         </div>
                                     </div>

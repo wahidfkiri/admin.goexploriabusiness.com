@@ -128,12 +128,16 @@
             <div class="stats-card-modern">
                 <div class="stats-header-modern">
                     <div>
+                    <a href="{{route('mail-subscribers.index')}}" style="text-decoration:none">
                         <div class="stats-value-modern" id="totalSubscribers">{{ $stats['total_subscribers'] ?? 0 }}</div>
                         <div class="stats-label-modern">Abonnés</div>
+                    </a>
                     </div>
+                    <a href="{{route('mail-subscribers.index')}}" style="text-decoration:none">
                     <div class="stats-icon-modern" style="background: linear-gradient(135deg, #ef476f, #d4335f);">
                         <i class="fas fa-users"></i>
                     </div>
+                    </a>
                 </div>
             </div>
         </div>
@@ -176,7 +180,7 @@
                                 <td>
                                     <div class="campaign-name-cell">
                                         <div class="campaign-name-modern">
-                                            <div class="campaign-icon-modern" style="background: {{ getCampaignColor($campaign->nom) }}">
+                                            <div class="campaign-icon-modern" style="background: {{ \Vendor\MailMarketing\Helpers\Helper::getCampaignColor($campaign->nom) }}">
                                                 <i class="fas fa-envelope-open-text"></i>
                                             </div>
                                             <div>
@@ -194,7 +198,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    {!! getStatusBadge($campaign->status) !!}
+                                    {!! \Vendor\MailMarketing\Helpers\Helper::getStatusBadge($campaign->status) !!}
                                 </td>
                                 <td>
                                     @if($campaign->scheduled_at)
@@ -247,8 +251,8 @@
                                 <td>
                                     @if($campaign->createdBy)
                                         <div class="user-info">
-                                            <div class="user-avatar-sm" style="background: {{ getUserColor($campaign->createdBy->name) }}">
-                                                {{ getInitials($campaign->createdBy->name) }}
+                                            <div class="user-avatar-sm" style="background: {{ \Vendor\MailMarketing\Helpers\Helper::getUserColor($campaign->createdBy->name) }}">
+                                                {{ \Vendor\MailMarketing\Helpers\Helper::getInitials($campaign->createdBy->name) }}
                                             </div>
                                             <div class="user-details">
                                                 <div class="user-name">{{ $campaign->createdBy->name }}</div>
@@ -1052,6 +1056,27 @@
                 width: 100%;
                 height: 36px;
             }
+        }
+        /* Petit avatar (32x32) - Utilisé dans les tableaux */
+        .user-avatar-sm {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px; /* Coins légèrement arrondis pour un look moderne */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            flex-shrink: 0; /* Empêche l'avatar de rétrécir */
+        }
+
+        .user-avatar-sm:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
     </style>
 @endsection

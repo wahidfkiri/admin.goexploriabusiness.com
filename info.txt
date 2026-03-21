@@ -7,3 +7,10 @@ php artisan db:seed --class=SouthAmericaCountriesSeeder
 php artisan db:seed --class=OceaniaCountriesSeeder
 
 php artisan db:seed --class=CanadaProvincesSeeder
+
+
+# Démarrer le worker pour traiter les jobs
+php artisan queue:work --queue=emails
+
+# Ou pour exécuter en arrière-plan (recommandé en production)
+php artisan queue:work --queue=emails --daemon
