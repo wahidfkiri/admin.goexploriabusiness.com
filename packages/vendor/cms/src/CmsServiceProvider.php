@@ -59,12 +59,12 @@ class CmsServiceProvider extends ServiceProvider
     {
         // Routes API
         Route::group($this->apiRouteConfiguration(), function () {
-            $this->loadRoutesFrom(__DIR__ . '/Routes/api.php');
+            $this->loadRoutesFrom(__DIR__ . '/routes/api.php');
         });
         
         // Routes Web
         Route::group($this->webRouteConfiguration(), function () {
-            $this->loadRoutesFrom(__DIR__ . '/Routes/web.php');
+            $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
         });
     }
 
