@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany; // Changé
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Vendor\Cms\Models\Traits\HasSettings; // Import du trait CMS
 
 class Etablissement extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasSettings; // Ajout du trait HasSettings
 
     protected $fillable = [
         'name',
@@ -48,7 +49,7 @@ class Etablissement extends Model
     {
         return $this->belongsToMany(Activity::class)
                     ->withTimestamps()
-                    ->withPivot('created_at', 'updated_at'); // Inclure les timestamps du pivot
+                    ->withPivot('created_at', 'updated_at');
     }
     
     /**
@@ -57,7 +58,7 @@ class Etablissement extends Model
     public function activeActivities(): BelongsToMany
     {
         return $this->belongsToMany(Activity::class)
-                    ->wherePivot('is_active', true) // Si vous avez un champ is_active dans le pivot
+                    ->wherePivot('is_active', true)
                     ->withTimestamps();
     }
     
@@ -99,5 +100,195 @@ class Etablissement extends Model
     public function syncActivities(array $activityIds)
     {
         $this->activities()->sync($activityIds);
+    }
+    
+    // ==============================================
+    // Méthodes supplémentaires pour la gestion CMS
+    // ==============================================
+    
+    /**
+     * Récupère tous les paramètres de configuration de l'établissement
+     * 
+     * @return array
+     */
+    public function getAllCmsSettings(): array
+    {
+        return $this->getAllSettings()->toArray();
+    }
+    
+    /**
+     * Récupère les paramètres d'un groupe spécifique
+     * 
+     * @param string $group
+     * @return array
+     */
+    public function getSettingsGroup(string $group): array
+    {
+        return $this->getSettingsGroup($group);
+    }
+    
+    /**
+     * Récupère le thème actif de l'établissement
+     * 
+     * @return \Vendor\Cms\Models\Theme|null
+     */
+    public function getActiveTheme()
+    {
+        return \Vendor\Cms\Models\Theme::where('etablissement_id', $this->id)
+            ->where('is_active', true)
+            ->first();
+    }
+    
+    /**
+     * Récupère toutes les pages de l'établissement
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getPages()
+    {
+        return \Vendor\Cms\Models\Page::where('etablissement_id', $this->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+    
+    /**
+     * Récupère les pages publiées
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getPublishedPages()
+    {
+        return \Vendor\Cms\Models\Page::where('etablissement_id', $this->id)
+            ->where('status', 'published')
+            ->orderBy('published_at', 'desc')
+            ->get();
+    }
+    
+    /**
+     * Récupère les thèmes disponibles
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getThemes()
+    {
+        return \Vendor\Cms\Models\Theme::where('etablissement_id', $this->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+    
+    /**
+     * Vérifie si l'établissement a des pages
+     * 
+     * @return bool
+     */
+    public function hasPages(): bool
+    {
+        return \Vendor\Cms\Models\Page::where('etablissement_id', $this->id)->exists();
+    }
+    
+    /**
+     * Vérifie si l'établissement a un thème actif
+     * 
+     * @return bool
+     */
+    public function hasActiveTheme(): bool
+    {
+        return \Vendor\Cms\Models\Theme::where('etablissement_id', $this->id)
+            ->where('is_active', true)
+            ->exists();
+    }
+    
+    /**
+     * Compte le nombre de pages
+     * 
+     * @return int
+     */
+    public function countPages(): int
+    {
+        return \Vendor\Cms\Models\Page::where('etablissement_id', $this->id)->count();
+    }
+    
+    /**
+     * Compte le nombre de pages publiées
+     * 
+     * @return int
+     */
+    public function countPublishedPages(): int
+    {
+        return \Vendor\Cms\Models\Page::where('etablissement_id', $this->id)
+            ->where('status', 'published')
+            ->count();
+    }
+    
+    /**
+     * Compte le nombre de thèmes
+     * 
+     * @return int
+     */
+    public function countThemes(): int
+    {
+        return \Vendor\Cms\Models\Theme::where('etablissement_id', $this->id)->count();
+    }
+    
+    /**
+     * Récupère l'URL du site avec les paramètres
+     * 
+     * @param string $path
+     * @return string
+     */
+    public function getSiteUrl(string $path = ''): string
+    {
+        $domain = $this->getSetting('domain', $this->website ?? '');
+        $baseUrl = $domain ?: url('/');
+        
+        return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
+    }
+    
+    /**
+     * Récupère les informations de contact formatées
+     * 
+     * @return array
+     */
+    public function getContactInfo(): array
+    {
+        return [
+            'phone' => $this->phone,
+            'fax' => $this->fax,
+            'email' => $this->email_contact,
+            'website' => $this->website,
+            'address' => $this->adresse,
+            'city' => $this->ville,
+            'zip_code' => $this->zip_code,
+        ];
+    }
+    
+    /**
+     * Récupère les réseaux sociaux configurés
+     * 
+     * @return array
+     */
+    public function getSocialNetworks(): array
+    {
+        return [
+            'facebook' => $this->getSetting('facebook_url'),
+            'twitter' => $this->getSetting('twitter_url'),
+            'instagram' => $this->getSetting('instagram_url'),
+            'linkedin' => $this->getSetting('linkedin_url'),
+            'youtube' => $this->getSetting('youtube_url'),
+        ];
+    }
+    
+    /**
+     * Récupère les informations SEO par défaut
+     * 
+     * @return array
+     */
+    public function getSeoDefaults(): array
+    {
+        return [
+            'title' => $this->getSetting('seo_title', $this->name),
+            'description' => $this->getSetting('seo_description', $this->lname ?? ''),
+            'keywords' => $this->getSetting('seo_keywords', ''),
+        ];
     }
 }

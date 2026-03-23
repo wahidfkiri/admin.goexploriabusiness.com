@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "99b02ef635cbd177cd9901618640f86b",
+    "content-hash": "9e1261a2573efece52997caedc73a1af",
     "packages": [
         {
             "name": "brick/math",
@@ -8089,6 +8089,40 @@
             "time": "2025-12-02T11:56:42+00:00"
         },
         {
+            "name": "vendor/cms",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "packages/vendor/cms",
+                "reference": "694da991f0fcc17f82e8c4af9ff58e61c185d958"
+            },
+            "require": {
+                "laravel/framework": "^10.0|^11.0",
+                "php": "^8.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Vendor\\Cms\\CmsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Vendor\\Cms\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "CMS Module for Laravel",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
             "name": "vlucas/phpdotenv",
             "version": "v5.6.2",
             "source": {
@@ -10741,7 +10775,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "vendor/cms": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

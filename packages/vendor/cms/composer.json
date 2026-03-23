@@ -1,0 +1,22 @@
+{
+    "name": "vendor/cms",
+    "description": "CMS Module for Laravel",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Vendor\\Cms\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^8.1",
+        "laravel/framework": "^10.0|^11.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Vendor\\Cms\\CmsServiceProvider"
+            ]
+        }
+    }
+}

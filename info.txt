@@ -14,3 +14,9 @@ php artisan queue:work --queue=emails
 
 # Ou pour exécuter en arrière-plan (recommandé en production)
 php artisan queue:work --queue=emails --daemon
+
+# cmds pour package cms
+composer require vendor/cms:@dev
+php artisan vendor:publish --provider="Vendor\Cms\CmsServiceProvider" --tag="cms-config"
+php artisan vendor:publish --provider="Vendor\Cms\CmsServiceProvider" --tag="cms-migrations"
+php artisan migrate --database=cms

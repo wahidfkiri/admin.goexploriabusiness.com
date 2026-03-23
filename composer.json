@@ -5,6 +5,15 @@
     "description": "The skeleton application for the Laravel framework.",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "packages/vendor/cms",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
     "require": {
         "php": "^8.2",
         "google-gemini-php/laravel": "^2.0",
@@ -21,7 +30,8 @@
         "spatie/crawler": "^8.4",
         "spatie/laravel-permission": "^6.24",
         "srmklive/paypal": "~3.0",
-        "stripe/stripe-php": "^19.4"
+        "stripe/stripe-php": "^19.4",
+        "vendor/cms": "@dev"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -55,7 +65,8 @@
             "Vendor\\Ecommerce\\": "packages/vendor/ecommerce/src",
             "Vendor\\MapMarker\\": "packages/vendor/map-marker/src",
             "Vendor\\Plugins\\": "packages/vendor/plugins/src",
-            "Vendor\\MailMarketing\\": "packages/vendor/mail-marketing/src"
+            "Vendor\\MailMarketing\\": "packages/vendor/mail-marketing/src",
+            "Vendor\\Cms\\": "packages/vendor/cms/src"
         }
     },
     "autoload-dev": {

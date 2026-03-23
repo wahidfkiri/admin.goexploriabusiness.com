@@ -27,9 +27,9 @@ Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
 Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
 Route::post('/chat/clear-history', [ChatController::class, 'clearHistory'])->name('chat.clear-history');
 // Page de login
-Route::get('/', function () {
-    return view('auth.login');
-});
+// Route::get('/', function () {
+//     return view('auth.login');
+// });
 
 // Page de login
 Route::get('/login', function () {
