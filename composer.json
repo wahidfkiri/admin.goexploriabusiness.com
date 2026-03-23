@@ -32,6 +32,7 @@
         "srmklive/paypal": "~3.0",
         "stripe/stripe-php": "^19.4",
         "vendor/cms": "@dev"
+        
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
