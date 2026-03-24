@@ -14,7 +14,7 @@
                 <a href="{{ route('cms.admin.pages.create') }}" class="btn btn-primary">
                     <i class="fas fa-plus-circle me-2"></i>Nouvelle page
                 </a>
-                <a href="{{ route('cms.admin.themes.upload') }}" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#uploadThemeModal">
+                <a href="{{ url('cms.admin.themes.upload') }}" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#uploadThemeModal">
                     <i class="fas fa-upload me-2"></i>Uploader un thème
                 </a>
             </div>
@@ -808,7 +808,7 @@
     <div class="modal fade" id="uploadThemeModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form action="{{ route('cms.admin.themes.upload') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ url('cms.admin.themes.upload') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title">Uploader un thème</h5>
