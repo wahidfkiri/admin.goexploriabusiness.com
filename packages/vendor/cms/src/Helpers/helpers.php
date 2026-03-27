@@ -254,13 +254,14 @@ if (!function_exists('theme_menu')) {
         $pages = \Vendor\Cms\Models\Page::where('etablissement_id', $etablissement->id)
             ->where('status', 'published')
             ->where('visibility', 'public')
-            ->orderBy('order', 'asc')
+            // ->orderBy('order', 'asc')
             ->orderBy('created_at', 'asc')
             ->get();
         
         $menu = [];
         
         foreach ($pages as $page) {
+            
             $menu[] = [
                 'id' => $page->id,
                 'label' => $page->title,

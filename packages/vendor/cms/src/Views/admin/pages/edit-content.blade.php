@@ -1,4 +1,4 @@
-@extends('cms::layouts.editor') {{-- Utiliser le layout editor sans header/sidebar --}}
+@extends('cms::layouts.editor')
 
 @section('title', 'Éditer le contenu : ' . $page->title)
 
@@ -45,9 +45,11 @@
             </div>
             
             <div class="cms-sidebar-blocks" id="cmsBlocksList">
-                <div class="cms-loading-blocks">
-                    <div class="cms-spinner"></div>
-                    <p>Chargement des blocs...</p>
+                <div class="cms-blocks-wrapper">
+                    <div class="cms-loading-blocks">
+                        <div class="cms-spinner"></div>
+                        <p>Chargement des blocs...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -221,6 +223,13 @@
     transition: all 0.2s ease;
 }
 
+.cms-sidebar-search input:focus {
+    outline: none;
+    border-color: #4361ee;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
 /* Categories */
 .cms-sidebar-categories {
     padding: 12px 20px;
@@ -257,11 +266,20 @@
     color: white;
 }
 
-/* Blocks List */
+/* ============================================
+   BLOCKS SECTION - Styles isolés
+   ============================================ */
 .cms-sidebar-blocks {
     flex: 1;
     overflow-y: auto;
     padding: 16px 20px;
+}
+
+.cms-blocks-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
 }
 
 .cms-loading-blocks {
@@ -284,63 +302,68 @@
     to { transform: rotate(360deg); }
 }
 
-/* Block Item */
 .cms-block-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #f8fafc;
-    border: 1px solid #eef2f6;
-    border-radius: 12px;
-    padding: 12px 16px;
-    margin-bottom: 10px;
-    cursor: grab;
-    transition: all 0.2s ease;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    background: #f8fafc !important;
+    border: 1px solid #eef2f6 !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+    cursor: grab !important;
+    transition: all 0.2s ease !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
 }
 
 .cms-block-item:hover {
-    background: #f1f5f9;
-    border-color: #4361ee;
-    transform: translateX(3px);
+    background: #f1f5f9 !important;
+    border-color: #4361ee !important;
+    transform: translateX(3px) !important;
 }
 
 .cms-block-item:active {
-    cursor: grabbing;
+    cursor: grabbing !important;
 }
 
 .cms-block-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1rem;
-    flex-shrink: 0;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: 1rem !important;
+    flex-shrink: 0 !important;
 }
 
 .cms-block-info {
-    flex: 1;
-    min-width: 0;
+    flex: 1 !important;
+    min-width: 0 !important;
 }
 
 .cms-block-name {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: #1e293b;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    color: #1e293b !important;
+    margin-bottom: 4px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 .cms-block-category {
-    font-size: 0.65rem;
-    color: #94a3b8;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    font-size: 0.65rem !important;
+    color: #94a3b8 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+.cms-block-category i {
+    font-size: 0.6rem !important;
 }
 
 .cms-empty-blocks {
@@ -587,12 +610,15 @@ function loadBlocks() {
     })
     .catch(error => {
         console.error('Error loading blocks:', error);
-        document.getElementById('cmsBlocksList').innerHTML = `
-            <div class="cms-empty-blocks">
-                <i class="fas fa-exclamation-circle"></i>
-                <p>Erreur de chargement</p>
-            </div>
-        `;
+        const wrapper = document.querySelector('#cmsBlocksList .cms-blocks-wrapper');
+        if (wrapper) {
+            wrapper.innerHTML = `
+                <div class="cms-empty-blocks">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Erreur de chargement des blocs</p>
+                </div>
+            `;
+        }
     });
 }
 
@@ -610,7 +636,7 @@ function displayCategories(categories) {
             html += `
                 <div class="cms-category-item" data-category="${cat.id}" onclick="filterByCategory('${cat.id}')">
                     <i class="fas fa-tag"></i>
-                    <span>${cat.label}</span>
+                    <span>${escapeHtml(cat.label)}</span>
                 </div>
             `;
         });
@@ -620,10 +646,12 @@ function displayCategories(categories) {
 }
 
 function displayBlocks(blocksToShow) {
-    const container = document.getElementById('cmsBlocksList');
+    const wrapper = document.querySelector('#cmsBlocksList .cms-blocks-wrapper');
+    
+    if (!wrapper) return;
     
     if (!blocksToShow || blocksToShow.length === 0) {
-        container.innerHTML = `
+        wrapper.innerHTML = `
             <div class="cms-empty-blocks">
                 <i class="fas fa-box-open"></i>
                 <p>Aucun bloc disponible</p>
@@ -653,7 +681,7 @@ function displayBlocks(blocksToShow) {
         `;
     });
     
-    container.innerHTML = html;
+    wrapper.innerHTML = html;
     
     // Ajouter les événements de drag & drop
     document.querySelectorAll('.cms-block-item').forEach(item => {
@@ -726,5 +754,4 @@ function hideLoading() {
     document.getElementById('cmsLoadingOverlay').style.display = 'none';
 }
 </script>
-
 @endsection
