@@ -5,7 +5,7 @@
                 <h5 class="modal-title">Uploader un thème</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="uploadThemeForm" enctype="multipart/form-data">
+            <form id="uploadThemeForm" enctype="multipart/form-data" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="upload-area" id="uploadArea">
@@ -209,7 +209,7 @@ document.getElementById('uploadThemeForm').addEventListener('submit', async (e) 
     showLoading();
     
     try {
-        const response = await fetch('/admin/cms/themes', {
+        const response = await fetch(`/admin/cms/${etablissementId}/themes`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,

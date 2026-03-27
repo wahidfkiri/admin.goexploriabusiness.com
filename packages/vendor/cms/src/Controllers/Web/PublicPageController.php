@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class PublicPageController extends Controller
@@ -21,33 +22,60 @@ class PublicPageController extends Controller
 
     protected $etablissement;
     protected $activeTheme;
+    protected $previewMode = false;
 
-    public function __construct(Request $request)
+    public function __construct(Request $request, $etablissementId = null)
     {
-        // Récupérer l'établissement à partir du domaine ou paramètre
-        $this->etablissement = Etablissement::first();
-        // $this->resolveEtablissement($request);
+        // Récupérer l'établissement depuis l'URL
+        if ($etablissementId) {
+            $this->etablissement = Etablissement::findOrFail($etablissementId);
+        } else {
+            // Fallback pour la compatibilité
+            $this->etablissement = $this->resolveEtablissement($request);
+        }
         
-        if ($this->etablissement) {
-            $this->activeTheme = Theme::first();
-            // where('etablissement_id', $this->etablissement->id)
-            //      ->where('is_active', true)
-            //     ->first();
-            
-            // Debug: Log du thème trouvé
-            if ($this->activeTheme) {
-                \Log::info('Theme found:', [
-                    'id' => $this->activeTheme->id,
-                    'name' => $this->activeTheme->name,
-                    'slug' => $this->activeTheme->slug,
-                    'path' => $this->activeTheme->path,
-                    'full_path' => $this->activeTheme->getFullPath(),
-                    'exists' => $this->activeTheme->exists()
-                ]);
-            }
-            
-            // Enregistrer le namespace du thème dynamiquement
-            $this->registerThemeNamespace();
+        if (!$this->etablissement) {
+            abort(404, 'Établissement non trouvé');
+        }
+        
+        // Récupérer le thème actif
+        $this->loadActiveTheme();
+        
+        // Vérifier le mode prévisualisation
+        $this->checkPreviewMode($request);
+        
+        // Enregistrer le namespace du thème
+        $this->registerThemeNamespace();
+    }
+
+    /**
+     * Charge le thème actif
+     */
+    protected function loadActiveTheme()
+    {
+        // Vérifier le mode prévisualisation
+        if ($this->previewMode && session()->has('preview_theme_id')) {
+            $this->activeTheme = Theme::where('id', session('preview_theme_id'))
+                ->where('etablissement_id', $this->etablissement->id)
+                ->first();
+        }
+        
+        // Sinon, prendre le thème actif
+        if (!$this->activeTheme) {
+            $this->activeTheme = Theme::where('etablissement_id', $this->etablissement->id)
+                ->where('is_active', true)
+                ->first();
+        }
+        
+        // Log pour débogage
+        if ($this->activeTheme) {
+            \Log::info('Theme loaded:', [
+                'id' => $this->activeTheme->id,
+                'name' => $this->activeTheme->name,
+                'slug' => $this->activeTheme->slug,
+                'etablissement_id' => $this->etablissement->id,
+                'preview_mode' => $this->previewMode
+            ]);
         }
     }
 
@@ -63,23 +91,17 @@ class PublicPageController extends Controller
         // Construire le chemin complet du thème
         $themePath = $this->getThemePath();
         
-        \Log::info('Registering theme namespace:', [
-            'path' => $themePath,
-            'exists' => $themePath && File::exists($themePath)
-        ]);
-        
         if ($themePath && File::exists($themePath)) {
             // Enregistrer le namespace "theme" pour ce thème
             View::addNamespace('theme', $themePath);
             
-            // Alternative: enregistrer un namespace spécifique par slug
+            // Enregistrer un namespace spécifique par slug
             View::addNamespace('theme_' . $this->activeTheme->slug, $themePath);
         }
     }
 
     /**
      * Récupérer le chemin complet du thème
-     * CORRIGÉ: Utiliser la nouvelle méthode getFullPath()
      */
     protected function getThemePath()
     {
@@ -100,12 +122,19 @@ class PublicPageController extends Controller
     /**
      * Affiche la page d'accueil
      */
-    public function home()
+    public function home(Request $request, $etablissementId)
     {
+        $etablissement = Etablissement::findOrFail($etablissementId);
+        $this->etablissement = $etablissement;
+        
+        // Recharger le thème pour cet établissement
+        $this->loadActiveTheme();
+        $this->registerThemeNamespace();
+        
         $homePage = null;
         
         // Vérifier si la colonne is_home existe
-        if (\Illuminate\Support\Facades\Schema::connection('cms')->hasColumn('cms_pages', 'is_home')) {
+        if (Schema::connection('cms')->hasColumn('cms_pages', 'is_home')) {
             $homePage = Page::where('etablissement_id', $this->etablissement->id)
                 ->where('is_home', true)
                 ->where('status', 'published')
@@ -130,8 +159,15 @@ class PublicPageController extends Controller
     /**
      * Affiche une page par son slug
      */
-    public function show($slug)
+    public function show(Request $request, $etablissementId, $slug)
     {
+        $etablissement = Etablissement::findOrFail($etablissementId);
+        $this->etablissement = $etablissement;
+        
+        // Recharger le thème pour cet établissement
+        $this->loadActiveTheme();
+        $this->registerThemeNamespace();
+        
         $page = Page::where('etablissement_id', $this->etablissement->id)
             ->where('slug', $slug)
             ->where('status', 'published')
@@ -145,88 +181,88 @@ class PublicPageController extends Controller
      */
     protected function renderPage($page)
     {
-        $cacheKey = "page_{$this->etablissement->id}_{$page->id}";
+        $cacheKey = $this->getCacheKey($page);
         
-        if (config('cms.cache_pages') && Cache::has($cacheKey)) {
+        if (!$this->previewMode && config('cms.cache_pages', false) && Cache::has($cacheKey)) {
             $html = Cache::get($cacheKey);
-        } else {
-            $theme = $this->activeTheme;
-            
-            if (!$theme) {
-                // Utiliser le thème par défaut
-                $theme = Theme::where('is_default', true)->first();
-            }
-            
-            // Si aucun thème n'est trouvé, afficher un contenu brut
-            if (!$theme) {
-                return $this->renderFallback($page, 'Aucun thème installé. Veuillez installer et activer un thème.');
-            }
-            
-            // Récupérer le chemin du thème
-            $themePath = $this->getThemePath();
-            
-            \Log::info('Rendering page with theme:', [
-                'theme_name' => $theme->name,
-                'theme_path' => $themePath,
-                'exists' => $themePath && File::exists($themePath),
-                'has_layout' => $themePath && File::exists($themePath . '/layout.blade.php')
-            ]);
-            
-            if (!$themePath || !File::exists($themePath)) {
-                return $this->renderFallback($page, "Le thème '{$theme->name}' est introuvable. Chemin: {$themePath}");
-            }
-            
-            // Vérifier si le fichier layout existe
-            $layoutFile = $themePath . '/layout.blade.php';
-            
-            if (!File::exists($layoutFile)) {
-                return $this->renderFallback($page, "Le fichier layout.blade.php est manquant dans le thème '{$theme->name}'");
-            }
-            
-            try {
-                $viewData = [
-                    'page' => $page,
-                    'content' => $page->content,
-                    'etablissement' => $this->etablissement,
-                    'settings' => $this->getAllSettings(),
-                    'menu' => $this->getMenu(),
-                ];
-                
-                // Méthode 1: Utiliser le namespace enregistré
-                if (View::exists('theme::layout')) {
-                    $html = view('theme::layout', $viewData)->render();
-                } 
-                // Méthode 2: Utiliser le namespace spécifique
-                elseif (View::exists('theme_' . $theme->slug . '::layout')) {
-                    $html = view('theme_' . $theme->slug . '::layout', $viewData)->render();
-                }
-                // Méthode 3: Charger directement avec file_get_contents et Blade compiler
-                else {
-                    $html = $this->loadViewDirectly($themePath, $page, $viewData);
-                }
-            } catch (\Exception $e) {
-                \Log::error('Theme rendering error: ' . $e->getMessage(), [
-                    'theme' => $theme->name,
-                    'path' => $themePath,
-                    'exception' => $e
-                ]);
-                
-                // En cas d'erreur, afficher le fallback
-                return $this->renderFallback($page, "Erreur de rendu: " . $e->getMessage());
-            }
-            
-            if (config('cms.cache_pages')) {
-                Cache::put($cacheKey, $html, now()->addMinutes(config('cms.page_cache_lifetime')));
-            }
+            return $this->buildResponse($html);
         }
         
-        return response($html);
+        $theme = $this->activeTheme;
+        
+        if (!$theme) {
+            return $this->renderFallback($page, 'Aucun thème installé. Veuillez installer et activer un thème.');
+        }
+        
+        // Récupérer le chemin du thème
+        $themePath = $this->getThemePath();
+        
+        if (!$themePath || !File::exists($themePath)) {
+            return $this->renderFallback($page, "Le thème '{$theme->name}' est introuvable.");
+        }
+        
+        // Vérifier si le fichier layout existe
+        $layoutFile = $themePath . '/layout.blade.php';
+        
+        if (!File::exists($layoutFile)) {
+            return $this->renderFallback($page, "Le fichier layout.blade.php est manquant dans le thème '{$theme->name}'");
+        }
+        
+        try {
+            $viewData = $this->prepareViewData($page, $theme);
+            
+            // Méthode 1: Utiliser le namespace enregistré
+            if (View::exists('theme::layout')) {
+                $html = view('theme::layout', $viewData)->render();
+            } 
+            // Méthode 2: Utiliser le namespace spécifique
+            elseif (View::exists('theme_' . $theme->slug . '::layout')) {
+                $html = view('theme_' . $theme->slug . '::layout', $viewData)->render();
+            }
+            // Méthode 3: Charger directement le fichier
+            else {
+                $html = $this->loadViewDirectly($themePath, $viewData);
+            }
+            
+            if (!$this->previewMode && config('cms.cache_pages', false)) {
+                Cache::put($cacheKey, $html, now()->addMinutes(config('cms.page_cache_lifetime', 60)));
+            }
+            
+            return $this->buildResponse($html);
+            
+        } catch (\Exception $e) {
+            \Log::error('Theme rendering error: ' . $e->getMessage(), [
+                'theme' => $theme->name,
+                'path' => $themePath,
+                'page_id' => $page->id,
+                'exception' => $e
+            ]);
+            
+            return $this->renderFallback($page, "Erreur de rendu: " . $e->getMessage());
+        }
     }
 
     /**
-     * Charger une vue directement depuis le fichier en utilisant le compilateur Blade
+     * Prépare les données pour la vue
      */
-    protected function loadViewDirectly($themePath, $page, $viewData)
+    protected function prepareViewData($page, $theme)
+    {
+        return [
+            'page' => $page,
+            'content' => $page->content,
+            'etablissement' => $this->etablissement,
+            'activeTheme' => $theme,
+            'settings' => $this->getAllSettings(),
+            'menu' => $this->getMenu(),
+            'previewMode' => $this->previewMode,
+            'assetBase' => url("/themes/{$this->etablissement->id}/{$theme->id}/assets"),
+        ];
+    }
+
+    /**
+     * Charger une vue directement depuis le fichier
+     */
+    protected function loadViewDirectly($themePath, $viewData)
     {
         $layoutPath = $themePath . '/layout.blade.php';
         
@@ -234,16 +270,10 @@ class PublicPageController extends Controller
             throw new \Exception("Layout file not found: {$layoutPath}");
         }
         
-        // Lire le contenu du fichier
-        $content = File::get($layoutPath);
-        
         // Créer un nom de vue temporaire unique
         $tempViewName = 'temp_theme_' . md5($themePath);
-        
-        // Stocker le contenu dans un fichier temporaire dans storage/framework/views
         $compiledPath = storage_path('framework/views/' . $tempViewName . '.blade.php');
         
-        // Copier le fichier dans le dossier des vues temporaires
         if (!File::exists(dirname($compiledPath))) {
             File::makeDirectory(dirname($compiledPath), 0755, true);
         }
@@ -251,17 +281,12 @@ class PublicPageController extends Controller
         File::copy($layoutPath, $compiledPath);
         
         try {
-            // Rendre la vue
             $html = view()->file($compiledPath, $viewData)->render();
-            
-            // Nettoyer
             if (File::exists($compiledPath)) {
                 File::delete($compiledPath);
             }
-            
             return $html;
         } catch (\Exception $e) {
-            // Nettoyer en cas d'erreur
             if (File::exists($compiledPath)) {
                 File::delete($compiledPath);
             }
@@ -274,7 +299,16 @@ class PublicPageController extends Controller
      */
     protected function renderFallback($page, $errorMessage = null)
     {
-        $html = '<!DOCTYPE html>
+        $html = $this->getFallbackHtml($page, $errorMessage);
+        return $this->buildResponse($html);
+    }
+
+    /**
+     * HTML fallback
+     */
+    protected function getFallbackHtml($page, $errorMessage = null)
+    {
+        return '<!DOCTYPE html>
         <html lang="fr">
         <head>
             <meta charset="UTF-8">
@@ -282,7 +316,7 @@ class PublicPageController extends Controller
             <title>' . e($page->title) . ' - ' . e($this->etablissement->name) . '</title>
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }
                 .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
                 .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 0; text-align: center; margin-bottom: 40px; }
                 .header h1 { font-size: 2.5rem; margin-bottom: 10px; }
@@ -304,17 +338,9 @@ class PublicPageController extends Controller
                 </div>
             </div>
             <div class="container">
-                <div class="content">';
-        
-        if ($errorMessage) {
-            $html .= '<div class="alert">
-                        <strong>⚠️ Attention:</strong> ' . e($errorMessage) . '
-                      </div>';
-        }
-        
-        $html .= '<div class="page-content">
-                    {!! $page->content !!}
-                  </div>
+                <div class="content">' .
+                ($errorMessage ? '<div class="alert"><strong>⚠️ Attention:</strong> ' . e($errorMessage) . '</div>' : '') .
+                '<div class="page-content">' . $page->content . '</div>
                 </div>
             </div>
             <div class="footer">
@@ -322,8 +348,17 @@ class PublicPageController extends Controller
             </div>
         </body>
         </html>';
-        
-        return $html;
+    }
+
+    /**
+     * Construit la réponse HTTP
+     */
+    protected function buildResponse($html)
+    {
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=utf-8',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /**
@@ -331,7 +366,7 @@ class PublicPageController extends Controller
      */
     protected function createDefaultHomePage()
     {
-        $page = Page::create([
+        return Page::create([
             'etablissement_id' => $this->etablissement->id,
             'title' => 'Accueil',
             'slug' => 'home',
@@ -348,114 +383,128 @@ class PublicPageController extends Controller
             'is_home' => true,
             'published_at' => now(),
         ]);
-        
-        return $page;
     }
 
-   /**
- * Rendu des assets du thème (CSS, JS, images)
- */
-public function asset($etablissementId, $themeId, $path)
-{
-    try {
-        // Récupérer le thème
-        $theme = Theme::where('id', $themeId)
-            ->where('etablissement_id', $etablissementId)
-            ->firstOrFail();
-        
-        // Construire le chemin complet du fichier
-        $fullPath = $theme->getFullPath();
-        
-        // Nettoyer le chemin
-        $fullPath = rtrim($fullPath, '/');
-        $path = ltrim($path, '/');
-        
-        $filePath = $fullPath . '/assets/' . $path;
-        
-        // Normaliser le chemin pour Windows
-        $filePath = str_replace('\\', '/', $filePath);
-        
-        \Log::info('Asset request:', [
-            'theme_id' => $themeId,
-            'etablissement_id' => $etablissementId,
-            'path' => $path,
-            'full_path' => $filePath,
-            'exists' => file_exists($filePath)
-        ]);
-        
-        // Vérifier si le fichier existe
-        if (!file_exists($filePath)) {
-            \Log::warning('Asset not found: ' . $filePath);
-            abort(404, 'Asset not found: ' . $path);
+    /**
+     * Rendu des assets du thème (CSS, JS, images)
+     */
+    public function asset($etablissementId, $themeId, $path)
+    {
+        try {
+            $theme = Theme::where('id', $themeId)
+                ->where('etablissement_id', $etablissementId)
+                ->firstOrFail();
+            
+            $fullPath = $theme->getFullPath();
+            $fullPath = rtrim($fullPath, '/');
+            $path = ltrim($path, '/');
+            
+            $filePath = $fullPath . '/assets/' . $path;
+            $filePath = str_replace('\\', '/', $filePath);
+            
+            if (!file_exists($filePath)) {
+                \Log::warning('Asset not found: ' . $filePath);
+                abort(404);
+            }
+            
+            $file = file_get_contents($filePath);
+            $mimeType = mime_content_type($filePath);
+            $cacheControl = app()->environment('local') ? 'no-cache' : 'public, max-age=31536000, immutable';
+            
+            return response($file, 200, [
+                'Content-Type' => $mimeType,
+                'Content-Length' => filesize($filePath),
+                'Cache-Control' => $cacheControl,
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Asset error: ' . $e->getMessage());
+            abort(404);
         }
-        
-        // Obtenir le contenu et le type MIME
-        $file = file_get_contents($filePath);
-        $mimeType = mime_content_type($filePath);
-        
-        // Déterminer le cache-control basé sur le type de fichier
-        $cacheControl = 'public, max-age=31536000'; // 1 an pour les assets statiques
-        
-        // Pour les fichiers CSS/JS, ajouter un cache plus court en développement
-        if (app()->environment('local')) {
-            $cacheControl = 'no-cache, must-revalidate';
-        }
-        
-        return response($file, 200, [
-            'Content-Type' => $mimeType,
-            'Content-Length' => filesize($filePath),
-            'Cache-Control' => $cacheControl,
-            'Accept-Ranges' => 'bytes',
-        ]);
-        
-    } catch (\Exception $e) {
-        \Log::error('Asset error: ' . $e->getMessage(), [
-            'theme_id' => $themeId,
-            'etablissement_id' => $etablissementId,
-            'path' => $path
-        ]);
-        abort(404, 'Asset not found');
     }
-}
 
     /**
      * Page fallback pour les routes non trouvées
      */
-    public function fallback()
+    public function fallback(Request $request, $etablissementId = null)
     {
-        $page404 = Page::where('etablissement_id', $this->etablissement->id)
-            ->where('slug', '404')
-            ->where('status', 'published')
-            ->first();
-        
-        if ($page404) {
-            return $this->renderPage($page404);
+        if ($etablissementId) {
+            $etablissement = Etablissement::find($etablissementId);
+            if ($etablissement) {
+                $this->etablissement = $etablissement;
+                
+                $page404 = Page::where('etablissement_id', $this->etablissement->id)
+                    ->where('slug', '404')
+                    ->where('status', 'published')
+                    ->first();
+                
+                if ($page404) {
+                    return $this->renderPage($page404);
+                }
+            }
         }
         
         abort(404);
     }
 
     /**
-     * Résoudre l'établissement à partir du domaine ou paramètre
+     * Vérifie le mode prévisualisation
+     */
+    protected function checkPreviewMode(Request $request)
+    {
+        if ($request->has('preview_theme')) {
+            $this->previewMode = true;
+            session(['preview_theme_id' => $request->preview_theme]);
+        }
+        
+        if ($request->has('preview') && $request->preview == 'true') {
+            $this->previewMode = true;
+        }
+        
+        if (session()->has('preview_theme_id')) {
+            $this->previewMode = true;
+        }
+        
+        if (session()->has('page_preview')) {
+            $this->previewMode = true;
+        }
+    }
+
+    /**
+     * Récupère la clé de cache
+     */
+    protected function getCacheKey($page)
+    {
+        $key = "page_{$this->etablissement->id}_{$page->id}";
+        
+        if ($this->previewMode) {
+            $key .= '_preview';
+        }
+        
+        return $key;
+    }
+
+    /**
+     * Résoudre l'établissement
      */
     protected function resolveEtablissement($request)
     {
-        // Option 1: Par sous-domaine
+        // Par sous-domaine
         $host = $request->getHost();
         $subdomain = explode('.', $host)[0];
         
-        $etablissement = Etablissement::first();
+        // $etablissement = Etablissement::where('subdomain', $subdomain)->first();
         
-        if ($etablissement) {
-            return $etablissement;
-        }
+        // if ($etablissement) {
+        //     return $etablissement;
+        // }
         
-        // Option 2: Par paramètre dans l'URL
-        if ($request->has('etablissement')) {
-            return Etablissement::where('slug', $request->etablissement)->first();
-        }
+        // Par paramètre
+        // if ($request->has('etablissement')) {
+        //     return Etablissement::where('slug', $request->etablissement)->first();
+        // }
         
-        // Option 3: Établissement par défaut
+        // Établissement par défaut
         return Etablissement::first();
     }
 
@@ -482,6 +531,16 @@ public function asset($etablissementId, $themeId, $path)
             ->where('key', 'main_menu')
             ->first();
         
-        return $menuItems ? $menuItems->value : [];
+        if ($menuItems) {
+            return $menuItems->value;
+        }
+        
+        // Menu par défaut
+        return [
+            ['label' => 'Accueil', 'url' => '/company/' . $this->etablissement->id, 'active' => false],
+            ['label' => 'À propos', 'url' => '/company/' . $this->etablissement->id . '/page/about', 'active' => false],
+            ['label' => 'Services', 'url' => '/company/' . $this->etablissement->id . '/page/services', 'active' => false],
+            ['label' => 'Contact', 'url' => '/company/' . $this->etablissement->id . '/page/contact', 'active' => false],
+        ];
     }
 }

@@ -6,7 +6,10 @@
     "autoload": {
         "psr-4": {
             "Vendor\\Cms\\": "src/"
-        }
+        },
+         "files": [
+            "src/Helpers/helpers.php"
+        ]
     },
     "require": {
         "php": "^8.1",

@@ -54,11 +54,6 @@
             <span class="submenu-text">liste des établissements</span>
           </a>
         </li>
-        <li>
-          <a href="{{ route('continents.index') }}" class="submenu-item">
-            <span class="submenu-text">rendez vous</span>
-          </a>
-        </li>
       </ul>
     </li>
     <li class="has-submenu">

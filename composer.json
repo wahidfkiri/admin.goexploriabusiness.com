@@ -68,7 +68,10 @@
             "Vendor\\Plugins\\": "packages/vendor/plugins/src",
             "Vendor\\MailMarketing\\": "packages/vendor/mail-marketing/src",
             "Vendor\\Cms\\": "packages/vendor/cms/src"
-        }
+        },
+        "files": [
+            "packages/vendor/cms/src/Helpers/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

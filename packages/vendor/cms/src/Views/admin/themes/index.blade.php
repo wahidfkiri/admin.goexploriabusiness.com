@@ -7,7 +7,7 @@
         <div>
             <h1 class="page-title">
                 <span class="page-title-icon"><i class="fas fa-palette"></i></span>
-                Gestion des thèmes
+                Gestion des thèmes - {{ $etablissement->name }}
             </h1>
             <p class="page-description">Personnalisez l'apparence de votre site</p>
         </div>
@@ -16,6 +16,9 @@
             <button class="btn btn-primary" onclick="showUploadModal()">
                 <i class="fas fa-upload me-2"></i>Uploader un thème
             </button>
+            <a href="{{ route('cms.admin.dashboard', ['etablissementId' => $etablissement->id]) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Retour au tableau de bord
+            </a>
         </div>
     </div>
     
@@ -56,7 +59,7 @@
     <div class="themes-container-modern">
         <div class="themes-grid" id="themesGrid">
             @foreach($themes as $theme)
-                @include('cms::admin.themes.partials.theme-card', ['theme' => $theme, 'activeTheme' => $activeTheme])
+                @include('cms::admin.themes.partials.theme-card', ['theme' => $theme, 'activeTheme' => $activeTheme, 'etablissement' => $etablissement])
             @endforeach
         </div>
         
@@ -83,7 +86,7 @@
 </div>
 
 <!-- Upload Modal -->
-@include('cms::admin.themes.partials.upload-modal')
+@include('cms::admin.themes.partials.upload-modal', ['etablissement' => $etablissement])
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteThemeModal" tabindex="-1">
@@ -276,12 +279,14 @@
     }
 }
 </style>
+
 <script>
 // ============================================
 // VARIABLES GLOBALES
 // ============================================
 let currentDeleteThemeId = null;
 let currentThemeId = null;
+const etablissementId = {{ $etablissement->id }};
 
 // ============================================
 // MODAL FUNCTIONS
@@ -332,7 +337,7 @@ function createUploadModal() {
                         <h5 class="modal-title">Uploader un thème</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <form id="uploadThemeForm" enctype="multipart/form-data">
+                    <form id="uploadThemeForm" enctype="multipart/form-data"  method="POST">
                         @csrf
                         <div class="modal-body">
                             <div class="upload-area" id="uploadArea">
@@ -492,7 +497,7 @@ async function handleUploadSubmit(e) {
     showLoading();
     
     try {
-        const response = await fetch('/admin/cms/themes', {
+        const response = await fetch(`/admin/cms/${etablissementId}/themes/store`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -543,7 +548,7 @@ async function handleUploadSubmit(e) {
 function previewTheme(themeId) {
     showLoading();
     
-    const previewUrl = `/admin/cms/themes/${themeId}/preview`;
+    const previewUrl = `/admin/cms/${etablissementId}/themes/${themeId}/preview`;
     window.open(previewUrl, '_blank');
     
     setTimeout(() => {
@@ -559,7 +564,7 @@ function activateTheme(themeId, button) {
     
     showLoading();
     
-    fetch(`/admin/cms/themes/${themeId}/activate`, {
+    fetch(`/admin/cms/${etablissementId}/themes/${themeId}/activate`, {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -624,7 +629,7 @@ function deactivateTheme(themeId, button) {
     
     showLoading();
     
-    fetch(`/admin/cms/themes/${themeId}/deactivate`, {
+    fetch(`/admin/cms/${etablissementId}/themes/${themeId}/deactivate`, {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -685,7 +690,7 @@ function confirmDeleteTheme() {
     
     showLoading();
     
-    fetch(`/admin/cms/themes/${currentDeleteThemeId}`, {
+    fetch(`/admin/cms/${etablissementId}/themes/${currentDeleteThemeId}`, {
         method: 'DELETE',
         headers: {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -732,7 +737,7 @@ function confirmDeleteTheme() {
 function editTheme(themeId) {
     showLoading();
     
-    fetch(`/admin/cms/themes/${themeId}/edit`, {
+    fetch(`/admin/cms/${etablissementId}/themes/${themeId}/edit`, {
         method: 'GET',
         headers: {
             'Accept': 'application/json'
@@ -838,7 +843,7 @@ async function handleEditSubmit(e) {
     showLoading();
     
     try {
-        const response = await fetch(`/admin/cms/themes/${themeId}`, {
+        const response = await fetch(`/admin/cms/${etablissementId}/themes/${themeId}`, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -954,14 +959,6 @@ function updateStats() {
     const activeTheme = document.querySelector('.theme-card.active-theme');
     const activeCount = activeTheme ? 1 : 0;
     const availableCount = totalThemes - activeCount;
-    
-    const totalElement = document.querySelector('.stat-value');
-    if (totalElement) {
-        const parent = totalElement.closest('.stat-card');
-        if (parent && parent.querySelector('.stat-label').textContent === 'Thèmes installés') {
-            totalElement.textContent = totalThemes;
-        }
-    }
     
     // Update stats in the DOM
     const statsValues = document.querySelectorAll('.stat-value');

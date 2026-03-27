@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Vendor\Cms\Models\Traits\HasSettings; // Import du trait CMS
+use Vendor\Cms\Models\Traits\HasSettings; 
 
 class Etablissement extends Model
 {
@@ -290,5 +290,63 @@ class Etablissement extends Model
             'description' => $this->getSetting('seo_description', $this->lname ?? ''),
             'keywords' => $this->getSetting('seo_keywords', ''),
         ];
+    }
+
+     /**
+     * Relation avec les thèmes (many-to-many)
+     */
+    public function themes()
+    {
+        return $this->belongsToMany(\Vendor\Cms\Models\Theme::class, 'cms_etablissement_theme', 'etablissement_id', 'theme_id')
+            ->withPivot('is_active', 'config')
+            ->withTimestamps();
+    }
+
+    /**
+     * Récupère le thème actif de l'établissement
+     */
+    public function activeTheme()
+    {
+        return $this->belongsToMany(\Vendor\Cms\Models\Theme::class, 'cms_etablissement_theme', 'etablissement_id', 'theme_id')
+            ->wherePivot('is_active', true)
+            ->first();
+    }
+
+    /**
+     * Active un thème pour cet établissement
+     */
+    public function activateTheme($themeId): bool
+    {
+        // Désactiver tous les thèmes
+        $this->themes()->newPivotStatement()
+            ->where('etablissement_id', $this->id)
+            ->update(['is_active' => false]);
+        
+        // Activer le thème sélectionné
+        $this->themes()->syncWithoutDetaching([
+            $themeId => ['is_active' => true]
+        ]);
+        
+        return true;
+    }
+
+    /**
+     * Récupère la configuration du thème actif
+     */
+    public function getActiveThemeConfig($key = null, $default = null)
+    {
+        $activeTheme = $this->activeTheme();
+        
+        if (!$activeTheme) {
+            return $default;
+        }
+        
+        $config = $activeTheme->pivot->config ?? [];
+        
+        if ($key === null) {
+            return $config;
+        }
+        
+        return $config[$key] ?? $default;
     }
 }

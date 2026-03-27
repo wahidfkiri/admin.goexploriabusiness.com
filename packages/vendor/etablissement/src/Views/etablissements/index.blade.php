@@ -392,7 +392,7 @@
                                class="action-btn-modern view-btn-modern" title="Visiter le site" ${!etablissement.website ? 'style="opacity:0.5; pointer-events:none;"' : ''}>
                                 <i class="fas fa-globe"></i>
                             </a>
-                            <a href="{{ route('etablissements.show', '') }}/${etablissement.id}" 
+                            <a href="{{ url('admin/cms') }}/${etablissement.id}/dashboard" 
                                class="action-btn-modern view-btn-modern" title="Voir détails">
                                 <i class="fas fa-eye"></i>
                             </a>

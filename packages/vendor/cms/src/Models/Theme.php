@@ -17,13 +17,11 @@ class Theme extends Model
     protected $table = 'cms_themes';
 
     protected $fillable = [
-        'etablissement_id',
         'name',
         'slug',
         'path',
         'preview_image',
         'config',
-        'is_active',
         'is_default',
         'version',
         'description',
@@ -31,7 +29,6 @@ class Theme extends Model
 
     protected $casts = [
         'config' => 'array',
-        'is_active' => 'boolean',
         'is_default' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -39,93 +36,78 @@ class Theme extends Model
     ];
 
     /**
-     * Get the etablissement that owns the theme.
+     * Relation avec les établissements (many-to-many)
      */
-    public function etablissement()
+    public function etablissements()
     {
-        return $this->belongsTo(Etablissement::class, 'etablissement_id');
+        return $this->belongsToMany(Etablissement::class, 'cms_etablissement_theme', 'theme_id', 'etablissement_id')
+            ->withPivot('is_active', 'config')
+            ->withTimestamps();
     }
 
     /**
-     * Get the full path to the theme directory.
-     * CORRIGÉ: Ne plus utiliser cette méthode comme attribut
+     * Récupère les établissements où ce thème est actif
      */
-    public function getFullPathAttribute()
+    public function activeEtablissements()
     {
-        return $this->getFullPath();
-    }
-    
-    /**
- * Get the full path to the theme directory.
- */
-public function getFullPath()
-{
-    $path = $this->path;
-    
-    // Si le chemin est déjà absolu
-    if (strpos($path, storage_path()) === 0) {
-        return rtrim($path, '/');
-    }
-    
-    // Si le chemin commence par 'app/'
-    if (str_starts_with($path, 'app/')) {
-        return rtrim(storage_path($path), '/');
-    }
-    
-    // Si le chemin commence par '/'
-    if (str_starts_with($path, '/')) {
-        return rtrim($path, '/');
-    }
-    
-    // Sinon, supposer que c'est relatif à storage/app
-    return rtrim(storage_path('app/' . $path), '/');
-}
-
-    /**
-     * Scope for active themes.
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
+        return $this->etablissements()->wherePivot('is_active', true);
     }
 
     /**
-     * Activate this theme.
+     * Vérifie si le thème est actif pour un établissement donné
      */
-    public function activate(): bool
+    public function isActiveForEtablissement($etablissementId): bool
     {
-        // Deactivate all other themes for this etablissement
-        self::where('etablissement_id', $this->etablissement_id)
-            ->where('id', '!=', $this->id)
+        return $this->etablissements()
+            ->where('etablissement_id', $etablissementId)
+            ->wherePivot('is_active', true)
+            ->exists();
+    }
+
+    /**
+     * Active le thème pour un établissement
+     */
+    public function activateForEtablissement($etablissementId): bool
+    {
+        // Désactiver tous les autres thèmes pour cet établissement
+        $this->etablissements()->newPivotStatement()
+            ->where('etablissement_id', $etablissementId)
             ->update(['is_active' => false]);
         
-        $this->is_active = true;
-        return $this->save();
+        // Activer ce thème
+        $this->etablissements()->syncWithoutDetaching([
+            $etablissementId => ['is_active' => true]
+        ]);
+        
+        return true;
     }
 
     /**
-     * Deactivate this theme.
+     * Désactive le thème pour un établissement
      */
-    public function deactivate(): bool
+    public function deactivateForEtablissement($etablissementId): bool
     {
-        $this->is_active = false;
-        return $this->save();
+        $this->etablissements()->updateExistingPivot($etablissementId, [
+            'is_active' => false
+        ]);
+        
+        return true;
     }
 
     /**
-     * Check if theme is active.
+     * Récupère la configuration du thème pour un établissement
      */
-    public function isActive(): bool
+    public function getConfigForEtablissement($etablissementId, $key = null, $default = null)
     {
-        return (bool) $this->is_active;
-    }
-
-    /**
-     * Get theme configuration.
-     */
-    public function getConfig($key = null, $default = null)
-    {
-        $config = $this->config ?? [];
+        $pivot = $this->etablissements()
+            ->where('etablissement_id', $etablissementId)
+            ->first();
+        
+        if (!$pivot || !$pivot->pivot->config) {
+            return $default;
+        }
+        
+        $config = $pivot->pivot->config;
         
         if ($key === null) {
             return $config;
@@ -135,14 +117,43 @@ public function getFullPath()
     }
 
     /**
-     * Set theme configuration.
+     * Définit la configuration du thème pour un établissement
      */
-    public function setConfig($key, $value): bool
+    public function setConfigForEtablissement($etablissementId, $key, $value): bool
     {
-        $config = $this->config ?? [];
-        $config[$key] = $value;
-        $this->config = $config;
-        return $this->save();
+        $currentConfig = $this->getConfigForEtablissement($etablissementId) ?: [];
+        $currentConfig[$key] = $value;
+        
+        $this->etablissements()->updateExistingPivot($etablissementId, [
+            'config' => $currentConfig
+        ]);
+        
+        return true;
+    }
+
+    /**
+     * Get the full path to the theme directory.
+     */
+    public function getFullPath(): string
+    {
+        // Chemin: storage/app/public/cms/themes/{slug}/
+        return storage_path("app/public/cms/themes/{$this->slug}");
+    }
+
+    /**
+     * Get the URL for theme assets.
+     */
+    public function getAssetUrl($path = ''): string
+    {
+        return url("/storage/cms/themes/{$this->slug}/assets/" . ltrim($path, '/'));
+    }
+
+    /**
+     * Scope for themes that are default.
+     */
+    public function scopeDefault($query)
+    {
+        return $query->where('is_default', true);
     }
 
     /**

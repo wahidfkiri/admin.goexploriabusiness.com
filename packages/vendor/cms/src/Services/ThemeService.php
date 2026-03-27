@@ -11,12 +11,13 @@ use ZipArchive;
 class ThemeService
 {
     /**
-     * Upload and extract a theme.
+     * Upload and extract a theme (sans etablissement_id).
      */
-    public function uploadTheme($file, $name, $etablissementId): Theme
+    public function uploadTheme($file, $name): Theme
     {
         $slug = Str::slug($name);
-        $themePath = "app/public/cms/themes/{$etablissementId}/{$slug}";
+        // Nouveau chemin: storage/app/public/cms/themes/{slug}/
+        $themePath = "app/public/cms/themes/{$slug}";
         
         // Create directory
         $fullPath = storage_path($themePath);
@@ -43,33 +44,100 @@ class ThemeService
         // Validate theme structure
         $this->validateThemeStructure($fullPath);
         
-        // Check if theme already exists
-        $existingTheme = Theme::where('etablissement_id', $etablissementId)
-            ->where('slug', $slug)
-            ->first();
+        // Extract preview image from zip root
+        $previewImage = $this->extractPreviewImage($zipPath, $fullPath, $slug);
+        
+        // Check if theme already exists globally
+        $existingTheme = Theme::where('slug', $slug)->first();
             
         if ($existingTheme) {
             throw new \Exception('Un thème avec ce nom existe déjà');
         }
         
-        // Create theme record
+        // Create theme record (sans etablissement_id)
         $theme = Theme::create([
-            'etablissement_id' => $etablissementId,
             'name' => $name,
             'slug' => $slug,
             'path' => $themePath,
+            'preview_image' => $previewImage,
             'version' => $this->getThemeVersion($fullPath),
             'description' => $this->getThemeDescription($fullPath),
-            'is_active' => false,
-            'is_default' => Theme::where('etablissement_id', $etablissementId)->count() === 0,
+            'is_default' => Theme::count() === 0, // Premier thème créé = thème par défaut
         ]);
         
-        // If this is the first theme, activate it
-        if ($theme->is_default) {
-            $this->activateTheme($theme);
+        return $theme;
+    }
+    
+    /**
+     * Extract preview image from zip root.
+     */
+    protected function extractPreviewImage($zipPath, $extractPath, $slug): ?string
+    {
+        $zip = new ZipArchive();
+        $previewImagePath = null;
+        
+        // Extensions d'images acceptées
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+        
+        if ($zip->open($zipPath) === true) {
+            // Chercher les images à la racine du ZIP
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $filename = $zip->getNameIndex($i);
+                
+                // Vérifier si le fichier est à la racine (pas de slash ou seulement un dossier)
+                $isRootFile = !str_contains($filename, '/') || substr_count($filename, '/') === 1;
+                
+                if ($isRootFile) {
+                    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                    $basename = strtolower(pathinfo($filename, PATHINFO_FILENAME));
+                    
+                    // Vérifier si c'est une image avec un nom de prévisualisation
+                    if (in_array($extension, $imageExtensions)) {
+                        // Noms de fichier acceptés pour la prévisualisation
+                        $previewNames = ['screenshot', 'preview', 'thumbnail', 'cover', 'theme-preview', 'theme'];
+                        
+                        if (in_array($basename, $previewNames)) {
+                            // Extraire l'image
+                            $imageContent = $zip->getFromName($filename);
+                            $previewImageName = "themes/{$slug}/preview.{$extension}";
+                            $storagePath = Storage::disk('public')->put($previewImageName, $imageContent);
+                            
+                            if ($storagePath) {
+                                $previewImagePath = $previewImageName;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Si aucune image de preview trouvée, chercher la première image à la racine
+            if (!$previewImagePath) {
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $filename = $zip->getNameIndex($i);
+                    $isRootFile = !str_contains($filename, '/') || substr_count($filename, '/') === 1;
+                    
+                    if ($isRootFile) {
+                        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                        
+                        if (in_array($extension, $imageExtensions)) {
+                            $imageContent = $zip->getFromName($filename);
+                            $previewImageName = "themes/{$slug}/preview.{$extension}";
+                            $storagePath = Storage::disk('public')->put($previewImageName, $imageContent);
+                            
+                            if ($storagePath) {
+                                $previewImagePath = $previewImageName;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            $zip->close();
         }
         
-        return $theme;
+        return $previewImagePath;
     }
     
     /**
@@ -122,47 +190,47 @@ class ThemeService
     }
     
     /**
-     * Activate a theme.
+     * Activate a theme for a specific etablissement (via relation).
      */
-    public function activateTheme(Theme $theme): void
+    public function activateThemeForEtablissement(Theme $theme, $etablissementId): void
     {
-        // Deactivate all other themes for this etablissement
-        Theme::where('etablissement_id', $theme->etablissement_id)
-            ->where('id', '!=', $theme->id)
-            ->update(['is_active' => false]);
-            
-        $theme->is_active = true;
-        $theme->save();
+        $etablissement = \App\Models\Etablissement::findOrFail($etablissementId);
+        
+        // Désactiver tous les thèmes de l'établissement
+        $etablissement->themes()->updateExistingPivot(
+            $etablissement->themes()->pluck('id')->toArray(),
+            ['is_active' => false]
+        );
+        
+        // Activer le thème sélectionné
+        $etablissement->themes()->updateExistingPivot($theme->id, [
+            'is_active' => true
+        ]);
         
         // Clear theme cache
-        $this->clearThemeCache($theme->etablissement_id);
+        $this->clearThemeCache($etablissementId);
     }
     
     /**
-     * Deactivate a theme.
+     * Deactivate a theme for a specific etablissement.
      */
-    public function deactivateTheme(Theme $theme): void
+    public function deactivateThemeForEtablissement(Theme $theme, $etablissementId): void
     {
-        $theme->is_active = false;
-        $theme->save();
+        $etablissement = \App\Models\Etablissement::findOrFail($etablissementId);
+        
+        $etablissement->themes()->updateExistingPivot($theme->id, [
+            'is_active' => false
+        ]);
         
         // Clear theme cache
-        $this->clearThemeCache($theme->etablissement_id);
+        $this->clearThemeCache($etablissementId);
     }
     
     /**
-     * Delete a theme.
+     * Delete theme files only (not database record).
      */
-    public function deleteTheme(Theme $theme): void
+    public function deleteThemeFiles(Theme $theme): void
     {
-        // Prevent deletion if it's the only theme
-        $themeCount = Theme::where('etablissement_id', $theme->etablissement_id)->count();
-        
-        if ($themeCount <= 1) {
-            throw new \Exception('Vous ne pouvez pas supprimer le dernier thème');
-        }
-        
-        // Delete physical files
         $fullPath = storage_path($theme->path);
         
         if (file_exists($fullPath)) {
@@ -173,20 +241,24 @@ class ThemeService
         if ($theme->preview_image && Storage::disk('public')->exists($theme->preview_image)) {
             Storage::disk('public')->delete($theme->preview_image);
         }
+    }
+    
+    /**
+     * Delete a theme completely (files + database).
+     */
+    public function deleteTheme(Theme $theme): void
+    {
+        // Delete physical files
+        $this->deleteThemeFiles($theme);
         
+        // Delete the theme record
         $theme->delete();
         
-        // If the deleted theme was active, activate another one
-        if ($theme->is_active) {
-            $newActiveTheme = Theme::where('etablissement_id', $theme->etablissement_id)->first();
-            
-            if ($newActiveTheme) {
-                $this->activateTheme($newActiveTheme);
-            }
+        // Clear cache for all etablissements that used this theme
+        $etablissementIds = $theme->etablissements()->pluck('etablissement_id')->toArray();
+        foreach ($etablissementIds as $etablissementId) {
+            $this->clearThemeCache($etablissementId);
         }
-        
-        // Clear theme cache
-        $this->clearThemeCache($theme->etablissement_id);
     }
     
     /**
@@ -270,7 +342,7 @@ class ThemeService
     public function duplicateTheme(Theme $theme, string $newName): Theme
     {
         $newSlug = Str::slug($newName);
-        $newPath = "app/cms/themes/{$theme->etablissement_id}/{$newSlug}";
+        $newPath = "app/public/cms/themes/{$newSlug}";
         
         // Copy files
         $sourcePath = storage_path($theme->path);
@@ -283,16 +355,25 @@ class ThemeService
         
         // Create new theme record
         $newTheme = Theme::create([
-            'etablissement_id' => $theme->etablissement_id,
             'name' => $newName,
             'slug' => $newSlug,
             'path' => $newPath,
             'version' => $theme->version,
             'description' => $theme->description,
             'config' => $theme->config,
-            'is_active' => false,
             'is_default' => false,
         ]);
+        
+        // Copy preview image if exists
+        if ($theme->preview_image) {
+            $oldPreviewPath = $theme->preview_image;
+            $newPreviewPath = "themes/{$newSlug}/preview." . pathinfo($oldPreviewPath, PATHINFO_EXTENSION);
+            
+            if (Storage::disk('public')->exists($oldPreviewPath)) {
+                Storage::disk('public')->copy($oldPreviewPath, $newPreviewPath);
+                $newTheme->update(['preview_image' => $newPreviewPath]);
+            }
+        }
         
         return $newTheme;
     }
@@ -317,5 +398,65 @@ class ThemeService
         }
         
         closedir($dir);
+    }
+    
+    /**
+     * Get all themes available for an etablissement.
+     */
+    public function getAvailableThemesForEtablissement($etablissementId): \Illuminate\Support\Collection
+    {
+        $etablissement = \App\Models\Etablissement::findOrFail($etablissementId);
+        
+        // Thèmes déjà liés
+        $linkedThemeIds = $etablissement->themes()->pluck('theme_id')->toArray();
+        
+        // Tous les thèmes
+        $allThemes = Theme::all();
+        
+        // Séparer les thèmes liés et non liés
+        $linkedThemes = $allThemes->filter(function($theme) use ($linkedThemeIds) {
+            return in_array($theme->id, $linkedThemeIds);
+        });
+        
+        $availableThemes = $allThemes->filter(function($theme) use ($linkedThemeIds) {
+            return !in_array($theme->id, $linkedThemeIds);
+        });
+        
+        return collect([
+            'linked' => $linkedThemes,
+            'available' => $availableThemes
+        ]);
+    }
+    
+    /**
+     * Attach an existing theme to an etablissement.
+     */
+    public function attachThemeToEtablissement($themeId, $etablissementId, $isActive = false): void
+    {
+        $etablissement = \App\Models\Etablissement::findOrFail($etablissementId);
+        $theme = Theme::findOrFail($themeId);
+        
+        // Vérifier si déjà attaché
+        if ($etablissement->themes()->where('theme_id', $themeId)->exists()) {
+            throw new \Exception('Ce thème est déjà associé à cet établissement');
+        }
+        
+        $etablissement->themes()->attach($themeId, [
+            'is_active' => $isActive,
+            'config' => null,
+        ]);
+    }
+    
+    /**
+     * Detach a theme from an etablissement.
+     */
+    public function detachThemeFromEtablissement($themeId, $etablissementId): void
+    {
+        $etablissement = \App\Models\Etablissement::findOrFail($etablissementId);
+        
+        $etablissement->themes()->detach($themeId);
+        
+        // Clear cache
+        $this->clearThemeCache($etablissementId);
     }
 }

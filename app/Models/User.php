@@ -437,6 +437,11 @@ public function activitielog(): HasMany
         
         return $points;
     }
+    
 
+    public function is_admin(): bool
+    {
+        return $this->hasAnyRole(['admin', 'super_admin']);
+    }
     
 }
