@@ -109,15 +109,17 @@ if (!function_exists('getThemeStoragePath')) {
      * Get the full storage path for a theme.
      *
      * @param \Vendor\Cms\Models\Theme $theme
+     * @param int|null $etablissementId
      * @return string
      */
-    function getThemeStoragePath($theme)
+    function getThemeStoragePath($theme, $etablissementId = null)
     {
-        // Nouveau chemin: storage/app/public/cms/themes/{slug}/
-        return storage_path("app/public/cms/themes/{$theme->slug}");
+        $etablissementId = $etablissementId ?: getCurrentEtablissementId();
+        
+        // Nouveau chemin: storage/app/public/cms/themes/{etablissementId}/{slug}/
+        return storage_path("app/public/cms/themes/{$etablissementId}/{$theme->slug}");
     }
 }
-
 if (!function_exists('theme_asset')) {
     /**
      * Get the URL for a theme asset.
@@ -127,14 +129,15 @@ if (!function_exists('theme_asset')) {
      */
     function theme_asset($path)
     {
+        $etablissement = getCurrentEtablissement();
         $theme = getCurrentTheme();
         
-        if (!$theme) {
+        if (!$etablissement || !$theme) {
             return asset($path);
         }
         
-        // Nouvelle URL: /storage/cms/themes/{slug}/assets/{path}
-        return url("/storage/cms/themes/{$theme->slug}/assets/" . ltrim($path, '/'));
+        // Nouvelle URL: /storage/cms/themes/{etablissementId}/{slug}/assets/{path}
+        return url("/storage/cms/themes/{$etablissement->id}/{$theme->slug}/assets/" . ltrim($path, '/'));
     }
 }
 
@@ -147,13 +150,15 @@ if (!function_exists('theme_path')) {
      */
     function theme_path($path = '')
     {
+        $etablissement = getCurrentEtablissement();
         $theme = getCurrentTheme();
         
-        if (!$theme) {
+        if (!$etablissement || !$theme) {
             return storage_path('app/public/cms/themes/default/' . ltrim($path, '/'));
         }
         
-        return storage_path("app/public/cms/themes/{$theme->slug}/" . ltrim($path, '/'));
+        // Nouveau chemin: storage/app/public/cms/themes/{etablissementId}/{slug}/
+        return storage_path("app/public/cms/themes/{$etablissement->id}/{$theme->slug}/" . ltrim($path, '/'));
     }
 }
 
@@ -167,28 +172,20 @@ if (!function_exists('render_theme_view')) {
      */
     function render_theme_view($view, $data = [])
     {
-        // Récupérer l'établissement depuis l'URL
         $etablissement = getCurrentEtablissement();
-        
-        if (!$etablissement) {
-            return view($view, $data);
-        }
-        
-        // Récupérer le thème actif
         $theme = getCurrentTheme();
         
-        if (!$theme) {
+        if (!$etablissement || !$theme) {
             return view($view, $data);
         }
         
-        $themePath = storage_path("app/public/cms/themes/{$theme->slug}");
+        $themePath = storage_path("app/public/cms/themes/{$etablissement->id}/{$theme->slug}");
         $viewPath = str_replace('.', '/', $view);
         
         if (!file_exists($themePath . '/' . $viewPath . '.blade.php')) {
             return view($view, $data);
         }
         
-        // Ajouter un namespace temporaire
         $namespace = 'theme_' . $theme->slug;
         \Illuminate\Support\Facades\View::addNamespace($namespace, $themePath);
         
@@ -443,4 +440,23 @@ if (!function_exists('get_theme_by_slug')) {
     {
         return \Vendor\Cms\Models\Theme::where('slug', $slug)->first();
     }
+
+    if (!function_exists('theme_view')) {
+    /**
+     * Get the full view name for a theme view.
+     *
+     * @param string $view
+     * @return string
+     */
+    function theme_view($view)
+    {
+        $theme = getCurrentTheme();
+        
+        if (!$theme) {
+            return $view;
+        }
+        
+        return 'theme_' . $theme->slug . '::' . $view;
+    }
+}
 }

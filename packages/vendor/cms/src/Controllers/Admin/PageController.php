@@ -934,30 +934,96 @@ public function editContent(Request $request, $etablissementId, $id)
 /**
  * Update page content only.
  */
-public function updateContent(Request $request, $etablissementId, $id): JsonResponse
+public function updatePageContent(Request $request, $id): JsonResponse
 {
     try {
-        $etablissement = Etablissement::findOrFail($etablissementId);
+        $page = Page::where('id', $id)->firstOrFail();
         
-        $page = Page::where('id', $id)
-            ->where('etablissement_id', $etablissement->id)
-            ->firstOrFail();
+        $validated = $request->validate([
+            'content' => 'nullable|string',
+            'html_content' => 'nullable|string',
+            'css_content' => 'nullable|string'
+        ]);
         
-        $content = $request->input('content');
+       
+        
+        // Sauvegarder le contenu
+        $content = $validated['content'] ?? (
+            !empty($validated['css_content']) 
+                ? '<style>' . $validated['css_content'] . '</style>' . $validated['html_content']
+                : ($validated['html_content'] ?? '')
+        );
+        
         $page->content = $content;
+        
+        
         $page->save();
         
         return response()->json([
             'success' => true,
-            'message' => 'Contenu sauvegardé avec succès'
+            'message' => 'Page mise à jour avec succès',
+            'data' => $page
         ]);
         
     } catch (\Exception $e) {
-        Log::error('Page content update error: ' . $e->getMessage());
+        \Log::error('Page update error: ' . $e->getMessage());
         
         return response()->json([
             'success' => false,
-            'message' => 'Erreur lors de la sauvegarde: ' . $e->getMessage()
+            'message' => 'Erreur lors de la mise à jour: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function loadPageContent(Request $request, $id): JsonResponse
+{
+    try {
+        $page = Page::where('id', $id)->firstOrFail();
+        
+        // Déterminer si le contenu est du HTML ou du JSON
+        $content = $page->content;
+        $htmlContent = '';
+        $cssContent = '';
+        
+        // Si le contenu est déjà au format HTML/CSS
+        if (is_string($content)) {
+            // Essayer d'extraire le CSS s'il existe dans des balises style
+            if (preg_match('/<style>(.*?)<\/style>/s', $content, $matches)) {
+                $cssContent = $matches[1];
+                $htmlContent = preg_replace('/<style>.*?<\/style>/s', '', $content);
+            } else {
+                $htmlContent = $content;
+            }
+        } 
+        // Si le contenu est un objet JSON
+        elseif (is_array($content) || is_object($content)) {
+            $htmlContent = $content->html ?? $content['html'] ?? '';
+            $cssContent = $content->css ?? $content['css'] ?? '';
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $page->id,
+                'title' => $page->title,
+                'slug' => $page->slug,
+                'html_content' => $htmlContent,
+                'css_content' => $cssContent,
+                'content' => $page->content,
+                'status' => $page->status,
+                'visibility' => $page->visibility,
+                'is_home' => $page->is_home ?? false,
+                'published_at' => $page->published_at,
+                'meta' => $page->meta ?? []
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Page content load error: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors du chargement: ' . $e->getMessage()
         ], 500);
     }
 }

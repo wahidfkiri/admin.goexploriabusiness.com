@@ -232,35 +232,36 @@ class WebThemeController extends Controller
     }
 
     /**
-     * Assets du thème (CSS, JS, images)
-     */
-    public function asset($etablissementId, $themeId, $path)
-    {
-        try {
-            $theme = Theme::findOrFail($themeId);
-            
-            $fullPath = $this->getThemePath($theme) . '/assets/' . $path;
-            $fullPath = str_replace('\\', '/', $fullPath);
-            
-            if (!File::exists($fullPath)) {
-                abort(404);
-            }
-            
-            $file = File::get($fullPath);
-            $mimeType = File::mimeType($fullPath);
-            $cacheControl = 'public, max-age=31536000, immutable';
-            
-            return response($file, 200, [
-                'Content-Type' => $mimeType,
-                'Content-Length' => File::size($fullPath),
-                'Cache-Control' => $cacheControl,
-            ]);
-            
-        } catch (\Exception $e) {
-            Log::error('Theme asset error: ' . $e->getMessage());
+ * Assets du thème (CSS, JS, images)
+ */
+public function asset($etablissementId, $themeId, $path)
+{
+    try {
+        $theme = Theme::findOrFail($themeId);
+        
+        // Nouveau chemin avec l'ID de l'établissement
+        $fullPath = storage_path("app/public/cms/themes/{$etablissementId}/{$theme->slug}/assets/{$path}");
+        $fullPath = str_replace('\\', '/', $fullPath);
+        
+        if (!File::exists($fullPath)) {
             abort(404);
         }
+        
+        $file = File::get($fullPath);
+        $mimeType = File::mimeType($fullPath);
+        $cacheControl = 'public, max-age=31536000, immutable';
+        
+        return response($file, 200, [
+            'Content-Type' => $mimeType,
+            'Content-Length' => File::size($fullPath),
+            'Cache-Control' => $cacheControl,
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Theme asset error: ' . $e->getMessage());
+        abort(404);
     }
+}
 
     /**
      * Téléchargement d'un thème
@@ -357,51 +358,75 @@ class WebThemeController extends Controller
     // ============================================
 
     /**
-     * Rendu du thème
-     */
-    protected function renderTheme($theme, $page = null, $preview = false, $demoContent = null)
-    {
-        $cacheKey = $this->getCacheKey($theme, $page);
-        
-        if (!$preview && config('cms.cache_pages', false) && Cache::has($cacheKey)) {
-            $html = Cache::get($cacheKey);
-            return $this->buildResponse($html);
-        }
-        
-        $themePath = $this->getThemePath($theme);
-        
-        if (!$themePath || !File::exists($themePath)) {
-            return $this->renderFallback("Le thème '{$theme->name}' est introuvable.");
-        }
-        
-        $layoutFile = $themePath . '/layout.blade.php';
-        
-        if (!File::exists($layoutFile)) {
-            return $this->renderFallback("Le fichier layout.blade.php est manquant.");
-        }
-        
-        try {
-            $this->registerThemeNamespace($theme, $themePath);
-            
-            $viewData = $this->prepareViewData($theme, $page, $preview, $demoContent);
-            
-            $html = $this->renderView($viewData);
-            
-            if (!$preview && config('cms.cache_pages', false)) {
-                Cache::put($cacheKey, $html, now()->addMinutes(config('cms.page_cache_lifetime', 60)));
-            }
-            
-            return $this->buildResponse($html);
-            
-        } catch (\Exception $e) {
-            Log::error('Theme rendering error: ' . $e->getMessage(), [
-                'theme' => $theme->name,
-                'exception' => $e
-            ]);
-            
-            return $this->renderFallback("Erreur de rendu: " . $e->getMessage());
-        }
+ * Rendu du thème
+ */
+protected function renderTheme($theme, $page = null, $preview = false, $demoContent = null)
+{
+    $cacheKey = $this->getCacheKey($theme, $page);
+    
+    if (!$preview && config('cms.cache_pages', false) && Cache::has($cacheKey)) {
+        $html = Cache::get($cacheKey);
+        return $this->buildResponse($html);
     }
+    
+    // Récupérer le chemin du thème avec l'ID de l'établissement
+    $themePath = $this->getThemePath($theme);
+    
+    if (!$themePath || !File::exists($themePath)) {
+        return $this->renderFallback("Le thème '{$theme->name}' est introuvable. Chemin: {$themePath}");
+    }
+    
+    $layoutFile = $themePath . '/layout.blade.php';
+    
+    if (!File::exists($layoutFile)) {
+        return $this->renderFallback("Le fichier layout.blade.php est manquant.");
+    }
+    
+    try {
+        // Enregistrer le namespace avec le chemin complet
+        View::addNamespace('theme', $themePath);
+        View::addNamespace('theme_' . $theme->slug, $themePath);
+        
+        $viewData = $this->prepareViewData($theme, $page, $preview, $demoContent);
+        
+        // 🔥 CORRECTION ICI 🔥
+        // Déterminer quelle vue utiliser en fonction de la page
+        // if ($page && $page->slug === 'home') {
+            // Page d'accueil : utiliser home.blade.php
+        //     $view = 'theme::pages.home';
+        // } 
+        if ($page) {
+            // Autres pages : utiliser page.blade.php
+            $view = 'theme::pages.page';
+        } else {
+            // Fallback : utiliser layout directement
+            $view = 'theme::layout';
+        }
+        
+        // Vérifier si la vue existe, sinon fallback
+        if (!View::exists($view)) {
+            \Log::warning('View not found: ' . $view . ', using layout fallback');
+            $view = 'theme::layout';
+        }
+        
+        $html = view($view, $viewData)->render();
+        
+        if (!$preview && config('cms.cache_pages', false)) {
+            Cache::put($cacheKey, $html, now()->addMinutes(config('cms.page_cache_lifetime', 60)));
+        }
+        
+        return $this->buildResponse($html);
+        
+    } catch (\Exception $e) {
+        Log::error('Theme rendering error: ' . $e->getMessage(), [
+            'theme' => $theme->name,
+            'path' => $themePath,
+            'exception' => $e
+        ]);
+        
+        return $this->renderFallback("Erreur de rendu: " . $e->getMessage());
+    }
+}
 
     /**
      * Enregistre le namespace du thème
@@ -413,16 +438,24 @@ class WebThemeController extends Controller
     }
 
     /**
-     * Prépare les données pour la vue
+     * Prépare les données pour la vue - CORRIGÉ
      */
     protected function prepareViewData($theme, $page, $preview = false, $demoContent = null)
     {
+        // Récupérer tous les paramètres de l'établissement
+        $settings = [];
+        $allSettings = Setting::where('etablissement_id', $this->etablissement->id)->get();
+        
+        foreach ($allSettings as $setting) {
+            $settings[$setting->key] = $setting->value;
+        }
+        
         return [
             'theme' => $theme,
             'page' => $page,
             'content' => $demoContent ?? ($page ? $page->content : ''),
             'etablissement' => $this->etablissement,
-            'settings' => $this->getAllSettings(),
+            'settings' => $settings,
             'menu' => $this->getMenu(),
             'previewMode' => $preview,
             'assetBase' => url("/themes/{$theme->id}/assets"),
@@ -508,7 +541,7 @@ class WebThemeController extends Controller
     }
 
     /**
-     * Récupère le thème à utiliser
+     * Récupère le thème à utiliser - CORRIGÉ
      */
     protected function getThemeToUse()
     {
@@ -533,7 +566,7 @@ class WebThemeController extends Controller
     }
 
     /**
-     * Récupère la page d'accueil
+     * Récupère la page d'accueil - CORRIGÉ
      */
     protected function getHomePage()
     {
@@ -557,11 +590,13 @@ class WebThemeController extends Controller
      */
     protected function createDefaultHomePage()
     {
+        $content = '<section class="hero"><div class="container"><h1>Bienvenue</h1><p>Bienvenue sur notre site.</p></div></section>';
+        
         return Page::create([
             'etablissement_id' => $this->etablissement->id,
             'title' => 'Accueil',
             'slug' => 'home',
-            'content' => '<h1>Bienvenue</h1><p>Bienvenue sur notre site.</p>',
+            'content' => $content,
             'status' => 'published',
             'visibility' => 'public',
             'is_home' => true,
@@ -570,22 +605,18 @@ class WebThemeController extends Controller
     }
 
     /**
-     * Récupère le chemin du thème
-     */
-    protected function getThemePath($theme)
-    {
-        $path = $theme->path;
-        
-        if (strpos($path, storage_path()) === 0) {
-            return rtrim($path, '/');
-        }
-        
-        if (str_starts_with($path, 'app/')) {
-            return rtrim(storage_path($path), '/');
-        }
-        
-        return rtrim(storage_path('app/' . $path), '/');
-    }
+ * Récupère le chemin du thème
+ */
+protected function getThemePath($theme)
+{
+    $etablissementId = $this->etablissement->id;
+    $slug = $theme->slug;
+    
+    // Nouveau chemin: storage/app/public/cms/themes/{etablissementId}/{slug}/
+    $path = storage_path("app/public/cms/themes/{$etablissementId}/{$slug}");
+    
+    return rtrim($path, '/');
+}
 
     /**
      * Récupère les captures d'écran du thème
@@ -705,7 +736,7 @@ class WebThemeController extends Controller
     }
 
     /**
-     * Récupère le menu à partir des pages publiées
+     * Récupère le menu à partir des pages publiées - CORRIGÉ
      */
     protected function getMenu()
     {

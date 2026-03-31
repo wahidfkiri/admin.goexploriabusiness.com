@@ -1,743 +1,1278 @@
-@extends('cms::layouts.editor')
-
-@section('title', 'Éditer le contenu : ' . $page->title)
-
-@section('content')
-<div class="cms-editor-container">
-    <div class="cms-editor-header">
-        <div>
-            <h1 class="cms-editor-title">
-                <span class="cms-editor-title-icon"><i class="fas fa-pencil-ruler"></i></span>
-                Éditer le contenu : {{ $page->title }}
-            </h1>
-            <p class="cms-editor-description">Modifiez le contenu de votre page avec l'éditeur visuel</p>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@if(isset($template)){{ $template->name }} - @endif Constructeur de Pages Web</title>
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- GrapesJS CSS via CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/grapesjs/dist/css/grapes.min.css">
+    
+    <link rel="stylesheet" href="{{ asset('vendor/editor/css/editor.css') }}">
+    <link rel="stylesheet" href="{{ asset('vendor/editor/css/custom.css') }}">
+    
+    <style>
+        .preview-frame {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+        }
+        
+        .preview-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .modal-content {
+            max-width: 90%;
+            margin: 5vh auto;
+        }
+        
+        .preview-fullscreen-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .preview-fullscreen-btn:hover {
+            background: #2563eb;
+        }
+        
+        /* Styles pour la navigation des catégories */
+        .categories-scroll-container {
+            position: relative;
+            display: contents;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .categories-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            flex: 1;
+            padding: 0 5px;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        
+        .categories-scroll::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Opera */
+        }
+        
+        .categories-nav-btn {
+            background: #f1f5f9;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748b;
+            font-size: 12px;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        
+        .categories-nav-btn:hover {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        
+        .categories-nav-btn.left {
+            margin-right: 5px;
+        }
+        
+        .categories-nav-btn.right {
+            margin-left: 5px;
+        }
+        
+        .categories-nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .categories-nav-btn i {
+            font-size: 10px;
+        }
+        
+        /* .blocks-categories-nav {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            position: relative;
+        } */
+        
+        /* Animation des catégories */
+        .category-tab {
+            animation: fadeInSlide 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Barre supérieure -->
+    <div class="top-bar">
+        <div class="logo">
+            <i class="fas fa-paint-brush logo-icon"></i>
+            <span>Constructeur de Pages Web</span>
         </div>
         
-        <div class="cms-editor-actions">
-            <a href="{{ route('cms.admin.pages.edit', ['etablissementId' => $etablissement->id, 'id' => $page->id]) }}" class="cms-btn cms-btn-outline">
-                <i class="fas fa-info-circle me-2"></i>Informations
-            </a>
-            <a href="{{ route('cms.admin.pages.index', ['etablissementId' => $etablissement->id]) }}" class="cms-btn cms-btn-outline">
-                <i class="fas fa-arrow-left me-2"></i>Retour
-            </a>
-            <button class="cms-btn cms-btn-primary" id="saveContentBtn">
-                <i class="fas fa-save me-2"></i>Sauvegarder
+        <div class="menu-actions">
+            <button class="menu-btn danger" onclick="clearCanvas()" title="Effacer tout">
+                <i class="fas fa-trash"></i>
+                Vider le canevas
+            </button>
+            <button class="menu-btn" onclick="showPreviewInNewTab()" title="Aperçu">
+                <i class="fas fa-eye"></i>
+                Afficher l'aperçu
+            </button>
+            <button class="menu-btn success" onclick="savePage()" title="Sauvegarder">
+                <i class="fas fa-save"></i>
+                Sauvegarder
             </button>
         </div>
     </div>
 
-    <div class="cms-editor-layout">
-        <!-- Barre latérale des blocks -->
-        <div class="cms-editor-sidebar">
-            <div class="cms-sidebar-header">
-                <h4><i class="fas fa-th-large"></i> Bibliothèque de blocs</h4>
-                <div class="cms-sidebar-search">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="cmsBlockSearch" placeholder="Rechercher un bloc...">
+    <!-- Container principal -->
+    <div class="editor-container">
+        <!-- Barre latérale gauche - Blocks & Templates -->
+        <div class="sidebar-left">
+            <div class="sidebar-header">
+                <div class="sidebar-title" style="display:none;">
+                    <i class="fas fa-cube"></i>
+                    <span>Bibliothèque de Blocs</span>
+                    <div class="sidebar-badge">PRO</div>
+                </div>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+            
+            <div class="blocks-search-container">
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="blocks-search-input" 
+                           id="blockSearch" 
+                           placeholder="Rechercher des blocs, catégories, tags...">
+                    <button class="search-clear" onclick="clearSearch()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="blocks-quick-filters">
+                    <button class="filter-chip active" data-filter="all">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Tous</span>
+                    </button>
+                    <button class="filter-chip" data-filter="popular">
+                        <i class="fas fa-fire"></i>
+                        <span>Populaires</span>
+                    </button>
+                    <button class="filter-chip" data-filter="free">
+                        <i class="fas fa-bolt"></i>
+                        <span>Gratuits</span>
+                    </button>
+                    <button class="filter-chip" data-filter="responsive">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Mobile</span>
+                    </button>
                 </div>
             </div>
             
-            <div class="cms-sidebar-categories" id="cmsBlocksCategories">
-                <div class="cms-category-item active" data-category="all">
-                    <i class="fas fa-th-large"></i>
-                    <span>Tous les blocs</span>
+            <!-- Navigation des catégories avec boutons -->
+            <div class="blocks-categories-nav">
+                <button class="categories-nav-btn left" onclick="scrollCategories(-150)" title="Défiler vers la gauche">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                
+                <div class="categories-scroll-container">
+                    <div class="categories-scroll" id="categoriesScroll">
+                        <!-- Les catégories seront générées dynamiquement -->
+                    </div>
+                </div>
+                
+                <button class="categories-nav-btn right" onclick="scrollCategories(150)" title="Défiler vers la droite">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            
+            <div class="blocks-content">
+                <div class="blocks-stats-bar">
+                    <div class="stat-item">
+                        <div class="stat-value" id="blocksCount">0</div>
+                        <div class="stat-label">Blocs</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="freeCount">0</div>
+                        <div class="stat-label">Gratuits</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="proCount">0</div>
+                        <div class="stat-label">PRO</div>
+                    </div>
+                </div>
+                
+                <div class="blocks-grid-modern" id="blocksContainer">
+                    <!-- Les blocs seront chargés dynamiquement -->
+                </div>
+                
+                <div class="blocks-empty-state" id="blocksEmptyState" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-cubes"></i>
+                    </div>
+                    <h3>Aucun bloc trouvé</h3>
+                    <p>Essayez d'ajuster votre recherche ou vos filtres</p>
+                    <button class="btn-primary" onclick="resetFilters()">
+                        <i class="fas fa-redo"></i>
+                        Réinitialiser les Filtres
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone éditeur principale -->
+        <div class="editor-main">
+            <div id="gjs"></div>
+        </div>
+
+        <!-- Panneau droit amélioré -->
+        <div class="sidebar-right" style="display:none;">
+            <div class="right-panel-tabs">
+                <button class="right-panel-tab active" onclick="showRightPanel('layers')">
+                    <i class="fas fa-layer-group"></i> Calques
+                </button>
+                <button class="right-panel-tab" onclick="showRightPanel('history')">
+                    <i class="fas fa-history"></i> Historique
+                </button>
+                <button class="right-panel-tab" onclick="showRightPanel('settings')">
+                    <i class="fas fa-cog"></i> Paramètres
+                </button>
+            </div>
+            
+            <!-- Panneau Couches -->
+            <div class="right-panel-content active" id="right-panel-layers">
+                <div class="layers-container">
+                    <div class="layers-list" id="layersList">
+                        <!-- Les couches seront chargées dynamiquement -->
+                    </div>
                 </div>
             </div>
             
-            <div class="cms-sidebar-blocks" id="cmsBlocksList">
-                <div class="cms-blocks-wrapper">
-                    <div class="cms-loading-blocks">
-                        <div class="cms-spinner"></div>
-                        <p>Chargement des blocs...</p>
+            <!-- Panneau Historique -->
+            <div class="right-panel-content" id="right-panel-history">
+                <div class="history-container">
+                    <div class="history-list" id="historyList">
+                        <!-- L'historique sera chargé dynamiquement -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Panneau Paramètres -->
+            <div class="right-panel-content" id="right-panel-settings">
+                <div class="settings-container">
+                    <div class="settings-section">
+                        <div class="settings-title">Paramètres du Canevas</div>
+                        <div class="settings-group">
+                            <div class="setting-item">
+                                <span class="setting-label">Afficher la Grille</span>
+                                <div class="setting-control">
+                                    <label class="switch">
+                                        <input type="checkbox" id="showGrid" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">Afficher les Contours</span>
+                                <div class="setting-control">
+                                    <label class="switch">
+                                        <input type="checkbox" id="showOutlines" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">Largeur du Canevas</span>
+                                <div class="setting-control">
+                                    <select class="control-select" id="canvasWidth">
+                                        <option value="100%">100%</option>
+                                        <option value="1200px">Bureau (1200px)</option>
+                                        <option value="768px">Tablette (768px)</option>
+                                        <option value="375px">Mobile (375px)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <div class="settings-title">Paramètres de l'Éditeur</div>
+                        <div class="settings-group">
+                            <div class="setting-item">
+                                <span class="setting-label">Sauvegarde auto.</span>
+                                <div class="setting-control">
+                                    <label class="switch">
+                                        <input type="checkbox" id="autoSave">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">Aligner à la Grille</span>
+                                <div class="setting-control">
+                                    <label class="switch">
+                                        <input type="checkbox" id="snapToGrid">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">Mode Sombre</span>
+                                <div class="setting-control">
+                                    <label class="switch">
+                                        <input type="checkbox" id="darkMode" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <div class="settings-title">Paramètres d'Export</div>
+                        <div class="settings-group">
+                            <div class="setting-item">
+                                <span class="setting-label">Format</span>
+                                <div class="setting-control">
+                                    <select class="control-select" id="exportFormat">
+                                        <option value="html">HTML</option>
+                                        <option value="react">React</option>
+                                        <option value="vue">Vue</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">Minifier CSS</span>
+                                <div class="setting-control">
+                                    <label class="switch">
+                                        <input type="checkbox" id="minifyCSS" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">Minifier HTML</span>
+                                <div class="setting-control">
+                                    <label class="switch">
+                                        <input type="checkbox" id="minifyHTML">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Éditeur GrapeJS -->
-        <div class="cms-editor-main">
-            <div id="cms-editor-container"></div>
-            <textarea name="content" id="cms-content" style="display: none;">{{ old('content', $page->content) }}</textarea>
+    </div>
+
+    <!-- Modal Code -->
+    <div id="codeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-code"></i>
+                    Code Généré
+                </div>
+                <button class="modal-close" onclick="closeModal('codeModal')">&times;</button>
+            </div>
+            <div class="modal-body code-modal-body">
+                <div class="code-actions">
+                    <button onclick="copyCode()" class="menu-btn">
+                        <i class="fas fa-copy"></i> Copier le Code
+                    </button>
+                </div>
+                <textarea id="codeEditor" class="code-editor"></textarea>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Loading Overlay -->
-<div class="cms-loading-overlay" id="cmsLoadingOverlay" style="display: none;">
-    <div class="cms-spinner-modern">
-        <div class="cms-spinner"></div>
-        <p>Sauvegarde en cours...</p>
+    <!-- Modal Preview -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-eye"></i>
+                    Aperçu
+                </div>
+                <button class="modal-close" onclick="closeModal('previewModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <iframe id="previewFrame" class="preview-frame"></iframe>
+            </div>
+            <div class="preview-modal-footer">
+                <button class="preview-fullscreen-btn" onclick="showPreviewInNewTab()">
+                    <i class="fas fa-external-link-alt"></i>
+                    Ouvrir dans un Nouvel Onglet
+                </button>
+            </div>
+        </div>
     </div>
-</div>
 
-<style>
-/* ============================================
-   CMS EDITOR STYLES - Classes personnalisées
-   ============================================ */
-.cms-editor-container {
-    padding: 20px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: #f1f5f9;
-}
+    <!-- Notifications -->
+    <div id="notifications"></div>
 
-.cms-editor-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 15px;
-    flex-shrink: 0;
-    background: transparent;
-    padding: 0;
-}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- Scripts CDN -->
+    <script src="https://unpkg.com/grapesjs"></script>
+    <script src="https://unpkg.com/grapesjs-preset-webpage"></script>
+    <script src="https://unpkg.com/grapesjs-blocks-basic"></script>
+    <script src="https://unpkg.com/grapesjs-plugin-forms"></script>
+    <script src="https://unpkg.com/grapesjs-tabs"></script>
+    <script src="https://unpkg.com/grapesjs-custom-code"></script>
+    <script src="https://unpkg.com/grapesjs-tooltip"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Script principal -->
+    <script>
+       // === CONFIGURATION ===
+const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+let editor;
+window.currentPageId = null;  // Changé de currentTemplateId à currentPageId
+let allBlocks = [];
+let allSections = [];
+let dropIndicator = null;
 
-.cms-editor-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    color: #1e293b;
-}
-
-.cms-editor-title-icon {
-    background: linear-gradient(135deg, #4361ee, #3a56e4);
-    width: 45px;
-    height: 45px;
-    border-radius: 12px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 12px;
-    color: white;
-}
-
-.cms-editor-description {
-    color: #64748b;
-    margin-left: 57px;
-    font-size: 0.85rem;
-}
-
-.cms-editor-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.cms-btn {
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-}
-
-.cms-btn-outline {
-    background: white;
-    border: 1px solid #e2e8f0;
-    color: #475569;
-}
-
-.cms-btn-outline:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    text-decoration: none;
-    color: #475569;
-}
-
-.cms-btn-primary {
-    background: linear-gradient(135deg, #4361ee, #3a56e4);
-    border: none;
-    color: white;
-}
-
-.cms-btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
-    color: white;
-}
-
-/* Editor Layout */
-.cms-editor-layout {
-    display: flex;
-    gap: 20px;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-}
-
-/* Sidebar */
-.cms-editor-sidebar {
-    width: 320px;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    flex-shrink: 0;
-}
-
-.cms-sidebar-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid #eef2f6;
-}
-
-.cms-sidebar-header h4 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0 0 12px 0;
-    color: #1e293b;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.cms-sidebar-search {
-    position: relative;
-}
-
-.cms-sidebar-search i {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #94a3b8;
-    font-size: 0.8rem;
-}
-
-.cms-sidebar-search input {
-    width: 100%;
-    padding: 8px 12px 8px 32px;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    background: #f8fafc;
-    transition: all 0.2s ease;
-}
-
-.cms-sidebar-search input:focus {
-    outline: none;
-    border-color: #4361ee;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-}
-
-/* Categories */
-.cms-sidebar-categories {
-    padding: 12px 20px;
-    border-bottom: 1px solid #eef2f6;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.cms-category-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    background: #f8fafc;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    color: #475569;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.cms-category-item i {
-    font-size: 0.7rem;
-}
-
-.cms-category-item:hover {
-    background: #eef2ff;
-    color: #4361ee;
-}
-
-.cms-category-item.active {
-    background: linear-gradient(135deg, #4361ee, #3a56e4);
-    color: white;
-}
-
-/* ============================================
-   BLOCKS SECTION - Styles isolés
-   ============================================ */
-.cms-sidebar-blocks {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 20px;
-}
-
-.cms-blocks-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-}
-
-.cms-loading-blocks {
-    text-align: center;
-    padding: 40px 20px;
-    color: #94a3b8;
-}
-
-.cms-loading-blocks .cms-spinner {
-    width: 30px;
-    height: 30px;
-    border: 2px solid #e2e8f0;
-    border-top-color: #4361ee;
-    border-radius: 50%;
-    animation: cms-spin 0.8s linear infinite;
-    margin: 0 auto 10px;
-}
-
-@keyframes cms-spin {
-    to { transform: rotate(360deg); }
-}
-
-.cms-block-item {
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-    background: #f8fafc !important;
-    border: 1px solid #eef2f6 !important;
-    border-radius: 12px !important;
-    padding: 12px 16px !important;
-    cursor: grab !important;
-    transition: all 0.2s ease !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    margin: 0 !important;
-}
-
-.cms-block-item:hover {
-    background: #f1f5f9 !important;
-    border-color: #4361ee !important;
-    transform: translateX(3px) !important;
-}
-
-.cms-block-item:active {
-    cursor: grabbing !important;
-}
-
-.cms-block-icon {
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 10px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    color: white !important;
-    font-size: 1rem !important;
-    flex-shrink: 0 !important;
-}
-
-.cms-block-info {
-    flex: 1 !important;
-    min-width: 0 !important;
-}
-
-.cms-block-name {
-    font-size: 0.85rem !important;
-    font-weight: 500 !important;
-    color: #1e293b !important;
-    margin-bottom: 4px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-}
-
-.cms-block-category {
-    font-size: 0.65rem !important;
-    color: #94a3b8 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-}
-
-.cms-block-category i {
-    font-size: 0.6rem !important;
-}
-
-.cms-empty-blocks {
-    text-align: center;
-    padding: 40px 20px;
-    color: #94a3b8;
-}
-
-.cms-empty-blocks i {
-    font-size: 2rem;
-    margin-bottom: 10px;
-    display: block;
-}
-
-/* Editor Main */
-.cms-editor-main {
-    flex: 1;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-#cms-editor-container {
-    flex: 1;
-    height: 100%;
-}
-
-/* Loading Overlay */
-.cms-loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
-
-.cms-spinner-modern {
-    background: white;
-    padding: 30px;
-    border-radius: 20px;
-    text-align: center;
-}
-
-.cms-spinner-modern .cms-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid #e2e8f0;
-    border-top-color: #4361ee;
-    border-radius: 50%;
-    animation: cms-spin 0.8s linear infinite;
-    margin: 0 auto 16px;
-}
-
-/* Scrollbar */
-.cms-sidebar-blocks::-webkit-scrollbar {
-    width: 4px;
-}
-
-.cms-sidebar-blocks::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-.cms-sidebar-blocks::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 4px;
-}
-
-/* Responsive */
-@media (max-width: 992px) {
-    .cms-editor-sidebar {
-        width: 280px;
-    }
-}
-
-@media (max-width: 768px) {
-    .cms-editor-container {
-        padding: 15px;
-        height: auto;
+// === INITIALISATION DE L'ÉDITEUR ===
+function initEditor() {
+    if (!document.getElementById('gjs')) {
+        console.error('Élément #gjs non trouvé dans le DOM');
+        setTimeout(initEditor, 100);
+        return;
     }
     
-    .cms-editor-layout {
-        flex-direction: column;
-    }
-    
-    .cms-editor-sidebar {
-        width: 100%;
-        max-height: 400px;
-    }
-    
-    .cms-editor-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .cms-editor-description {
-        margin-left: 57px;
-    }
-    
-    .cms-editor-actions {
-        width: 100%;
-        justify-content: flex-start;
-    }
-}
-</style>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/grapesjs@0.21.5/dist/grapes.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/grapesjs@0.21.5/dist/css/grapes.min.css">
-
-<script>
-let editor = null;
-let blocks = [];
-const currentEtablissementId = {{ $etablissement->id }};
-const pageId = {{ $page->id }};
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialiser GrapeJS
-    const textarea = document.getElementById('cms-content');
-    const initialContent = textarea.value;
+    console.log('Initialisation de l\'éditeur GrapesJS...');
     
     editor = grapesjs.init({
-        container: '#cms-editor-container',
+        container: '#gjs',
         height: '100%',
-        storageManager: false,
         fromElement: true,
-        components: initialContent,
-        styleManager: {
-            sectors: [{
-                name: 'Dimension',
-                open: false,
-                properties: ['width', 'min-width', 'height', 'min-height', 'margin', 'padding']
-            }, {
-                name: 'Typography',
-                open: false,
-                properties: ['font-family', 'font-size', 'font-weight', 'letter-spacing', 'color', 'line-height', 'text-align']
-            }, {
-                name: 'Background',
-                open: false,
-                properties: ['background-color', 'background-image', 'background-repeat', 'background-position', 'background-size']
-            }, {
-                name: 'Border',
-                open: false,
-                properties: ['border-radius', 'border-color', 'border-width', 'border-style']
-            }]
-        }
-    });
-    
-    // Charger les blocks
-    loadBlocks();
-    
-    // Sauvegarde
-    const saveBtn = document.getElementById('saveContentBtn');
-    
-    function saveContent() {
-        if (editor) {
-            const content = editor.getHtml();
-            document.getElementById('cms-content').value = content;
-        }
+        storageManager: false,
         
-        const formData = new FormData();
-        formData.append('content', document.getElementById('cms-content').value);
-        formData.append('_method', 'PUT');
-        formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+        plugins: [
+            'grapesjs-preset-webpage',
+            'grapesjs-blocks-basic',
+            'grapesjs-plugin-forms',
+            'grapesjs-tabs',
+            'grapesjs-custom-code'
+        ],
         
-        showLoading();
-        
-        fetch(`/admin/cms/${currentEtablissementId}/pages/${pageId}/update-content`, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json'
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            hideLoading();
-            if (data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Succès!',
-                    text: data.message,
-                    confirmButtonColor: '#4361ee',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erreur',
-                    text: data.message,
-                    confirmButtonColor: '#4361ee'
-                });
+        pluginsOpts: {
+            'grapesjs-preset-webpage': {
+                blocks: []
             }
-        })
-        .catch(error => {
-            hideLoading();
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Erreur',
-                text: 'Une erreur est survenue',
-                confirmButtonColor: '#4361ee'
-            });
-        });
-    }
-    
-    saveBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        saveContent();
+        },
+        
+        styleManager: {
+            sectors: [
+                {
+                    name: 'Général',
+                    open: false,
+                    properties: [
+                        'display', 'position', 'float', 'top',
+                        'right', 'left', 'bottom'
+                    ]
+                },
+                {
+                    name: 'Dimensions',
+                    open: false,
+                    properties: [
+                        'width', 'height', 'max-width', 'min-height',
+                        'margin', 'padding'
+                    ]
+                },
+                {
+                    name: 'Typographie',
+                    open: false,
+                    properties: [
+                        'font-family', 'font-size', 'font-weight',
+                        'letter-spacing', 'color', 'line-height',
+                        'text-align', 'text-shadow'
+                    ]
+                },
+                {
+                    name: 'Décorations',
+                    open: false,
+                    properties: [
+                        'border-radius', 'border', 'box-shadow',
+                        'background', 'opacity'
+                    ]
+                },
+                {
+                    name: 'Extra',
+                    open: false,
+                    properties: [
+                        'transition', 'transform', 'cursor',
+                        'overflow', 'z-index'
+                    ]
+                }
+            ]
+        },
+        
+        deviceManager: {
+            devices: [
+                {
+                    name: 'Bureau',
+                    width: ''
+                },
+                {
+                    name: 'Tablette',
+                    width: '768px',
+                    widthMedia: '768px'
+                },
+                {
+                    name: 'Mobile',
+                    width: '320px',
+                    widthMedia: '480px'
+                }
+            ]
+        },
+        
+        canvas: {
+            styles: [
+                'https://unpkg.com/grapesjs/dist/css/grapes.min.css',
+                'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'
+            ]
+        }
     });
     
-    // Recherche de blocks
-    const searchInput = document.getElementById('cmsBlockSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            filterBlocks(this.value);
-        });
+    initLayersPanel();
+    initEditorEvents();
+    
+    setTimeout(() => {
+        if (editor && editor.Canvas) {
+            initCustomDragDrop();
+        } else {
+            console.error('GrapesJS pas complètement initialisé, nouvelle tentative...');
+            setTimeout(initCustomDragDrop, 500);
+        }
+    }, 300);
+    
+    // Récupérer l'ID de la page depuis l'URL
+    const pageIdFromURL = getPageIdFromURL();
+    console.log('ID de la page depuis l\'URL:', pageIdFromURL);
+    
+    if (pageIdFromURL) {
+        window.currentPageId = pageIdFromURL;
+        console.log('Définition de currentPageId à:', window.currentPageId);
+        
+        initBlocksModern();
+        
+        setTimeout(() => {
+            if (editor) {
+                loadPageOnStart(window.currentPageId);
+            } else {
+                console.error('Éditeur non initialisé, impossible de charger la page');
+            }
+        }, 800);
+    } else {
+        console.log('Aucun ID de page trouvé, utilisation du contenu par défaut');
+        setTimeout(() => {
+            if (editor) {
+                editor.setComponents(`
+                    <section style="padding: 100px 20px; background: linear-gradient(135deg, #0f172a, #1e293b); color: white; text-align: center;">
+                        <div style="max-width: 800px; margin: 0 auto;">
+                            <h1 style="font-size: 3rem; margin-bottom: 20px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); -webkit-background-clip: text; background-clip: text; color: transparent;">
+                                Bienvenue dans le Constructeur de Pages Web
+                            </h1>
+                            <p style="font-size: 1.2rem; margin-bottom: 40px; opacity: 0.9;">
+                                Glissez-déposez des blocs depuis le panneau de gauche pour commencer à créer votre page.
+                            </p>
+                        </div>
+                    </section>
+                `);
+            }
+        }, 800);
     }
-});
+    
+    showNotification('Éditeur prêt ! Commencez à construire votre site web.', 'info');
+}
 
-function loadBlocks() {
-    fetch(`/admin/cms/${currentEtablissementId}/blocks/api`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json'
+// === FONCTIONS DE GESTION DES PAGES ===
+async function loadPageOnStart(pageId) {
+    try {
+        console.log('Chargement de la page avec ID:', pageId);
+        showLoading('Chargement de la page...');
+        
+        // Correction de l'URL - utiliser le bon endpoint
+        const response = await fetch(`/admin/cms/api/pages/${pageId}/load`);
+        
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP ! statut: ${response.status}`);
         }
-    })
-    .then(response => response.json())
-    .then(data => {
+        
+        const data = await response.json();
+        console.log('Réponse API Page:', data);
+        
+        // Vérifier la structure de la réponse
         if (data.success) {
-            blocks = data.blocks;
-            displayCategories(data.categories);
-            displayBlocks(blocks);
+            // Extraire les données selon la structure retournée
+            const pageData = data.data;
+            const htmlContent = pageData.html_content || pageData.content || '';
+            const cssContent = pageData.css_content || '';
+            const title = pageData.title || '';
+            
+            console.log('Longueur du contenu HTML:', htmlContent.length);
+            console.log('Longueur du contenu CSS:', cssContent.length);
+            
+            // Mettre à jour le titre dans le champ
+            const titleInput = document.getElementById('title');
+            if (titleInput && title) {
+                titleInput.value = title;
+            }
+            
+            // Mettre à jour le slug
+            const slugInput = document.getElementById('slug');
+            if (slugInput && pageData.slug) {
+                slugInput.value = pageData.slug;
+            }
+            
+            // Mettre à jour le statut
+            const statusSelect = document.getElementById('status');
+            if (statusSelect && pageData.status) {
+                statusSelect.value = pageData.status;
+            }
+            
+            // Mettre à jour la visibilité
+            const visibilitySelect = document.getElementById('visibility');
+            if (visibilitySelect && pageData.visibility) {
+                visibilitySelect.value = pageData.visibility;
+                // Afficher/masquer le champ mot de passe
+                const passwordField = document.getElementById('passwordField');
+                if (passwordField) {
+                    passwordField.style.display = pageData.visibility === 'password' ? 'block' : 'none';
+                }
+            }
+            
+            // Mettre à jour la case "page d'accueil"
+            const isHomeCheckbox = document.getElementById('is_home');
+            if (isHomeCheckbox && pageData.is_home) {
+                isHomeCheckbox.checked = pageData.is_home;
+            }
+            
+            // Nettoyer et charger le contenu HTML/CSS
+            if (htmlContent && htmlContent.trim()) {
+                let cleanHtml = htmlContent;
+                let cleanCss = cssContent;
+                
+                // Nettoyer les éventuels caractères d'échappement
+                if (typeof cleanHtml === 'string') {
+                    cleanHtml = cleanHtml
+                        .replace(/\\r\\n/g, '\n')
+                        .replace(/\\n/g, '\n')
+                        .replace(/\\t/g, '\t')
+                        .replace(/\\"/g, '"')
+                        .replace(/\\'/g, "'")
+                        .replace(/\\\\/g, '\\');
+                }
+                
+                if (typeof cleanCss === 'string') {
+                    cleanCss = cleanCss
+                        .replace(/\\r\\n/g, '\n')
+                        .replace(/\\n/g, '\n')
+                        .replace(/\\t/g, '\t')
+                        .replace(/\\"/g, '"')
+                        .replace(/\\'/g, "'")
+                        .replace(/\\\\/g, '\\');
+                }
+                
+                console.log('Définition des composants dans l\'éditeur...');
+                
+                // Vider l'éditeur avant de charger le nouveau contenu
+                editor.setComponents('');
+                
+                // Charger le contenu avec ou sans CSS
+                if (cleanCss && cleanCss.trim()) {
+                    editor.setComponents(cleanHtml + '<style>' + cleanCss + '</style>');
+                    editor.setStyle(cleanCss);
+                } else {
+                    editor.setComponents(cleanHtml);
+                }
+                
+                console.log('Page chargée avec succès');
+            } else {
+                console.log('Le HTML de la page est vide, utilisation du contenu par défaut');
+                editor.setComponents(`
+                    <section style="padding: 100px 20px; background: linear-gradient(135deg, #0f172a, #1e293b); color: white; text-align: center;">
+                        <div style="max-width: 800px; margin: 0 auto;">
+                            <h1 style="font-size: 3rem; margin-bottom: 20px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); -webkit-background-clip: text; background-clip: text; color: transparent;">
+                                Nouvelle Page
+                            </h1>
+                            <p style="font-size: 1.2rem; margin-bottom: 40px; opacity: 0.9;">
+                                Commencez à créer votre contenu en ajoutant des blocs depuis le panneau de gauche.
+                            </p>
+                        </div>
+                    </section>
+                `);
+            }
+            
+            window.currentPageId = pageId;
+            
+            if (title) {
+                document.title = `${title} - Constructeur de Pages Web`;
+            }
+            
+            updateLayersPanel();
+            
+            showNotification(`Page "${title || 'Sans nom'}" chargée avec succès`, 'success');
+        } else {
+            throw new Error(data.message || 'Échec du chargement de la page: Réponse invalide');
         }
-    })
-    .catch(error => {
-        console.error('Error loading blocks:', error);
-        const wrapper = document.querySelector('#cmsBlocksList .cms-blocks-wrapper');
-        if (wrapper) {
-            wrapper.innerHTML = `
-                <div class="cms-empty-blocks">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <p>Erreur de chargement des blocs</p>
+    } catch (error) {
+        console.error('Erreur de chargement de la page:', error);
+        showNotification('Erreur de chargement de la page: ' + error.message, 'error');
+        
+        // Charger un contenu par défaut
+        editor.setComponents(`
+            <section style="padding: 100px 20px; background: linear-gradient(135deg, #0f172a, #1e293b); color: white; text-align: center;">
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <h1 style="font-size: 3rem; margin-bottom: 20px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); -webkit-background-clip: text; background-clip: text; color: transparent;">
+                        Erreur de Chargement
+                    </h1>
+                    <p style="font-size: 1.2rem; margin-bottom: 40px; opacity: 0.9;">
+                        Impossible de charger la page. Démarrage avec un canevas vierge.
+                    </p>
+                    <p style="font-size: 0.9rem; color: #ef4444;">
+                        Erreur: ${error.message}
+                    </p>
                 </div>
-            `;
+            </section>
+        `);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function savePage() {
+    try {
+        console.log('ID de la page actuel avant sauvegarde:', window.currentPageId);
+        
+        if (!window.currentPageId) {
+            window.currentPageId = getPageIdFromURL();
+            console.log('ID de la page récupéré:', window.currentPageId);
+            
+            if (!window.currentPageId) {
+                showNotification('Aucun ID de page trouvé. Impossible de sauvegarder.', 'error');
+                return;
+            }
         }
+        
+        showLoading('Sauvegarde de la page...');
+        
+        const htmlContent = editor.getHtml();
+        const cssContent = editor.getCss();
+        const title = document.getElementById('title') ? document.getElementById('title').value : '';
+        const slug = document.getElementById('slug') ? document.getElementById('slug').value : '';
+        const status = document.getElementById('status') ? document.getElementById('status').value : 'draft';
+        const visibility = document.getElementById('visibility') ? document.getElementById('visibility').value : 'public';
+        const isHome = document.getElementById('is_home') ? document.getElementById('is_home').checked : false;
+        const password = document.getElementById('password') ? document.getElementById('password').value : '';
+        
+        console.log('Sauvegarde de la page ID:', window.currentPageId);
+        console.log('Titre:', title);
+        console.log('Statut:', status);
+        
+        // Construire le contenu complet
+        const fullContent = cssContent && cssContent.trim() 
+            ? `<style>${cssContent}</style>${htmlContent}`
+            : htmlContent;
+        
+        const formData = {
+            title: title,
+            slug: slug,
+            status: status,
+            visibility: visibility,
+            is_home: isHome,
+            content: fullContent,
+            html_content: htmlContent,
+            css_content: cssContent,
+            password: password
+        };
+        
+        const response = await fetch(`/admin/cms/api/pages/${window.currentPageId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        hideLoading();
+        
+        if (data.success) {
+            showNotification('Page sauvegardée avec succès !', 'success');
+        } else {
+            throw new Error(data.message || 'Échec de la sauvegarde de la page');
+        }
+    } catch (error) {
+        console.error('Erreur de sauvegarde de la page:', error);
+        hideLoading();
+        showNotification('Erreur de sauvegarde: ' + error.message, 'error');
+    }
+}
+
+function getPageIdFromURL() {
+    const url = window.location.pathname;
+    console.log('Récupération de l\'ID de la page depuis l\'URL:', url);
+    
+    // Pattern pour /admin/cms/11/pages/5/edit-content
+    const pattern = /\/admin\/cms\/\d+\/pages\/(\d+)\/edit-content/;
+    const match = url.match(pattern);
+    
+    if (match && match[1]) {
+        console.log('ID de la page trouvé:', match[1]);
+        return parseInt(match[1]);
+    }
+    
+    // Pattern alternatif pour /pages/{id}/edit
+    const altPattern = /\/pages\/(\d+)\/edit/;
+    const altMatch = url.match(altPattern);
+    
+    if (altMatch && altMatch[1]) {
+        console.log('ID de la page trouvé (format alternatif):', altMatch[1]);
+        return parseInt(altMatch[1]);
+    }
+    
+    // Vérifier les paramètres URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageIdParam = urlParams.get('page_id');
+    if (pageIdParam) {
+        console.log('ID de la page trouvé dans les paramètres:', pageIdParam);
+        return parseInt(pageIdParam);
+    }
+    
+    console.log('Aucun ID de page trouvé dans l\'URL');
+    return null;
+}
+
+// === FONCTIONS POUR LE DÉFILEMENT DES CATÉGORIES ===
+function scrollCategories(amount) {
+    const scrollContainer = document.getElementById('categoriesScroll');
+    if (!scrollContainer) return;
+    
+    scrollContainer.scrollBy({
+        left: amount,
+        behavior: 'smooth'
+    });
+    
+    setTimeout(updateCategoryNavButtons, 300);
+}
+
+function updateCategoryNavButtons() {
+    const scrollContainer = document.getElementById('categoriesScroll');
+    if (!scrollContainer) return;
+    
+    const leftBtn = document.querySelector('.categories-nav-btn.left');
+    const rightBtn = document.querySelector('.categories-nav-btn.right');
+    
+    if (leftBtn && rightBtn) {
+        if (scrollContainer.scrollLeft <= 10) {
+            leftBtn.disabled = true;
+            leftBtn.style.opacity = '0.4';
+        } else {
+            leftBtn.disabled = false;
+            leftBtn.style.opacity = '1';
+        }
+        
+        if (scrollContainer.scrollLeft + scrollContainer.clientWidth >= scrollContainer.scrollWidth - 10) {
+            rightBtn.disabled = true;
+            rightBtn.style.opacity = '0.4';
+        } else {
+            rightBtn.disabled = false;
+            rightBtn.style.opacity = '1';
+        }
+    }
+}
+
+// === FONCTIONS POUR L'INTERFACE MODERNE ===
+async function loadBlocksModern(pageId) {
+    try {
+        showLoading('Chargement de la bibliothèque de blocs...');
+        
+        console.log('Récupération des blocs depuis l\'API avec pageId:', pageId);
+        
+        let apiUrl = '/api/blocks/data';
+        
+        if (pageId) {
+            apiUrl += '?page_id=' + pageId;
+        }
+        
+        console.log('Récupération des blocs depuis:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+            throw new Error(`Erreur API: ${response.status}`);
+        }
+        
+        const responseText = await response.text();
+        
+        if (responseText.trim().startsWith('<!DOCTYPE') || 
+            responseText.trim().startsWith('<!--') || 
+            responseText.includes('<html')) {
+            console.error('Le serveur a retourné du HTML au lieu du JSON:', responseText.substring(0, 200));
+            throw new Error('L\'API a retourné du HTML au lieu du JSON. Vérifiez vos routes.');
+        }
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Erreur d\'analyse JSON:', parseError);
+            console.error('Texte de réponse:', responseText.substring(0, 500));
+            throw new Error('Réponse JSON invalide du serveur');
+        }
+        
+        console.log('Données de réponse API:', data);
+        
+        if (data.success) {
+            allBlocks = data.blocks || [];
+            allSections = data.sections || [];
+            
+            console.log(`${allBlocks.length} blocs et ${allSections.length} sections chargés`);
+            
+            updateStats(allBlocks);
+            renderCategories(allSections, allBlocks);
+            renderBlocksModern(allBlocks);
+            initModernFilters();
+            
+            hideLoading();
+            showNotification(`${allBlocks.length} blocs chargés`, 'success');
+            
+            setTimeout(updateCategoryNavButtons, 500);
+            
+        } else {
+            throw new Error(data.message || 'Échec du chargement des blocs');
+        }
+    } catch (error) {
+        console.error('Erreur de chargement des blocs:', error);
+        hideLoading();
+        showNotification('Erreur de chargement des blocs: ' + error.message, 'error');
+        renderEmptyState();
+    }
+}
+
+function updateStats(blocks) {
+    const total = blocks.length;
+    const free = blocks.filter(b => b.is_free).length;
+    const pro = total - free;
+    
+    const blocksCount = document.getElementById('blocksCount');
+    const freeCount = document.getElementById('freeCount');
+    const proCount = document.getElementById('proCount');
+    
+    if (blocksCount) blocksCount.textContent = total;
+    if (freeCount) freeCount.textContent = free;
+    if (proCount) proCount.textContent = pro;
+}
+
+function renderCategories(sections, blocks) {
+    const container = document.getElementById('categoriesScroll');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const allCount = blocks.length;
+    const allButton = createCategoryTab('all', 'Tous les Blocs', 'fa-layer-group', allCount, true);
+    container.appendChild(allButton);
+    
+    sections.forEach(section => {
+        const sectionBlocks = blocks.filter(b => b.section_id === section.id);
+        if (sectionBlocks.length > 0) {
+            const button = createCategoryTab(
+                section.slug,
+                section.name,
+                section.icon || 'fa-folder',
+                sectionBlocks.length,
+                false
+            );
+            container.appendChild(button);
+        }
+    });
+    
+    const websiteTypes = [...new Set(blocks.map(b => b.website_type))];
+    websiteTypes.forEach(type => {
+        const typeBlocks = blocks.filter(b => b.website_type === type);
+        if (typeBlocks.length > 0 && type !== 'General') {
+            const icon = getWebsiteTypeIcon(type);
+            const button = createCategoryTab(
+                `type-${type.toLowerCase()}`,
+                type,
+                icon,
+                typeBlocks.length,
+                false
+            );
+            container.appendChild(button);
+        }
+    });
+    
+    initCategoryEvents();
+}
+
+function createCategoryTab(id, name, icon, count, isActive) {
+    const button = document.createElement('button');
+    button.className = `category-tab ${isActive ? 'active' : ''}`;
+    button.dataset.category = id;
+    button.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <span>${name}</span>
+        <span class="category-count">${count}</span>
+    `;
+    return button;
+}
+
+function getWebsiteTypeIcon(type) {
+    const icons = {
+        'SaaS': 'fa-cloud',
+        'Ecommerce': 'fa-shopping-cart',
+        'Portfolio': 'fa-briefcase',
+        'Restaurant': 'fa-utensils',
+        'Blog': 'fa-blog',
+        'Corporate': 'fa-building',
+        'Landing': 'fa-flag',
+        'Dashboard': 'fa-chart-line',
+        'Editor': 'fa-edit',
+        'General': 'fa-globe'
+    };
+    return icons[type] || 'fa-globe';
+}
+
+function initCategoryEvents() {
+    document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.category-tab').forEach(t => {
+                t.classList.remove('active');
+            });
+            
+            tab.classList.add('active');
+            
+            const category = tab.dataset.category;
+            filterBlocksByCategory(category);
+        });
     });
 }
 
-function displayCategories(categories) {
-    const container = document.getElementById('cmsBlocksCategories');
-    let html = `
-        <div class="cms-category-item active" data-category="all" onclick="filterByCategory('all')">
-            <i class="fas fa-th-large"></i>
-            <span>Tous les blocs</span>
+function filterBlocksByCategory(category) {
+    const blocksGrid = document.getElementById('blocksContainer');
+    if (!blocksGrid) return;
+    
+    const allBlockCards = document.querySelectorAll('.block-card-modern');
+    
+    allBlockCards.forEach(card => {
+        if (category === 'all') {
+            card.style.display = 'block';
+        } else if (category.startsWith('type-')) {
+            const type = category.replace('type-', '');
+            const blockType = card.dataset.websiteType || '';
+            card.style.display = blockType.toLowerCase() === type.toLowerCase() ? 'block' : 'none';
+        } else {
+            const blockSection = card.dataset.section || '';
+            card.style.display = blockSection === category ? 'block' : 'none';
+        }
+        
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(10px)';
+        
+        setTimeout(() => {
+            if (card.style.display !== 'none') {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }
+        }, 10);
+    });
+    
+    const visibleBlocks = Array.from(allBlockCards).filter(b => b.style.display !== 'none');
+    const emptyState = document.getElementById('blocksEmptyState');
+    
+    if (visibleBlocks.length === 0 && emptyState) {
+        emptyState.style.display = 'block';
+        blocksGrid.style.display = 'none';
+    } else {
+        if (emptyState) emptyState.style.display = 'none';
+        blocksGrid.style.display = 'grid';
+    }
+}
+
+function renderBlocksModern(blocks) {
+    const container = document.getElementById('blocksContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (!blocks || blocks.length === 0) {
+        renderEmptyState();
+        return;
+    }
+    
+    const sortedBlocks = [...blocks].sort((a, b) => (b.usage_count || 0) - (a.usage_count || 0));
+    
+    sortedBlocks.forEach((block, index) => {
+        const card = createBlockCardModern(block, index);
+        container.appendChild(card);
+    });
+}
+
+function createBlockCardModern(block, index) {
+    const card = document.createElement('div');
+    card.className = 'block-card-modern';
+    card.dataset.blockId = block.id;
+    card.dataset.section = block.section_slug || 'general';
+    card.dataset.websiteType = block.website_type || 'General';
+    card.dataset.category = block.category || 'Basic';
+    card.style.animationDelay = `${index * 0.05}s`;
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+        card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+    }, index * 50);
+    
+    const shortDesc = block.description 
+        ? block.description.substring(0, 60) + (block.description.length > 60 ? '...' : '')
+        : 'Pas de description';
+    
+    const categoryBadge = `<span class="block-badge badge-category">${block.category || 'Basic'}</span>`;
+    const proBadge = !block.is_free ? '<span class="block-badge badge-pro">PRO</span>' : '';
+    const freeBadge = block.is_free ? '<span class="block-badge badge-free">Gratuit</span>' : '';
+    const usageBadge = block.usage_count > 0 ? 
+        `<span class="block-badge badge-usage"><i class="fas fa-download"></i> ${block.usage_count}</span>` : '';
+    
+    card.innerHTML = `
+        <div class="block-icon-modern">
+            <i class="fas ${block.icon || 'fa-cube'}"></i>
+        </div>
+        <div class="block-name">${escapeHtml(block.name)}</div>
+        <div class="block-description">${escapeHtml(shortDesc)}</div>
+        <div class="block-meta-modern">
+            ${categoryBadge}
+            ${proBadge}
+            ${freeBadge}
+            ${usageBadge}
+        </div>
+        <div class="block-stats">
+            ${block.is_responsive ? 
+                '<div class="block-stat" title="Responsive"><i class="fas fa-mobile-alt"></i></div>' : ''}
+            ${block.views_count > 0 ? 
+                `<div class="block-stat" title="${block.views_count} vues">
+                    <i class="fas fa-eye"></i>
+                </div>` : ''}
         </div>
     `;
     
-    if (categories && categories.length) {
-        categories.forEach(cat => {
-            html += `
-                <div class="cms-category-item" data-category="${cat.id}" onclick="filterByCategory('${cat.id}')">
-                    <i class="fas fa-tag"></i>
-                    <span>${escapeHtml(cat.label)}</span>
-                </div>
-            `;
-        });
-    }
+    card.draggable = true;
     
-    container.innerHTML = html;
-}
-
-function displayBlocks(blocksToShow) {
-    const wrapper = document.querySelector('#cmsBlocksList .cms-blocks-wrapper');
-    
-    if (!wrapper) return;
-    
-    if (!blocksToShow || blocksToShow.length === 0) {
-        wrapper.innerHTML = `
-            <div class="cms-empty-blocks">
-                <i class="fas fa-box-open"></i>
-                <p>Aucun bloc disponible</p>
-            </div>
-        `;
-        return;
-    }
-    
-    let html = '';
-    blocksToShow.forEach(block => {
-        const colors = ['#4361ee', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec489a'];
-        const colorIndex = block.id % colors.length;
+    card.addEventListener('dragstart', (e) => {
+        let blockHtml = '';
         
-        html += `
-            <div class="cms-block-item" draggable="true" data-block-content="${escapeHtml(block.content)}">
-                <div class="cms-block-icon" style="background: linear-gradient(135deg, ${colors[colorIndex]}, ${colors[colorIndex]}dd);">
-                    <i class="fas fa-puzzle-piece"></i>
-                </div>
-                <div class="cms-block-info">
-                    <div class="cms-block-name">${escapeHtml(block.label)}</div>
-                    <div class="cms-block-category">
-                        <i class="fas fa-tag"></i>
-                        <span>${escapeHtml(block.category)}</span>
-                    </div>
-                </div>
-            </div>
-        `;
+        if (block.html_content) {
+            let cleanHtml = block.html_content
+                .replace(/\\r\\n/g, '\n')
+                .replace(/\\n/g, '\n')
+                .replace(/\\t/g, '\t')
+                .replace(/\\"/g, '"');
+            
+            if (block.css_content && block.css_content.trim()) {
+                let cleanCss = block.css_content
+                    .replace(/\\r\\n/g, '\n')
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\t/g, '\t')
+                    .replace(/\\"/g, '"');
+                
+                blockHtml = cleanHtml + '\n<style>\n' + cleanCss + '\n</style>';
+            } else {
+                blockHtml = cleanHtml;
+            }
+        }
+        
+        e.dataTransfer.setData('text/html', blockHtml);
+        e.dataTransfer.setData('text/plain', blockHtml);
+        e.dataTransfer.setData('block-id', block.id.toString());
+        
+        e.dataTransfer.effectAllowed = 'copy';
+        card.classList.add('dragging');
+        
+        e.dataTransfer.setDragImage(card, 75, 75);
+        
+        card.style.transform = 'scale(0.95) rotate(2deg)';
+        card.style.boxShadow = '0 30px 60px rgba(0, 0, 0, 0.5)';
     });
     
-    wrapper.innerHTML = html;
-    
-    // Ajouter les événements de drag & drop
-    document.querySelectorAll('.cms-block-item').forEach(item => {
-        item.addEventListener('dragstart', handleDragStart);
-        item.addEventListener('dragend', handleDragEnd);
+    card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        card.style.transform = '';
+        card.style.boxShadow = '';
     });
-}
-
-function filterByCategory(categoryId) {
-    document.querySelectorAll('.cms-category-item').forEach(cat => {
-        cat.classList.remove('active');
+    
+    card.addEventListener('click', async (e) => {
+        if (!e.target.closest('.block-badge')) {
+            await addBlockToEditor(block.id);
+            card.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                card.style.transform = '';
+            }, 200);
+        }
     });
-    const activeCat = document.querySelector(`.cms-category-item[data-category="${categoryId}"]`);
-    if (activeCat) activeCat.classList.add('active');
     
-    if (categoryId === 'all') {
-        displayBlocks(blocks);
-    } else {
-        const filteredBlocks = blocks.filter(block => {
-            const catSlug = block.category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            return catSlug === categoryId;
-        });
-        displayBlocks(filteredBlocks);
-    }
-}
-
-function filterBlocks(searchTerm) {
-    if (!searchTerm.trim()) {
-        displayBlocks(blocks);
-        return;
-    }
+    card.addEventListener('mouseenter', () => {
+        const icon = card.querySelector('.block-icon-modern i');
+        if (icon) {
+            icon.style.transform = 'rotate(10deg) scale(1.1)';
+        }
+        card.style.zIndex = '10';
+    });
     
-    const term = searchTerm.toLowerCase();
-    const filtered = blocks.filter(block => 
-        block.label.toLowerCase().includes(term) ||
-        block.category.toLowerCase().includes(term)
-    );
-    displayBlocks(filtered);
-}
-
-function handleDragStart(e) {
-    const blockItem = e.target.closest('.cms-block-item');
-    if (!blockItem) return;
+    card.addEventListener('mouseleave', () => {
+        const icon = card.querySelector('.block-icon-modern i');
+        if (icon) {
+            icon.style.transform = '';
+        }
+        card.style.zIndex = '1';
+    });
     
-    const blockContent = blockItem.getAttribute('data-block-content');
-    e.dataTransfer.setData('text/html', blockContent);
-    e.dataTransfer.effectAllowed = 'copy';
-    
-    blockItem.style.opacity = '0.5';
-}
-
-function handleDragEnd(e) {
-    const blockItem = e.target.closest('.cms-block-item');
-    if (blockItem) {
-        blockItem.style.opacity = '1';
-    }
+    return card;
 }
 
 function escapeHtml(text) {
@@ -746,12 +1281,847 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function showLoading() {
-    document.getElementById('cmsLoadingOverlay').style.display = 'flex';
+// === FONCTIONS DE FILTRES MODERNES ===
+function initModernFilters() {
+    const searchInput = document.getElementById('blockSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce((e) => {
+            filterBlocksBySearch(e.target.value);
+        }, 300));
+    }
+    
+    const clearBtn = document.querySelector('.search-clear');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearSearch);
+    }
+    
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            if (chip.classList.contains('active')) {
+                chip.classList.remove('active');
+                filterByQuickFilter('all');
+            } else {
+                document.querySelectorAll('.filter-chip').forEach(c => {
+                    c.classList.remove('active');
+                });
+                chip.classList.add('active');
+                filterByQuickFilter(chip.dataset.filter);
+            }
+        });
+    });
+}
+
+function filterBlocksBySearch(term) {
+    const cards = document.querySelectorAll('.block-card-modern');
+    const emptyState = document.getElementById('blocksEmptyState');
+    const blocksGrid = document.getElementById('blocksContainer');
+    
+    const clearBtn = document.querySelector('.search-clear');
+    if (clearBtn) {
+        clearBtn.style.display = term ? 'block' : 'none';
+    }
+    
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+        const name = card.querySelector('.block-name').textContent.toLowerCase();
+        const desc = card.querySelector('.block-description').textContent.toLowerCase();
+        const category = card.dataset.category.toLowerCase();
+        const websiteType = card.dataset.websiteType.toLowerCase();
+        
+        const matches = name.includes(term.toLowerCase()) || 
+                       desc.includes(term.toLowerCase()) || 
+                       category.includes(term.toLowerCase()) ||
+                       websiteType.includes(term.toLowerCase());
+        
+        if (matches) {
+            card.style.display = 'block';
+            visibleCount++;
+            
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 10);
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    if (emptyState && blocksGrid) {
+        if (visibleCount === 0) {
+            emptyState.style.display = 'block';
+            blocksGrid.style.display = 'none';
+        } else {
+            emptyState.style.display = 'none';
+            blocksGrid.style.display = 'grid';
+        }
+    }
+}
+
+function filterByQuickFilter(filter) {
+    const cards = document.querySelectorAll('.block-card-modern');
+    
+    cards.forEach(card => {
+        switch(filter) {
+            case 'all':
+                card.style.display = 'block';
+                break;
+            case 'popular':
+                const usageElement = card.querySelector('.badge-usage');
+                const usageText = usageElement ? usageElement.textContent : '';
+                const usageMatch = usageText.match(/\d+/);
+                const usage = usageMatch ? parseInt(usageMatch[0]) : 0;
+                card.style.display = usage > 5 ? 'block' : 'none';
+                break;
+            case 'free':
+                const hasFreeBadge = card.querySelector('.badge-free');
+                card.style.display = hasFreeBadge ? 'block' : 'none';
+                break;
+            case 'responsive':
+                const hasMobileIcon = card.querySelector('.block-stat .fa-mobile-alt');
+                card.style.display = hasMobileIcon ? 'block' : 'none';
+                break;
+        }
+        
+        if (card.style.display !== 'none') {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 10);
+        }
+    });
+}
+
+function renderEmptyState() {
+    const container = document.getElementById('blocksContainer');
+    const emptyState = document.getElementById('blocksEmptyState');
+    
+    if (container) {
+        container.style.display = 'none';
+    }
+    
+    if (emptyState) {
+        emptyState.style.display = 'block';
+    }
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('blockSearch');
+    if (searchInput) {
+        searchInput.value = '';
+        filterBlocksBySearch('');
+        searchInput.focus();
+    }
+}
+
+function resetFilters() {
+    clearSearch();
+    
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.classList.remove('active');
+    });
+    const allChip = document.querySelector('.filter-chip[data-filter="all"]');
+    if (allChip) allChip.classList.add('active');
+    
+    document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    const allTab = document.querySelector('.category-tab[data-category="all"]');
+    if (allTab) allTab.classList.add('active');
+    
+    filterBlocksByCategory('all');
+    filterByQuickFilter('all');
+}
+
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar-left');
+    const toggleBtn = document.querySelector('.sidebar-toggle i');
+    
+    if (!sidebar || !toggleBtn) return;
+    
+    if (sidebar.classList.contains('collapsed')) {
+        sidebar.classList.remove('collapsed');
+        sidebar.style.width = '380px';
+        toggleBtn.className = 'fas fa-chevron-left';
+        
+        setTimeout(() => {
+            const cards = document.querySelectorAll('.block-card-modern');
+            cards.forEach((card, index) => {
+                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(10px)';
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 30);
+            });
+        }, 300);
+    } else {
+        sidebar.classList.add('collapsed');
+        sidebar.style.width = '60px';
+        toggleBtn.className = 'fas fa-chevron-right';
+    }
+}
+
+// === FONCTIONS DE GESTION DES BLOCS ===
+async function addBlockToEditor(blockId) {
+    try {
+        showLoading('Ajout du bloc...');
+        
+        const response = await fetch('/api/blocks/add-to-editor', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            },
+            body: JSON.stringify({ block_id: blockId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            let fullHtml = data.block.html;
+            if (data.block.css && data.block.css.trim()) {
+                fullHtml = data.block.html + '\n<style>\n' + data.block.css + '\n</style>';
+            }
+            
+            editor.addComponents(fullHtml);
+            
+            if (data.block.js && data.block.js.trim()) {
+                try {
+                    const script = document.createElement('script');
+                    script.textContent = data.block.js;
+                    document.body.appendChild(script);
+                } catch (jsError) {
+                    console.warn('Erreur d\'exécution du JS du bloc:', jsError);
+                }
+            }
+            
+            updateLayersPanel();
+            updateBlockUsageInUI(blockId);
+            
+            hideLoading();
+            showNotification('Bloc ajouté avec succès', 'success');
+            
+        } else {
+            throw new Error(data.message || 'Échec de l\'ajout du bloc');
+        }
+    } catch (error) {
+        console.error('Erreur d\'ajout du bloc:', error);
+        hideLoading();
+        showNotification('Erreur d\'ajout du bloc: ' + error.message, 'error');
+    }
+}
+
+function updateBlockUsageInUI(blockId) {
+    const blockElement = document.querySelector(`.block-card-modern[data-block-id="${blockId}"]`);
+    if (blockElement) {
+        const usageElement = blockElement.querySelector('.badge-usage');
+        if (usageElement) {
+            const currentCount = parseInt(usageElement.textContent.match(/\d+/)[0]) || 0;
+            usageElement.innerHTML = `<i class="fas fa-download"></i> ${currentCount + 1}`;
+            
+            usageElement.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                usageElement.style.transform = 'scale(1)';
+            }, 300);
+        } else {
+            const metaElement = blockElement.querySelector('.block-meta-modern');
+            if (metaElement) {
+                const usageSpan = document.createElement('span');
+                usageSpan.className = 'block-badge badge-usage';
+                usageSpan.innerHTML = '<i class="fas fa-download"></i> 1';
+                metaElement.appendChild(usageSpan);
+            }
+        }
+    }
+}
+
+async function updateBlockUsage(blockId) {
+    try {
+        const response = await fetch('/api/blocks/add-to-editor', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            },
+            body: JSON.stringify({ block_id: blockId })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            updateBlockUsageInUI(blockId);
+        }
+    } catch (error) {
+        console.error('Erreur de mise à jour de l\'utilisation du bloc:', error);
+    }
+}
+
+// === FONCTIONS UTILITAIRES ===
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function showLoading(message = 'Chargement...') {
+    let loader = document.getElementById('global-loader');
+    if (!loader) {
+        loader = document.createElement('div');
+        loader.id = 'global-loader';
+        loader.className = 'global-loader';
+        loader.innerHTML = `
+            <div class="loader-content">
+                <div class="loader-spinner"></div>
+                <div class="loader-text">${message}</div>
+            </div>
+        `;
+        document.body.appendChild(loader);
+    } else {
+        loader.querySelector('.loader-text').textContent = message;
+    }
+    loader.style.display = 'flex';
 }
 
 function hideLoading() {
-    document.getElementById('cmsLoadingOverlay').style.display = 'none';
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+        loader.style.display = 'none';
+    }
 }
-</script>
-@endsection
+
+function showNotification(message, type = 'info') {
+    document.querySelectorAll('.notification').forEach(n => n.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
+    }, 10);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 4000);
+}
+
+function initBlocksModern() {
+    const pageId = window.currentPageId || null;
+    console.log('Initialisation des blocs avec pageId:', pageId);
+    loadBlocksModern(pageId);
+}
+
+function initLayersPanel() {
+    updateLayersPanel();
+    
+    editor.on('component:selected', updateLayersPanel);
+    editor.on('component:add', updateLayersPanel);
+    editor.on('component:remove', updateLayersPanel);
+    editor.on('component:update', updateLayersPanel);
+}
+
+function updateLayersPanel() {
+    const layersList = document.getElementById('layersList');
+    if (!layersList) return;
+    
+    const components = editor.DomComponents.getComponents();
+    
+    layersList.innerHTML = '';
+    
+    if (components.length === 0) {
+        layersList.innerHTML = '<div style="color: #94a3b8; text-align: center; padding: 20px;">Aucun calque pour l\'instant</div>';
+        return;
+    }
+    
+    function renderLayers(components, level = 0) {
+        components.forEach(component => {
+            const layerDiv = document.createElement('div');
+            layerDiv.className = 'layer-item';
+            layerDiv.style.paddingLeft = (level * 20) + 'px';
+            
+            const selectedComponent = editor.getSelected();
+            if (selectedComponent && selectedComponent === component) {
+                layerDiv.classList.add('active');
+            }
+            
+            let icon = 'fa-cube';
+            const tagName = component.get('tagName');
+            if (tagName === 'img') icon = 'fa-image';
+            else if (tagName === 'button' || tagName === 'a') icon = 'fa-square';
+            else if (tagName === 'h1' || tagName === 'h2' || tagName === 'h3') icon = 'fa-heading';
+            else if (tagName === 'p') icon = 'fa-paragraph';
+            else if (tagName === 'section' || tagName === 'div') icon = 'fa-square-full';
+            
+            layerDiv.innerHTML = `
+                <div class="layer-icon">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="layer-name">
+                    ${component.get('type') || tagName || 'Composant'}
+                </div>
+                <div class="layer-badge">
+                    ${tagName || 'div'}
+                </div>
+            `;
+            
+            layerDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                editor.select(component);
+            });
+            
+            layersList.appendChild(layerDiv);
+            
+            const children = component.get('components');
+            if (children && children.length > 0) {
+                renderLayers(children, level + 1);
+            }
+        });
+    }
+    
+    renderLayers(components);
+}
+
+function initEditorEvents() {
+    let history = [];
+    const maxHistory = 50;
+    
+    editor.on('component:add component:remove component:update style:property:update', () => {
+        const action = {
+            time: new Date().toLocaleTimeString(),
+            html: editor.getHtml(),
+            css: editor.getCss()
+        };
+        
+        history.unshift(action);
+        if (history.length > maxHistory) {
+            history.pop();
+        }
+        
+        updateHistoryPanel();
+    });
+    
+    function updateHistoryPanel() {
+        const historyList = document.getElementById('historyList');
+        if (!historyList) return;
+        
+        historyList.innerHTML = '';
+        
+        if (history.length === 0) {
+            historyList.innerHTML = '<div style="color: #94a3b8; text-align: center; padding: 20px;">Aucun historique pour l\'instant</div>';
+            return;
+        }
+        
+        history.slice(0, 10).forEach((action, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'history-item';
+            
+            let icon = 'fa-edit';
+            if (index === 0) icon = 'fa-clock';
+            
+            itemDiv.innerHTML = `
+                <div class="history-icon">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div>
+                    ${index === 0 ? 'Actuel' : 'Action ' + index}
+                </div>
+                <div class="history-time">
+                    ${action.time}
+                </div>
+            `;
+            
+            historyList.appendChild(itemDiv);
+        });
+    }
+    
+    updateHistoryPanel();
+}
+
+// === FONCTIONS DE GESTION DES MODALES ===
+async function clearCanvas() {
+    const { isConfirmed } = await Swal.fire({
+        title: 'Vider le Canevas ?',
+        text: 'Êtes-vous sûr de vouloir vider le canevas ? Tout votre travail actuel sera perdu.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Oui, le vider !',
+        cancelButtonText: 'Annuler',
+        reverseButtons: true
+    });
+
+    if (isConfirmed) {
+        editor.setComponents('');
+        showNotification('Canevas vidé', 'info');
+        
+        Swal.fire({
+            title: 'Vidé !',
+            text: 'Le canevas a été vidé.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+}
+
+function showPreviewInModal() {
+    const html = editor.getHtml();
+    const css = editor.getCss();
+    
+    const previewFrame = document.getElementById('previewFrame');
+    if (previewFrame) {
+        const previewDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+        previewDoc.open();
+        previewDoc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Aperçu</title>
+                <style>${css}</style>
+            </head>
+            <body style="margin: 0; padding: 20px; background: #f8fafc;">${html}</body>
+            </html>
+        `);
+        previewDoc.close();
+        
+        const modal = document.getElementById('previewModal');
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    }
+}
+
+function showPreviewInNewTab() {
+    const html = editor.getHtml();
+    const css = editor.getCss();
+    
+    const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aperçu - Constructeur de Pages Web</title>
+    <style>
+        ${css}
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f8fafc;
+        }
+        
+        .preview-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .preview-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .preview-header h1 {
+            color: #1e293b;
+            margin: 0;
+        }
+        
+        .preview-note {
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <div class="preview-header">
+            <h1><i class="fas fa-eye"></i> Mode Aperçu</h1>
+            <div class="preview-note">
+                Ceci est un aperçu de votre page. Les modifications ne sont pas sauvegardées automatiquement.
+            </div>
+        </div>
+        ${html}
+    </div>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>`;
+    
+    const newTab = window.open();
+    newTab.document.open();
+    newTab.document.write(fullHtml);
+    newTab.document.close();
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function copyCode() {
+    const codeEditor = document.getElementById('codeEditor');
+    if (codeEditor) {
+        codeEditor.select();
+        document.execCommand('copy');
+        showNotification('Code copié dans le presse-papier', 'success');
+    }
+}
+
+// === DRAG AND DROP PERSONNALISÉ ===
+function initCustomDragDrop() {
+    if (!editor || !editor.Canvas) {
+        console.error('Éditeur ou Canvas non initialisé, nouvelle tentative dans 500ms...');
+        setTimeout(initCustomDragDrop, 500);
+        return;
+    }
+    
+    try {
+        let canvas = null;
+        
+        if (editor.Canvas.getFrameEl) {
+            canvas = editor.Canvas.getFrameEl();
+        }
+        
+        if (!canvas && editor.Canvas.getWindow) {
+            const win = editor.Canvas.getWindow();
+            if (win && win.document) {
+                canvas = win.document.body;
+            }
+        }
+        
+        if (!canvas) {
+            const iframe = document.querySelector('.gjs-frame');
+            if (iframe && iframe.contentDocument) {
+                canvas = iframe.contentDocument.body;
+            }
+        }
+        
+        if (!canvas) {
+            const frame = document.querySelector('#gjs iframe, .gjs-frame');
+            if (frame && frame.contentDocument) {
+                canvas = frame.contentDocument.body;
+            }
+        }
+        
+        if (!canvas) {
+            console.error('Élément Canvas non trouvé, nouvelles tentatives...');
+            setTimeout(initCustomDragDrop, 500);
+            return;
+        }
+        
+        console.log('Canvas trouvé:', canvas);
+        
+        dropIndicator = document.createElement('div');
+        dropIndicator.className = 'drop-indicator';
+        dropIndicator.style.display = 'none';
+        
+        const canvasContainer = document.querySelector('.gjs-editor-cont');
+        if (canvasContainer) {
+            canvasContainer.appendChild(dropIndicator);
+        } else {
+            document.body.appendChild(dropIndicator);
+        }
+        
+        canvas.addEventListener('dragover', handleCanvasDragOver);
+        canvas.addEventListener('dragleave', handleCanvasDragLeave);
+        canvas.addEventListener('drop', handleCanvasDrop);
+        
+        console.log('Drag and drop personnalisé initialisé avec succès');
+        
+        const iframe = document.querySelector('#gjs iframe, .gjs-frame');
+        if (iframe) {
+            iframe.addEventListener('dragover', handleCanvasDragOver);
+            iframe.addEventListener('dragleave', handleCanvasDragLeave);
+            iframe.addEventListener('drop', handleCanvasDrop);
+        }
+        
+    } catch (error) {
+        console.error('Erreur d\'initialisation du drag and drop personnalisé:', error);
+        setTimeout(initCustomDragDrop, 500);
+    }
+}
+
+function handleCanvasDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!dropIndicator) return false;
+    
+    const editorContainer = document.querySelector('.gjs-editor-cont') || document.querySelector('#gjs');
+    if (!editorContainer) return false;
+    
+    const rect = editorContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const closestComponent = findClosestComponent(target);
+    
+    if (closestComponent && closestComponent !== editorContainer) {
+        const componentRect = closestComponent.getBoundingClientRect();
+        const relativeY = e.clientY - componentRect.top;
+        const isBefore = relativeY < componentRect.height / 2;
+        
+        dropIndicator.style.display = 'block';
+        dropIndicator.style.width = componentRect.width + 'px';
+        dropIndicator.style.left = (componentRect.left - rect.left) + 'px';
+        
+        if (isBefore) {
+            dropIndicator.style.top = (componentRect.top - rect.top - 1) + 'px';
+            dropIndicator.className = 'drop-indicator before';
+        } else {
+            dropIndicator.style.top = (componentRect.bottom - rect.top - 1) + 'px';
+            dropIndicator.className = 'drop-indicator after';
+        }
+        
+        dropIndicator.dataset.targetId = closestComponent.id || '';
+        dropIndicator.dataset.position = isBefore ? 'before' : 'after';
+    } else {
+        dropIndicator.style.display = 'none';
+    }
+    
+    return false;
+}
+
+function handleCanvasDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dropIndicator) {
+        dropIndicator.style.display = 'none';
+    }
+    return false;
+}
+
+async function handleCanvasDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (dropIndicator) {
+        dropIndicator.style.display = 'none';
+    }
+    
+    let blockHtml = e.dataTransfer.getData('text/html');
+    const blockId = e.dataTransfer.getData('block-id');
+    
+    if (!blockHtml || blockHtml.trim() === '') {
+        blockHtml = e.dataTransfer.getData('text/plain');
+    }
+    
+    if (blockHtml && blockHtml.trim()) {
+        if (dropIndicator && dropIndicator.dataset.targetId && dropIndicator.dataset.position) {
+            const targetId = dropIndicator.dataset.targetId;
+            const position = dropIndicator.dataset.position;
+            
+            editor.addComponents(blockHtml);
+        } else {
+            editor.addComponents(blockHtml);
+        }
+        
+        if (blockId) {
+            updateBlockUsage(parseInt(blockId));
+        }
+        
+        showNotification('Bloc ajouté avec succès', 'success');
+    } else {
+        showNotification('Impossible d\'ajouter le bloc: Aucun HTML valide trouvé', 'error');
+    }
+    
+    return false;
+}
+
+function findClosestComponent(element) {
+    while (element && element !== document) {
+        if (element.classList && element.classList.contains('gjs-comp-selected')) {
+            return element;
+        }
+        element = element.parentElement;
+    }
+    return null;
+}
+
+// === FONCTIONS DIVERSES ===
+function previewBlock(blockId) {
+    console.log('Aperçu du bloc:', blockId);
+}
+
+function showBlockCode(blockId) {
+    console.log('Afficher le code pour le bloc:', blockId);
+}
+
+async function importBlocks() {
+    console.log('Importation de blocs');
+}
+
+async function exportBlocks() {
+    console.log('Exportation de blocs');
+}
+
+function showAllCategories() {
+    console.log('Afficher toutes les catégories');
+}
+
+function showRightPanel(panel) {
+    console.log('Afficher le panneau:', panel);
+}
+
+// === INITIALISATION ===
+document.addEventListener('DOMContentLoaded', function() {
+    initEditor();
+    
+    console.log('Constructeur de Pages Web moderne initialisé');
+    
+    window.addEventListener('resize', updateCategoryNavButtons);
+    
+    const scrollContainer = document.getElementById('categoriesScroll');
+    if (scrollContainer) {
+        scrollContainer.addEventListener('scroll', updateCategoryNavButtons);
+    }
+    
+    setTimeout(updateCategoryNavButtons, 1000);
+});
+    </script>
+</body>
+</html>

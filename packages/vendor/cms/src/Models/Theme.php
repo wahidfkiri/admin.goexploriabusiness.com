@@ -131,14 +131,19 @@ class Theme extends Model
         return true;
     }
 
-    /**
-     * Get the full path to the theme directory.
-     */
-    public function getFullPath(): string
-    {
-        // Chemin: storage/app/public/cms/themes/{slug}/
-        return storage_path("app/public/cms/themes/{$this->slug}");
-    }
+   /**
+ * Get the full path to the theme directory for a specific etablissement.
+ *
+ * @param int|null $etablissementId
+ * @return string
+ */
+public function getFullPath($etablissementId = null)
+{
+    $etablissementId = $etablissementId ?: $this->etablissement_id;
+    
+    // Nouveau chemin: storage/app/public/cms/themes/{etablissementId}/{slug}/
+    return storage_path("app/public/cms/themes/{$etablissementId}/{$this->slug}");
+}
 
     /**
      * Get the URL for theme assets.

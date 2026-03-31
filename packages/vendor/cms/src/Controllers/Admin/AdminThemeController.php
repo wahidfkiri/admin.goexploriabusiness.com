@@ -75,7 +75,8 @@ class AdminThemeController extends Controller
             // Upload du thème (ne contient plus d'établissement_id)
             $theme = $this->themeService->uploadTheme(
                 $request->file('theme_file'),
-                $request->input('name')
+                $request->input('name'),
+                $etablissement->id
             );
             
             // Attacher le thème à l'établissement

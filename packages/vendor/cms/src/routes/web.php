@@ -76,9 +76,9 @@ Route::middleware(['web'])->group(function () {
     });
     
     // Route pour les assets des thèmes (en dehors du préfixe company)
-    Route::get('/themes/{etablissementId}/{themeId}/assets/{path}', [WebThemeController::class, 'asset'])
-        ->where('path', '.*')
-        ->name('cms.theme.asset');
+    Route::get('/themes/{etablissementId}/{themeSlug}/assets/{path}', [WebThemeController::class, 'asset'])
+    ->where('path', '.*')
+    ->name('cms.theme.asset');
     
     // Route de fallback
     Route::fallback(function () {
@@ -98,6 +98,11 @@ Route::middleware(['web'])->group(function () {
 Auth::routes();
 
 Route::middleware(['web', 'auth'])->group(function () {
+
+    Route::prefix('admin/cms/api/pages')->name('cms.admin.')->group(function () {
+        Route::get('/{id}/load', [PageController::class, 'loadPageContent'])->name('pages.load');
+        Route::put('/{id}', [PageController::class, 'updatePageContent']);
+    });
     
     Route::prefix('admin/cms/{etablissementId}')->name('cms.admin.')->group(function () {
         

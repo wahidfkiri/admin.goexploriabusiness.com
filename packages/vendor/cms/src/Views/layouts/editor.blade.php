@@ -20,8 +20,6 @@
     <!-- Scripts -->
     @stack('scripts')
 </body>
-</html>
-
 <style>
     * {
         margin: 0;
@@ -41,7 +39,5 @@
     }
 </style>
 
-<script>
-    window.currentEtablissementId = {{ $etablissement->id }};
-    const currentEtablissementId = {{ $etablissement->id }};
-</script>
+</html>
+

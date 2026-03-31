@@ -3,6 +3,7 @@
 namespace Vendor\Cms\Services;
 
 use Vendor\Cms\Models\Theme;
+use Vendor\Cms\Models\Page;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
@@ -11,13 +12,12 @@ use ZipArchive;
 class ThemeService
 {
     /**
-     * Upload and extract a theme (sans etablissement_id).
+     * Upload and extract a theme.
      */
-    public function uploadTheme($file, $name): Theme
+    public function uploadTheme($file, $name, $etablissementId): Theme
     {
         $slug = Str::slug($name);
-        // Nouveau chemin: storage/app/public/cms/themes/{slug}/
-        $themePath = "app/public/cms/themes/{$slug}";
+        $themePath = "app/public/cms/themes/{$etablissementId}/{$slug}";
         
         // Create directory
         $fullPath = storage_path($themePath);
@@ -45,7 +45,10 @@ class ThemeService
         $this->validateThemeStructure($fullPath);
         
         // Extract preview image from zip root
-        $previewImage = $this->extractPreviewImage($zipPath, $fullPath, $slug);
+        $previewImage = $this->extractPreviewImage($zipPath, $fullPath, $slug, $etablissementId);
+        
+        // Extract home page content
+        $homeContent = $this->extractHomePageContent($fullPath);
         
         // Check if theme already exists globally
         $existingTheme = Theme::where('slug', $slug)->first();
@@ -54,7 +57,7 @@ class ThemeService
             throw new \Exception('Un thème avec ce nom existe déjà');
         }
         
-        // Create theme record (sans etablissement_id)
+        // Create theme record
         $theme = Theme::create([
             'name' => $name,
             'slug' => $slug,
@@ -62,44 +65,204 @@ class ThemeService
             'preview_image' => $previewImage,
             'version' => $this->getThemeVersion($fullPath),
             'description' => $this->getThemeDescription($fullPath),
-            'is_default' => Theme::count() === 0, // Premier thème créé = thème par défaut
+            'is_default' => Theme::count() === 0,
         ]);
+        
+        // Create default home page with extracted content
+        $this->createDefaultHomePage($etablissementId, $theme, $homeContent);
         
         return $theme;
     }
     
     /**
+     * Extract home page content from the theme.
+     */
+    protected function extractHomePageContent($themePath): ?string
+    {
+        // Chercher home.html, index.html ou home.blade.php à la racine
+        $homeFiles = ['home.html', 'index.html', 'home.blade.php'];
+        
+        foreach ($homeFiles as $file) {
+            $filePath = $themePath . '/' . $file;
+            if (file_exists($filePath)) {
+                $content = file_get_contents($filePath);
+                Log::info('Home page content found in: ' . $file);
+                
+                // Si c'est un fichier Blade, extraire le contenu de la section
+                if (str_ends_with($file, '.blade.php')) {
+                    $content = $this->extractBladeContent($content);
+                }
+                
+                return $this->cleanHtmlContent($content);
+            }
+        }
+        
+        // Chercher dans le dossier pages
+        // $pagesDir = $themePath . '/pages';
+        // if (file_exists($pagesDir)) {
+        //     $pageFiles = ['home.html', 'index.html', 'home.blade.php'];
+        //     foreach ($pageFiles as $file) {
+        //         $filePath = $pagesDir . '/' . $file;
+        //         if (file_exists($filePath)) {
+        //             $content = file_get_contents($filePath);
+        //             Log::info('Home page content found in pages/' . $file);
+                    
+        //             if (str_ends_with($file, '.blade.php')) {
+        //                 $content = $this->extractBladeContent($content);
+        //             }
+                    
+        //             return $this->cleanHtmlContent($content);
+        //         }
+        //     }
+        // }
+        
+        Log::info('No home page content found in theme, using default');
+        return null;
+    }
+    
+    /**
+     * Extract content from Blade file between @section('content') and @endsection.
+     */
+    protected function extractBladeContent($content): string
+    {
+        // Extraire le contenu entre @section('content') et @endsection
+        $pattern = '/@section\([\'"]content[\'"]\s*(.*?)\s*@endsection/s';
+        if (preg_match($pattern, $content, $matches)) {
+            return trim($matches[1]);
+        }
+        
+        // Si pas de section content, retourner tout le contenu sans les directives Blade
+        $content = preg_replace('/@extends\([^\)]+\)/', '', $content);
+        $content = preg_replace('/@section\([^\)]+\)/', '', $content);
+        $content = preg_replace('/@endsection/', '', $content);
+        $content = preg_replace('/@include\([^\)]+\)/', '', $content);
+        $content = preg_replace('/@yield\([^\)]+\)/', '', $content);
+        $content = preg_replace('/@stack\([^\)]+\)/', '', $content);
+        
+        return trim($content);
+    }
+    
+    /**
+     * Clean HTML content by removing DOCTYPE, html, head, body tags.
+     */
+    protected function cleanHtmlContent($content): string
+    {
+        // Enlever les balises DOCTYPE, html, head, body si présentes
+        $content = preg_replace('/<!DOCTYPE[^>]*>/i', '', $content);
+        $content = preg_replace('/<html[^>]*>/i', '', $content);
+        $content = preg_replace('/<\/html>/i', '', $content);
+        $content = preg_replace('/<head[^>]*>.*<\/head>/is', '', $content);
+        $content = preg_replace('/<body[^>]*>/i', '', $content);
+        $content = preg_replace('/<\/body>/i', '', $content);
+        
+        // Nettoyer les espaces
+        $content = trim($content);
+        
+        return $content;
+    }
+    
+    /**
+     * Create default home page with theme content.
+     */
+    protected function createDefaultHomePage($etablissementId, $theme, $homeContent = null)
+    {
+        // Vérifier si une page d'accueil existe déjà
+        $existingHome = Page::where('etablissement_id', $etablissementId)
+            ->where('is_home', true)
+            ->first();
+        
+        // if ($existingHome) {
+        //     Log::info('Home page already exists for etablissement ' . $etablissementId . ', skipping creation');
+        //     return;
+        // }
+        
+        // Si un contenu a été extrait, l'utiliser
+        if ($homeContent && !empty(trim($homeContent))) {
+            $content = $homeContent;
+            Log::info('Using extracted home page content for theme: ' . $theme->name);
+        } else {
+            // Sinon, utiliser un contenu par défaut basé sur le thème
+            $content = $this->getDefaultHomeContent($theme);
+            Log::info('Using default home page content for theme: ' . $theme->name);
+        }
+        
+        // Créer la page d'accueil
+        Page::updateOrCreate([
+            'etablissement_id' => $etablissementId,
+            'title' => 'Accueil',
+            'slug' => 'home',
+        ], [
+            'content' => $content,
+            'status' => 'published',
+            'visibility' => 'public',
+            'is_home' => true,
+            'published_at' => now(),
+        ]);
+        
+        Log::info('Default home page created for etablissement ' . $etablissementId . ' with theme: ' . $theme->name);
+    }
+    
+    /**
+     * Get default home content based on theme.
+     */
+    protected function getDefaultHomeContent($theme): string
+    {
+        return '<section class="hero-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 100px 20px; text-align: center;">
+            <div class="container" style="max-width: 1200px; margin: 0 auto;">
+                <h1 style="font-size: 3rem; margin-bottom: 20px;">Bienvenue sur notre site</h1>
+                <p style="font-size: 1.2rem; margin-bottom: 30px;">Ceci est votre page d\'accueil avec le thème <strong>' . e($theme->name) . '</strong></p>
+                <a href="#" class="btn" style="display: inline-block; background: white; color: #667eea; padding: 12px 30px; border-radius: 50px; text-decoration: none; font-weight: bold;">Commencer</a>
+            </div>
+        </section>
+        <section class="features" style="padding: 60px 20px;">
+            <div class="container" style="max-width: 1200px; margin: 0 auto;">
+                <h2 style="text-align: center; margin-bottom: 40px;">Nos services</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                    <div style="background: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+                        <i class="fas fa-rocket" style="font-size: 2rem; color: #667eea; margin-bottom: 15px;"></i>
+                        <h3>Innovation</h3>
+                        <p>Des solutions innovantes pour votre entreprise.</p>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+                        <i class="fas fa-users" style="font-size: 2rem; color: #667eea; margin-bottom: 15px;"></i>
+                        <h3>Expertise</h3>
+                        <p>Une équipe d\'experts à votre service.</p>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+                        <i class="fas fa-headset" style="font-size: 2rem; color: #667eea; margin-bottom: 15px;"></i>
+                        <h3>Support 24/7</h3>
+                        <p>Une assistance disponible à tout moment.</p>
+                    </div>
+                </div>
+            </div>
+        </section>';
+    }
+    
+    /**
      * Extract preview image from zip root.
      */
-    protected function extractPreviewImage($zipPath, $extractPath, $slug): ?string
+    protected function extractPreviewImage($zipPath, $extractPath, $slug, $etablissementId): ?string
     {
         $zip = new ZipArchive();
         $previewImagePath = null;
         
-        // Extensions d'images acceptées
         $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
         
         if ($zip->open($zipPath) === true) {
-            // Chercher les images à la racine du ZIP
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $filename = $zip->getNameIndex($i);
-                
-                // Vérifier si le fichier est à la racine (pas de slash ou seulement un dossier)
                 $isRootFile = !str_contains($filename, '/') || substr_count($filename, '/') === 1;
                 
                 if ($isRootFile) {
                     $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                     $basename = strtolower(pathinfo($filename, PATHINFO_FILENAME));
                     
-                    // Vérifier si c'est une image avec un nom de prévisualisation
                     if (in_array($extension, $imageExtensions)) {
-                        // Noms de fichier acceptés pour la prévisualisation
                         $previewNames = ['screenshot', 'preview', 'thumbnail', 'cover', 'theme-preview', 'theme'];
                         
                         if (in_array($basename, $previewNames)) {
-                            // Extraire l'image
                             $imageContent = $zip->getFromName($filename);
-                            $previewImageName = "themes/{$slug}/preview.{$extension}";
+                            $previewImageName = "themes/{$etablissementId}/{$slug}/preview.{$extension}";
                             $storagePath = Storage::disk('public')->put($previewImageName, $imageContent);
                             
                             if ($storagePath) {
@@ -111,7 +274,6 @@ class ThemeService
                 }
             }
             
-            // Si aucune image de preview trouvée, chercher la première image à la racine
             if (!$previewImagePath) {
                 for ($i = 0; $i < $zip->numFiles; $i++) {
                     $filename = $zip->getNameIndex($i);
@@ -122,7 +284,7 @@ class ThemeService
                         
                         if (in_array($extension, $imageExtensions)) {
                             $imageContent = $zip->getFromName($filename);
-                            $previewImageName = "themes/{$slug}/preview.{$extension}";
+                            $previewImageName = "themes/{$etablissementId}/{$slug}/preview.{$extension}";
                             $storagePath = Storage::disk('public')->put($previewImageName, $imageContent);
                             
                             if ($storagePath) {
@@ -153,9 +315,16 @@ class ThemeService
             }
         }
         
-        // Create assets directory if it doesn't exist
         if (!file_exists($path . '/assets')) {
             mkdir($path . '/assets', 0755, true);
+        }
+        
+        if (!file_exists($path . '/partials')) {
+            mkdir($path . '/partials', 0755, true);
+        }
+        
+        if (!file_exists($path . '/pages')) {
+            mkdir($path . '/pages', 0755, true);
         }
     }
     
@@ -196,18 +365,15 @@ class ThemeService
     {
         $etablissement = \App\Models\Etablissement::findOrFail($etablissementId);
         
-        // Désactiver tous les thèmes de l'établissement
         $etablissement->themes()->updateExistingPivot(
             $etablissement->themes()->pluck('id')->toArray(),
             ['is_active' => false]
         );
         
-        // Activer le thème sélectionné
         $etablissement->themes()->updateExistingPivot($theme->id, [
             'is_active' => true
         ]);
         
-        // Clear theme cache
         $this->clearThemeCache($etablissementId);
     }
     
@@ -222,22 +388,21 @@ class ThemeService
             'is_active' => false
         ]);
         
-        // Clear theme cache
         $this->clearThemeCache($etablissementId);
     }
     
     /**
      * Delete theme files only (not database record).
      */
-    public function deleteThemeFiles(Theme $theme): void
+    public function deleteThemeFiles(Theme $theme, $etablissementId = null): void
     {
-        $fullPath = storage_path($theme->path);
+        $etablissementId = $etablissementId ?: $theme->etablissement_id;
+        $fullPath = storage_path("app/public/cms/themes/{$etablissementId}/{$theme->slug}");
         
         if (file_exists($fullPath)) {
             $this->deleteDirectory($fullPath);
         }
         
-        // Delete preview image if exists
         if ($theme->preview_image && Storage::disk('public')->exists($theme->preview_image)) {
             Storage::disk('public')->delete($theme->preview_image);
         }
@@ -248,13 +413,9 @@ class ThemeService
      */
     public function deleteTheme(Theme $theme): void
     {
-        // Delete physical files
         $this->deleteThemeFiles($theme);
-        
-        // Delete the theme record
         $theme->delete();
         
-        // Clear cache for all etablissements that used this theme
         $etablissementIds = $theme->etablissements()->pluck('etablissement_id')->toArray();
         foreach ($etablissementIds as $etablissementId) {
             $this->clearThemeCache($etablissementId);
@@ -266,12 +427,10 @@ class ThemeService
      */
     protected function clearThemeCache($etablissementId): void
     {
-        // Clear view cache
         if (function_exists('opcache_reset')) {
             opcache_reset();
         }
         
-        // Clear specific page cache for this etablissement
         $cacheKeys = [
             "page_{$etablissementId}_*",
             "theme_{$etablissementId}_*",
@@ -329,9 +488,7 @@ class ThemeService
     public function saveThemeConfig(Theme $theme, array $config): void
     {
         $configFile = storage_path($theme->path . '/config.json');
-        
         file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT));
-        
         $theme->config = $config;
         $theme->save();
     }
@@ -339,13 +496,12 @@ class ThemeService
     /**
      * Duplicate a theme.
      */
-    public function duplicateTheme(Theme $theme, string $newName): Theme
+    public function duplicateTheme(Theme $theme, string $newName, $etablissementId): Theme
     {
         $newSlug = Str::slug($newName);
-        $newPath = "app/public/cms/themes/{$newSlug}";
+        $newPath = "app/public/cms/themes/{$etablissementId}/{$newSlug}";
         
-        // Copy files
-        $sourcePath = storage_path($theme->path);
+        $sourcePath = storage_path("app/public/cms/themes/{$etablissementId}/{$theme->slug}");
         $destPath = storage_path($newPath);
         
         if (!file_exists($destPath)) {
@@ -353,7 +509,6 @@ class ThemeService
             $this->copyDirectory($sourcePath, $destPath);
         }
         
-        // Create new theme record
         $newTheme = Theme::create([
             'name' => $newName,
             'slug' => $newSlug,
@@ -364,17 +519,6 @@ class ThemeService
             'is_default' => false,
         ]);
         
-        // Copy preview image if exists
-        if ($theme->preview_image) {
-            $oldPreviewPath = $theme->preview_image;
-            $newPreviewPath = "themes/{$newSlug}/preview." . pathinfo($oldPreviewPath, PATHINFO_EXTENSION);
-            
-            if (Storage::disk('public')->exists($oldPreviewPath)) {
-                Storage::disk('public')->copy($oldPreviewPath, $newPreviewPath);
-                $newTheme->update(['preview_image' => $newPreviewPath]);
-            }
-        }
-        
         return $newTheme;
     }
     
@@ -384,7 +528,6 @@ class ThemeService
     protected function copyDirectory($src, $dst): void
     {
         $dir = opendir($src);
-        
         @mkdir($dst);
         
         while (false !== ($file = readdir($dir))) {
@@ -407,13 +550,9 @@ class ThemeService
     {
         $etablissement = \App\Models\Etablissement::findOrFail($etablissementId);
         
-        // Thèmes déjà liés
         $linkedThemeIds = $etablissement->themes()->pluck('theme_id')->toArray();
-        
-        // Tous les thèmes
         $allThemes = Theme::all();
         
-        // Séparer les thèmes liés et non liés
         $linkedThemes = $allThemes->filter(function($theme) use ($linkedThemeIds) {
             return in_array($theme->id, $linkedThemeIds);
         });
@@ -436,7 +575,6 @@ class ThemeService
         $etablissement = \App\Models\Etablissement::findOrFail($etablissementId);
         $theme = Theme::findOrFail($themeId);
         
-        // Vérifier si déjà attaché
         if ($etablissement->themes()->where('theme_id', $themeId)->exists()) {
             throw new \Exception('Ce thème est déjà associé à cet établissement');
         }
@@ -453,10 +591,7 @@ class ThemeService
     public function detachThemeFromEtablissement($themeId, $etablissementId): void
     {
         $etablissement = \App\Models\Etablissement::findOrFail($etablissementId);
-        
         $etablissement->themes()->detach($themeId);
-        
-        // Clear cache
         $this->clearThemeCache($etablissementId);
     }
 }
