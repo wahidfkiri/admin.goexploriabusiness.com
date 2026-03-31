@@ -799,4 +799,86 @@ class CountryController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Delete a file from either local storage or CDN
+     */
+    private function deleteFile($filePath, $cdnEnabled = null)
+    {
+        if (!$filePath) {
+            return false;
+        }
+
+        $cdnEnabled = $cdnEnabled ?? env('CDN_ENABLED', false);
+        
+        try {
+            // Check if it's a CDN URL
+            if ($this->isCdnUrl($filePath)) {
+                // Extract path from CDN URL
+                $path = $this->extractPathFromCdnUrl($filePath);
+                \Log::info('Deleting file from CDN', [
+                    'url' => $filePath,
+                    'path' => $path,
+                ]);
+                
+                $result = $this->cdnService->delete($path);
+                
+                if (isset($result['success']) && $result['success']) {
+                    \Log::info('File deleted from CDN successfully', ['path' => $path]);
+                    return true;
+                } else {
+                    \Log::warning('Failed to delete from CDN', ['path' => $path, 'result' => $result]);
+                    return false;
+                }
+            } 
+            // Delete from local storage
+            else {
+                \Log::info('Deleting file from local storage', [
+                    'path' => $filePath,
+                    'exists' => Storage::disk('public')->exists($filePath),
+                ]);
+                
+                if (Storage::disk('public')->exists($filePath)) {
+                    $deleted = Storage::disk('public')->delete($filePath);
+                    \Log::info('Local file deletion result', [
+                        'deleted' => $deleted,
+                        'path' => $filePath,
+                    ]);
+                    return $deleted;
+                }
+                
+                return false;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error deleting file', [
+                'file_path' => $filePath,
+                'error' => $e->getMessage(),
+                'cdn_enabled' => $cdnEnabled,
+            ]);
+            return false;
+        }
+    }
+    
+    /**
+     * Check if a URL is from our CDN
+     */
+    private function isCdnUrl($url)
+    {
+        if (!$url) {
+            return false;
+        }
+        
+        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
+        return Str::startsWith($url, $cdnUrl);
+    }
+    
+    /**
+     * Extract the storage path from a CDN URL
+     */
+    private function extractPathFromCdnUrl($url)
+    {
+        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
+        $path = str_replace($cdnUrl . '/storage/', '', $url);
+        return $path;
+    }
 }
