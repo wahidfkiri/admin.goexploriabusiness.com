@@ -67,6 +67,12 @@ return [
         'visibility' => 'public',
     ],
 
+    'cdn' => [
+        'driver' => 'custom',
+        'root' => storage_path('app/cdn'),
+        'url' => 'https://upload.goexploriabusiness.com/storage',
+    ],
+
     ],
 
     /*

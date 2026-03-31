@@ -11,9 +11,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log; 
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Services\CDNService;
+
 
 class CountryController extends Controller
 {
+    protected $cdnService;
+    
+    public function __construct(CDNService $cdnService)
+    {
+        $this->cdnService = $cdnService;
+    }
     /**
      * Display a listing of the resource.
      */
@@ -282,6 +290,7 @@ class CountryController extends Controller
                 'request_data' => $request->except(['image', '_token', '_method']),
                 'has_file' => $request->hasFile('image'),
                 'has_flag_remove' => $request->has('flag_remove'),
+                'cdn_enabled' => env('CDN_ENABLED', false),
             ]);
 
             $validated = $request->validate([
@@ -314,24 +323,14 @@ class CountryController extends Controller
             $currentFlag = $country->flag;
             $newImagePath = $currentFlag;
             $imageUploaded = false;
+            $cdnEnabled = env('CDN_ENABLED', false);
 
             // Handle image upload if new image is provided
             if ($request->hasFile('image') && $request->file('image')->isValid()) {
                 try {
-                    // Delete old file if it exists and is stored locally
-                    if ($currentFlag && !Str::startsWith($currentFlag, ['http://', 'https://'])) {
-                        \Log::info('Attempting to delete old image file', [
-                            'old_path' => $currentFlag,
-                            'exists' => Storage::disk('public')->exists($currentFlag),
-                        ]);
-                        
-                        if (Storage::disk('public')->exists($currentFlag)) {
-                            $deleted = Storage::disk('public')->delete($currentFlag);
-                            \Log::info('Old image deletion result', [
-                                'deleted' => $deleted,
-                                'path' => $currentFlag,
-                            ]);
-                        }
+                    // Delete old file if it exists
+                    if ($currentFlag) {
+                        $this->deleteFile($currentFlag, $cdnEnabled);
                     }
 
                     $image = $request->file('image');
@@ -341,37 +340,50 @@ class CountryController extends Controller
                         'original_extension' => $image->getClientOriginalExtension(),
                         'mime_type' => $image->getMimeType(),
                         'size' => $image->getSize(),
-                        'temp_path' => $image->getPathname(),
+                        'cdn_enabled' => $cdnEnabled,
                     ]);
 
                     // Generate unique filename with country code and original extension
                     $extension = $image->getClientOriginalExtension();
                     $filename = strtolower($validated['code']) . '_' . time() . '.' . $extension;
-                    
-                    // Define the storage path
                     $path = 'countries';
-                    
-                    // Store file in storage/app/public/countries directory
-                    \Log::info('Attempting to store new image file', [
-                        'filename' => $filename,
-                        'path' => $path,
-                        'disk' => 'public',
-                    ]);
-                    
-                    $storedPath = $image->storeAs($path, $filename, 'public');
-                    
-                    if (!$storedPath) {
-                        throw new \Exception('Failed to store new image file');
+
+                    if ($cdnEnabled) {
+                        // Upload to CDN
+                        \Log::info('Uploading to CDN', [
+                            'filename' => $filename,
+                            'path' => $path,
+                        ]);
+                        
+                        $uploadResult = $this->cdnService->upload($image, $path, 'public');
+                        
+                        if (isset($uploadResult['success']) && $uploadResult['success']) {
+                            $newImagePath = $uploadResult['url']; // Full CDN URL
+                            $imageUploaded = true;
+                            
+                            \Log::info('Image uploaded to CDN successfully', [
+                                'cdn_url' => $newImagePath,
+                                'response' => $uploadResult,
+                            ]);
+                        } else {
+                            throw new \Exception('CDN upload failed: ' . json_encode($uploadResult));
+                        }
+                    } else {
+                        // Upload locally
+                        $storedPath = $image->storeAs($path, $filename, 'public');
+                        
+                        if (!$storedPath) {
+                            throw new \Exception('Failed to store new image file locally');
+                        }
+                        
+                        $newImagePath = $storedPath;
+                        $imageUploaded = true;
+                        
+                        \Log::info('Image stored locally successfully', [
+                            'stored_path' => $storedPath,
+                            'full_url' => Storage::disk('public')->url($storedPath),
+                        ]);
                     }
-                    
-                    $newImagePath = $storedPath;
-                    $imageUploaded = true;
-                    
-                    \Log::info('New image stored successfully', [
-                        'stored_path' => $storedPath,
-                        'full_url' => Storage::disk('public')->url($storedPath),
-                        'replaced_old_path' => $currentFlag,
-                    ]);
                     
                 } catch (\Exception $imageException) {
                     \Log::error('New image upload failed during update', [
@@ -379,6 +391,7 @@ class CountryController extends Controller
                         'trace' => $imageException->getTraceAsString(),
                         'country_id' => $country->id,
                         'country_code' => $validated['code'],
+                        'cdn_enabled' => $cdnEnabled,
                     ]);
                     
                     // Keep old image if new upload fails
@@ -390,25 +403,14 @@ class CountryController extends Controller
                 \Log::info('Flag removal requested', [
                     'country_id' => $country->id,
                     'current_flag' => $currentFlag,
+                    'cdn_enabled' => $cdnEnabled,
                 ]);
                 
-                if ($currentFlag && !Str::startsWith($currentFlag, ['http://', 'https://'])) {
-                    if (Storage::disk('public')->exists($currentFlag)) {
-                        $deleted = Storage::disk('public')->delete($currentFlag);
-                        \Log::info('Flag file deleted', [
-                            'deleted' => $deleted,
-                            'path' => $currentFlag,
-                        ]);
-                    }
+                if ($currentFlag) {
+                    $this->deleteFile($currentFlag, $cdnEnabled);
                 }
                 $newImagePath = null;
-            }
-            // Keep existing flag URL if no new file uploaded
-            elseif ($request->has('flag') && $request->input('flag') !== null) {
-                $newImagePath = $request->input('flag');
-                \Log::debug('Keeping existing flag URL', [
-                    'flag_url' => $newImagePath,
-                ]);
+                $imageUploaded = true;
             }
             // Keep existing flag if no changes
             else {
@@ -418,20 +420,15 @@ class CountryController extends Controller
                 ]);
             }
 
-            // Store relative path in database
+            // Store the image path/URL in database
             $validated['image'] = $newImagePath;
 
             // Convert timezones to JSON if provided
             if ($request->has('timezones')) {
                 $validated['timezones'] = json_encode($validated['timezones']);
-                // \Log::debug('Timezones processed for update', [
-                //     'timezones_count' => count($validated['timezones']),
-                // ]);
             } elseif ($request->has('timezones') && empty($request->timezones)) {
                 $validated['timezones'] = null;
-                \Log::debug('Clearing timezones', [
-                    'reason' => 'empty timezones array provided',
-                ]);
+                \Log::debug('Clearing timezones');
             }
 
             \Log::info('Updating country record', [
@@ -440,6 +437,7 @@ class CountryController extends Controller
                 'image_uploaded' => $imageUploaded,
                 'old_flag' => $currentFlag,
                 'new_flag' => $newImagePath,
+                'cdn_enabled' => $cdnEnabled,
             ]);
 
             $country->update($validated);
@@ -449,13 +447,16 @@ class CountryController extends Controller
                 'country_name' => $country->name,
                 'updated_at' => $country->updated_at,
                 'image_changed' => $imageUploaded || ($newImagePath !== $currentFlag),
+                'storage_type' => $cdnEnabled ? 'CDN' : 'Local',
             ]);
 
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Pays mis à jour avec succès!',
-                    'data' => $country->load('continent')
+                    'data' => $country->load('continent'),
+                    'image_url' => $newImagePath,
+                    'storage_type' => $cdnEnabled ? 'cdn' : 'local',
                 ]);
             }
 
@@ -466,7 +467,6 @@ class CountryController extends Controller
             \Log::error('Validation failed during country update', [
                 'country_id' => $country->id,
                 'errors' => $validationException->errors(),
-                'request_data' => $request->except(['image', '_token', '_method']),
                 'user_id' => auth()->id(),
             ]);
 
@@ -485,10 +485,7 @@ class CountryController extends Controller
                 'error' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
                 'country_id' => $country->id,
-                'request_data' => $request->except(['image', '_token', '_method']),
                 'user_id' => auth()->id(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
             ]);
 
             if ($request->ajax()) {
