@@ -1158,7 +1158,7 @@
                                         ` : ''}
                                     </div>
                                 `;
-                            } else if (slider.is_uploaded_video && slider.video_url) {
+                            } else if (slider.video_url) {
                                 const thumbnailUrl = slider.thumbnail_url || slider.image_url || '';
                                 content = `
                                     <div class="slider-preview">
