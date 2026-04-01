@@ -2625,9 +2625,427 @@
         font-size: 1.1em;
     }
     
-    
+
     .slider-info-type {
         margin-top: 5px;
     }
+
+    /* ============================================
+   STYLES COMPLETS POUR LES BOUTONS ET ÉLÉMENTS
+   ============================================ */
+
+/* Boutons d'action dans le tableau */
+.slider-actions-modern {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.action-btn-modern {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+/* Bouton Modifier */
+.edit-btn-modern {
+    background-color: #ffc107;
+    color: #856404;
+}
+
+.edit-btn-modern:hover {
+    background-color: #e0a800;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+/* Bouton Aperçu */
+.preview-btn-modern {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.preview-btn-modern:hover {
+    background-color: #0b5ed7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+/* Bouton Statut (activer/désactiver) */
+.status-btn-modern {
+    background-color: #6c757d;
+    color: white;
+}
+
+.status-btn-modern:hover {
+    background-color: #5c636a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+/* Bouton Supprimer */
+.delete-btn-modern {
+    background-color: #dc3545;
+    color: white;
+}
+
+.delete-btn-modern:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Bouton Restaurer */
+.restore-btn-modern {
+    background-color: #198754;
+    color: white;
+}
+
+.restore-btn-modern:hover {
+    background-color: #157347;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+}
+
+/* Boutons principaux */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 10px 24px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-primary .btn-text {
+    position: relative;
+    z-index: 1;
+}
+
+/* Bouton secondaire */
+.btn-secondary {
+    background-color: #6c757d;
+    border: none;
+    padding: 10px 24px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+/* Bouton danger */
+.btn-danger {
+    background: linear-gradient(135deg, #ef476f, #d4335f);
+    border: none;
+    padding: 10px 24px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(239, 71, 111, 0.4);
+    background: linear-gradient(135deg, #d4335f, #ef476f);
+}
+
+/* Bouton succès */
+.btn-success {
+    background: linear-gradient(135deg, #20c997, #198754);
+    border: none;
+    padding: 10px 24px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(32, 201, 151, 0.4);
+    background: linear-gradient(135deg, #198754, #20c997);
+}
+
+/* Bouton outline */
+.btn-outline-secondary {
+    border: 2px solid #e9ecef;
+    background: transparent;
+    padding: 8px 20px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: transparent;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Bouton FAB (Floating Action Button) */
+.fab-modern {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.fab-modern:hover {
+    transform: scale(1.1) rotate(90deg);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+.fab-modern:active {
+    transform: scale(0.95);
+}
+
+/* Animation pulse pour le bouton principal */
+.btn-pulse {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-pulse::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-pulse:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Bouton de traitement (loading) */
+.btn-processing {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Pagination */
+.modern-pagination {
+    display: flex;
+    gap: 8px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.page-link-modern {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: white;
+    color: #667eea;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.page-link-modern:hover {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-color: transparent;
+    transform: translateY(-2px);
+}
+
+.page-item.active .page-link-modern {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-color: transparent;
+}
+
+.page-item.disabled .page-link-modern {
+    color: #adb5bd;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Boutons de modal */
+.modal-footer-modern .btn {
+    padding: 8px 20px;
+    font-size: 14px;
+}
+
+.modal-footer-modern .btn-secondary {
+    background-color: #e9ecef;
+    color: #6c757d;
+}
+
+.modal-footer-modern .btn-secondary:hover {
+    background-color: #dee2e6;
+    color: #495057;
+}
+
+.modal-footer-modern .btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+/* Toast/Alert styles */
+.alert-custom-modern {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+    max-width: 450px;
+    animation: slideInRight 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    border: none;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.alert-custom-modern .btn-close {
+    font-size: 10px;
+}
+
+/* Boutons dans les modals de confirmation */
+.delete-confirm-modal .btn-secondary {
+    background-color: #e9ecef;
+    color: #6c757d;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.delete-confirm-modal .btn-secondary:hover {
+    background-color: #dee2e6;
+    transform: translateY(-2px);
+}
+
+.delete-confirm-modal .btn-danger {
+    background: linear-gradient(135deg, #ef476f, #d4335f);
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+/* Effet de hover sur les boutons d'action */
+.slider-actions-modern .action-btn-modern {
+    position: relative;
+    overflow: hidden;
+}
+
+.slider-actions-modern .action-btn-modern::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.slider-actions-modern .action-btn-modern:active::after {
+    width: 100px;
+    height: 100px;
+}
+
+/* Responsive pour les boutons */
+@media (max-width: 768px) {
+    .slider-actions-modern {
+        gap: 4px;
+    }
+    
+    .action-btn-modern {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+    
+    .btn-primary, .btn-secondary, .btn-danger, .btn-success {
+        padding: 6px 16px;
+        font-size: 13px;
+    }
+    
+    .fab-modern {
+        width: 48px;
+        height: 48px;
+        bottom: 20px;
+        right: 20px;
+        font-size: 18px;
+    }
+}
+
+/* Animation pour les nouveaux sliders */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slider-row {
+    animation: fadeInUp 0.3s ease forwards;
+}
 </style>
 @endsection
