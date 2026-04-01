@@ -479,4 +479,25 @@ class RegionController extends Controller
             ], 500);
         }
     }
+
+    public function getRegionsData(Request $request)
+    {
+        $query = Region::query();
+
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%")
+                  ->orWhere('capital', 'like', "%{$search}%")
+                  ->orWhere('largest_city', 'like', "%{$search}%")
+                  ->orWhere('classification', 'like', "%{$search}%");
+        }
+
+        $regions = $query->orderBy('name')->limit(10)->get(['id', 'name']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $regions
+        ]);
+    }
 }

@@ -12,19 +12,8 @@ class Slider extends Model
 {
     use HasFactory, SoftDeletes;
 
-    /**
-     * Spécifier la connexion de base de données
-     * Commenter si vous utilisez la même DB que principale
-     */
-    // protected $connection = 'secondary';
-    
     protected $table = 'sliders';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'description',
@@ -39,24 +28,19 @@ class Slider extends Model
         'button_text',
         'button_url',
         'settings',
+        'country_id',
+        'province_id',
+        'region_id',
+        'ville_id',
+        'location_path',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'is_active' => 'boolean',
         'order' => 'integer',
         'settings' => 'array',
     ];
 
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array
-     */
     protected $appends = [
         'image_url',
         'video_embed_url',
@@ -68,75 +52,136 @@ class Slider extends Model
         'has_button',
         'is_cdn_image',
         'is_cdn_video',
+        'full_location',
+        'location_hierarchy',
     ];
 
-    /**
-     * Boot method
-     */
-    protected static function boot()
+    // Relations
+    public function country()
     {
-        parent::boot();
+        return $this->belongsTo(Country::class);
+    }
+
+    public function province()
+    {
+        return $this->belongsTo(Province::class);
+    }
+
+    public function region()
+    {
+        return $this->belongsTo(Region::class);
+    }
+
+    public function ville()
+    {
+        return $this->belongsTo(Ville::class);
+    }
+
+    // Accessor pour la localisation complète
+    public function getFullLocationAttribute()
+    {
+        $parts = [];
+        if ($this->country) $parts[] = $this->country->name;
+        if ($this->province) $parts[] = $this->province->name;
+        if ($this->region) $parts[] = $this->region->name;
+        if ($this->ville) $parts[] = $this->ville->name;
+        return implode(' › ', $parts);
+    }
+
+    // Accessor pour la hiérarchie complète
+    public function getLocationHierarchyAttribute()
+    {
+        return [
+            'country_id' => $this->country_id,
+            'country_name' => $this->country?->name,
+            'province_id' => $this->province_id,
+            'province_name' => $this->province?->name,
+            'region_id' => $this->region_id,
+            'region_name' => $this->region?->name,
+            'ville_id' => $this->ville_id,
+            'ville_name' => $this->ville?->name,
+            'full_path' => $this->full_location,
+        ];
+    }
+
+    // Scope pour rechercher par mot-clé dans toute la hiérarchie
+    public function scopeSearchLocation($query, $keyword)
+    {
+        if (empty($keyword)) return $query;
+
+        return $query->where(function ($q) use ($keyword) {
+            $q->whereHas('country', function ($sub) use ($keyword) {
+                $sub->where('name', 'LIKE', "%{$keyword}%");
+            })->orWhereHas('province', function ($sub) use ($keyword) {
+                $sub->where('name', 'LIKE', "%{$keyword}%");
+            })->orWhereHas('region', function ($sub) use ($keyword) {
+                $sub->where('name', 'LIKE', "%{$keyword}%");
+            })->orWhereHas('ville', function ($sub) use ($keyword) {
+                $sub->where('name', 'LIKE', "%{$keyword}%");
+            })->orWhere('location_path', 'LIKE', "%{$keyword}%");
+        });
+    }
+
+    // Générer le chemin hiérarchique avant sauvegarde
+    protected static function booted()
+    {
+        parent::booted();
 
         static::creating(function ($slider) {
             if (empty($slider->order)) {
                 $maxOrder = static::max('order') ?? 0;
                 $slider->order = $maxOrder + 1;
             }
+            $slider->location_path = $slider->generateLocationPath();
+        });
+
+        static::updating(function ($slider) {
+            $slider->location_path = $slider->generateLocationPath();
         });
     }
 
-    /**
-     * Scope for active sliders
-     */
+    protected function generateLocationPath()
+    {
+        $parts = [];
+        if ($this->country) $parts[] = $this->country->name;
+        if ($this->province) $parts[] = $this->province->name;
+        if ($this->region) $parts[] = $this->region->name;
+        if ($this->ville) $parts[] = $this->ville->name;
+        return implode(' › ', $parts);
+    }
+
+    // Reste du code existant (scopes, méthodes, etc.)
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * Scope for inactive sliders
-     */
     public function scopeInactive($query)
     {
         return $query->where('is_active', false);
     }
 
-    /**
-     * Scope for image sliders
-     */
     public function scopeImages($query)
     {
         return $query->where('type', 'image');
     }
 
-    /**
-     * Scope for video sliders
-     */
     public function scopeVideos($query)
     {
         return $query->where('type', 'video');
     }
 
-    /**
-     * Order by order column
-     */
     public function scopeOrdered($query)
     {
         return $query->orderBy('order');
     }
 
-    /**
-     * Search sliders
-     */
     public function scopeSearch($query, $search)
     {
         return $query->where('name', 'like', '%' . $search . '%')
                     ->orWhere('description', 'like', '%' . $search . '%');
     }
 
-    /**
-     * Filter by status
-     */
     public function scopeStatus($query, $status)
     {
         if ($status === 'active') {
@@ -144,13 +189,9 @@ class Slider extends Model
         } elseif ($status === 'inactive') {
             return $query->inactive();
         }
-        
         return $query;
     }
 
-    /**
-     * Filter by type
-     */
     public function scopeOfType($query, $type)
     {
         if ($type === 'image') {
@@ -158,164 +199,92 @@ class Slider extends Model
         } elseif ($type === 'video') {
             return $query->videos();
         }
-        
         return $query;
     }
 
-    /**
-     * Check if a path/URL is from CDN
-     */
     private function isCdnUrl($path)
     {
-        if (!$path) {
-            return false;
-        }
-        
+        if (!$path) return false;
         $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
         return Str::startsWith($path, $cdnUrl);
     }
 
-    /**
-     * Check if image is from CDN
-     */
     public function getIsCdnImageAttribute()
     {
         return $this->isCdnUrl($this->image_path);
     }
 
-    /**
-     * Check if video is from CDN
-     */
     public function getIsCdnVideoAttribute()
     {
         return $this->isCdnUrl($this->video_path);
     }
 
-    /**
-     * Get the image URL (supports CDN and local)
-     */
     public function getImageUrlAttribute()
     {
         if (!$this->image_path) {
             return asset('images/default-slider.jpg');
         }
-        
-        // Si c'est une URL complète (CDN)
         if ($this->isCdnUrl($this->image_path)) {
             return $this->image_path;
         }
-        
-        // Si c'est une URL externe (YouTube, Vimeo, etc.)
         if (filter_var($this->image_path, FILTER_VALIDATE_URL)) {
             return $this->image_path;
         }
-        
-        // Sinon, c'est un chemin local
         return asset('storage/' . $this->image_path);
     }
 
-    /**
-     * Get the video embed URL (sans conflit)
-     */
     public function getVideoEmbedUrlAttribute()
     {
-        if ($this->type !== 'video') {
-            return null;
-        }
+        if ($this->type !== 'video') return null;
 
         if ($this->video_type === 'youtube' && $this->video_url) {
             return $this->extractYoutubeEmbedUrl($this->video_url);
         } elseif ($this->video_type === 'vimeo' && $this->video_url) {
             return $this->extractVimeoEmbedUrl($this->video_url);
         } elseif ($this->video_type === 'upload' && $this->video_path) {
-            // Si c'est une URL CDN
-            if ($this->isCdnUrl($this->video_path)) {
-                return $this->video_path;
-            }
-            // Si c'est une URL externe
-            if (filter_var($this->video_path, FILTER_VALIDATE_URL)) {
-                return $this->video_path;
-            }
-            // Sinon, c'est un chemin local
+            if ($this->isCdnUrl($this->video_path)) return $this->video_path;
+            if (filter_var($this->video_path, FILTER_VALIDATE_URL)) return $this->video_path;
             return asset('storage/' . $this->video_path);
         }
-        
         return null;
     }
 
-    /**
-     * Get the thumbnail URL
-     */
     public function getThumbnailUrlAttribute()
     {
         if ($this->thumbnail_path) {
-            // Si c'est une URL CDN
-            if ($this->isCdnUrl($this->thumbnail_path)) {
-                return $this->thumbnail_path;
-            }
-            // Si c'est une URL externe
-            if (filter_var($this->thumbnail_path, FILTER_VALIDATE_URL)) {
-                return $this->thumbnail_path;
-            }
-            // Sinon, c'est un chemin local
+            if ($this->isCdnUrl($this->thumbnail_path)) return $this->thumbnail_path;
+            if (filter_var($this->thumbnail_path, FILTER_VALIDATE_URL)) return $this->thumbnail_path;
             return asset('storage/' . $this->thumbnail_path);
         } elseif ($this->image_path) {
-            // Fallback sur l'image
             return $this->image_url;
         }
-        
         return asset('images/default-slider.jpg');
     }
 
-    /**
-     * Extract YouTube embed URL
-     */
     private function extractYoutubeEmbedUrl($url)
     {
         if (!$url) return null;
-        
         $pattern = '/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/';
         preg_match($pattern, $url, $matches);
-        
-        if (isset($matches[1])) {
-            return 'https://www.youtube.com/embed/' . $matches[1];
-        }
-        
-        return $url;
+        return isset($matches[1]) ? 'https://www.youtube.com/embed/' . $matches[1] : $url;
     }
 
-    /**
-     * Extract YouTube video ID
-     */
     private function extractYoutubeId($url)
     {
         if (!$url) return null;
-        
         $pattern = '/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/';
         preg_match($pattern, $url, $matches);
         return $matches[1] ?? null;
     }
 
-    /**
-     * Extract Vimeo embed URL
-     */
     private function extractVimeoEmbedUrl($url)
     {
         if (!$url) return null;
-        
         $pattern = '/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)(?:$|\/|\?)/';
         preg_match($pattern, $url, $matches);
-        
-        if (isset($matches[3])) {
-            return 'https://player.vimeo.com/video/' . $matches[3];
-        }
-        
-        return $url;
+        return isset($matches[3]) ? 'https://player.vimeo.com/video/' . $matches[3] : $url;
     }
 
-    /**
-     * Get YouTube video ID
-     */
     public function getYoutubeIdAttribute()
     {
         if ($this->video_type === 'youtube' && $this->video_url) {
@@ -324,103 +293,59 @@ class Slider extends Model
         return null;
     }
 
-    /**
-     * Check if slider is YouTube video
-     */
     public function getIsYoutubeAttribute()
     {
         return $this->video_type === 'youtube';
     }
 
-    /**
-     * Check if slider is Vimeo video
-     */
     public function getIsVimeoAttribute()
     {
         return $this->video_type === 'vimeo';
     }
 
-    /**
-     * Check if slider is uploaded video
-     */
     public function getIsUploadedVideoAttribute()
     {
         return $this->video_type === 'upload';
     }
 
-    /**
-     * Check if slider has button
-     */
     public function getHasButtonAttribute()
     {
         return !empty($this->button_text) && !empty($this->button_url);
     }
 
-    /**
-     * Get original video URL (safe getter)
-     */
     public function getVideoUrl()
     {
         return $this->attributes['video_url'] ?? null;
     }
 
-    /**
-     * Get original video path (safe getter)
-     */
     public function getVideoPath()
     {
         return $this->attributes['video_path'] ?? null;
     }
 
-    /**
-     * Helper method to get the storage path (for local files)
-     */
     public function getStoragePath($attribute)
     {
         $path = $this->$attribute;
-        
         if (!$path || $this->isCdnUrl($path) || filter_var($path, FILTER_VALIDATE_URL)) {
             return null;
         }
-        
         return storage_path('app/public/' . $path);
     }
 
-    /**
-     * Helper method to check if file exists (works with CDN and local)
-     */
     public function fileExists($attribute)
     {
         $path = $this->$attribute;
-        
-        if (!$path) {
-            return false;
-        }
-        
-        // CDN URL - on considère que le fichier existe (on peut faire un HEAD request si besoin)
-        if ($this->isCdnUrl($path)) {
-            return true;
-        }
-        
-        // URL externe
-        if (filter_var($path, FILTER_VALIDATE_URL)) {
-            return true;
-        }
-        
-        // Fichier local
+        if (!$path) return false;
+        if ($this->isCdnUrl($path)) return true;
+        if (filter_var($path, FILTER_VALIDATE_URL)) return true;
         return Storage::disk('public')->exists($path);
     }
 
-    /**
-     * Delete associated files from storage
-     */
     public function deleteFiles()
     {
         $files = ['image_path', 'video_path', 'thumbnail_path'];
-        
         foreach ($files as $file) {
             $path = $this->$file;
-            
             if ($path && !$this->isCdnUrl($path) && !filter_var($path, FILTER_VALIDATE_URL)) {
                 if (Storage::disk('public')->exists($path)) {
                     Storage::disk('public')->delete($path);
@@ -429,17 +354,11 @@ class Slider extends Model
         }
     }
 
-    /**
-     * Override delete method to handle file cleanup
-     */
     public function delete()
     {
-        // Ne supprimer les fichiers que si c'est une suppression définitive
-        // Pour soft delete, on garde les fichiers
         if ($this->forceDeleting) {
             $this->deleteFiles();
         }
-        
         return parent::delete();
     }
 }

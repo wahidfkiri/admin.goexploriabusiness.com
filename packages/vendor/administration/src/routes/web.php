@@ -7,12 +7,22 @@ use Vendor\Administration\Controllers\MenuPageController;
 use Vendor\Administration\Controllers\PublicPageController;
 use Vendor\Administration\Controllers\BlockController;
 use Vendor\Administration\Controllers\TemplateController;
+use Vendor\Administration\Controllers\LocationController;
 
 
 
 Auth::routes();
 
 Route::middleware(['auth','web'])->group(function () {
+
+
+Route::prefix('locations')->group(function () {
+    Route::get('/countries', [LocationController::class, 'getCountries']);
+    Route::get('/countries/{countryId}/provinces', [LocationController::class, 'getProvinces']);
+    Route::get('/provinces/{provinceId}/regions', [LocationController::class, 'getRegions']);
+    Route::get('/regions/{regionId}/villes', [LocationController::class, 'getVilles']);
+    Route::get('/search', [LocationController::class, 'search']);
+});
 // Routes pour les sliders
 Route::prefix('sliders')->group(function () {
     Route::get('/', [SliderController::class, 'index'])->name('sliders.index');

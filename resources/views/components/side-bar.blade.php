@@ -346,8 +346,8 @@
           </a>
         </li>
         <li>
-          <a href="{{ route('settings.pages.index') }}" class="submenu-item">
-            <span class="submenu-text">UX Design</span>
+          <a href="{{ route('sliders.index') }}" class="submenu-item">
+            <span class="submenu-text">Sliders</span>
           </a>
         </li>
       </ul>

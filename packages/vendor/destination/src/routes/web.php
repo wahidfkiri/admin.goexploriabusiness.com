@@ -394,3 +394,5 @@ Route::prefix('admin/menus')->name('destinations.menus.')->group(function () {
 
 
 });
+
+Route::get('api/regions/data', [RegionController::class, 'getRegionsData'])->name('api.regions.data');
