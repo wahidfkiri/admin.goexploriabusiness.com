@@ -69,7 +69,7 @@ return [
 
     'cdn' => [
         'driver' => 'custom',
-        'root' => storage_path('app/cdn'),
+        'root' => storage_path('app/public/cdn'),
         'url' => 'https://upload.goexploriabusiness.com/storage',
     ],
 

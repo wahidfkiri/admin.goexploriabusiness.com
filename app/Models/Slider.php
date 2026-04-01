@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Slider extends Model
 {
@@ -64,6 +66,8 @@ class Slider extends Model
         'is_vimeo',
         'is_uploaded_video',
         'has_button',
+        'is_cdn_image',
+        'is_cdn_video',
     ];
 
     /**
@@ -159,17 +163,55 @@ class Slider extends Model
     }
 
     /**
-     * Get the image URL
+     * Check if a path/URL is from CDN
+     */
+    private function isCdnUrl($path)
+    {
+        if (!$path) {
+            return false;
+        }
+        
+        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
+        return Str::startsWith($path, $cdnUrl);
+    }
+
+    /**
+     * Check if image is from CDN
+     */
+    public function getIsCdnImageAttribute()
+    {
+        return $this->isCdnUrl($this->image_path);
+    }
+
+    /**
+     * Check if video is from CDN
+     */
+    public function getIsCdnVideoAttribute()
+    {
+        return $this->isCdnUrl($this->video_path);
+    }
+
+    /**
+     * Get the image URL (supports CDN and local)
      */
     public function getImageUrlAttribute()
     {
-        if ($this->image_path) {
-            if (filter_var($this->image_path, FILTER_VALIDATE_URL)) {
-                return $this->image_path;
-            }
-            return asset('storage/' . $this->image_path);
+        if (!$this->image_path) {
+            return asset('images/default-slider.jpg');
         }
-        return asset('images/default-slider.jpg');
+        
+        // Si c'est une URL complète (CDN)
+        if ($this->isCdnUrl($this->image_path)) {
+            return $this->image_path;
+        }
+        
+        // Si c'est une URL externe (YouTube, Vimeo, etc.)
+        if (filter_var($this->image_path, FILTER_VALIDATE_URL)) {
+            return $this->image_path;
+        }
+        
+        // Sinon, c'est un chemin local
+        return asset('storage/' . $this->image_path);
     }
 
     /**
@@ -186,9 +228,15 @@ class Slider extends Model
         } elseif ($this->video_type === 'vimeo' && $this->video_url) {
             return $this->extractVimeoEmbedUrl($this->video_url);
         } elseif ($this->video_type === 'upload' && $this->video_path) {
+            // Si c'est une URL CDN
+            if ($this->isCdnUrl($this->video_path)) {
+                return $this->video_path;
+            }
+            // Si c'est une URL externe
             if (filter_var($this->video_path, FILTER_VALIDATE_URL)) {
                 return $this->video_path;
             }
+            // Sinon, c'est un chemin local
             return asset('storage/' . $this->video_path);
         }
         
@@ -201,16 +249,21 @@ class Slider extends Model
     public function getThumbnailUrlAttribute()
     {
         if ($this->thumbnail_path) {
+            // Si c'est une URL CDN
+            if ($this->isCdnUrl($this->thumbnail_path)) {
+                return $this->thumbnail_path;
+            }
+            // Si c'est une URL externe
             if (filter_var($this->thumbnail_path, FILTER_VALIDATE_URL)) {
                 return $this->thumbnail_path;
             }
+            // Sinon, c'est un chemin local
             return asset('storage/' . $this->thumbnail_path);
         } elseif ($this->image_path) {
-            if (filter_var($this->image_path, FILTER_VALIDATE_URL)) {
-                return $this->image_path;
-            }
-            return asset('storage/' . $this->image_path);
+            // Fallback sur l'image
+            return $this->image_url;
         }
+        
         return asset('images/default-slider.jpg');
     }
 
@@ -317,5 +370,76 @@ class Slider extends Model
     public function getVideoPath()
     {
         return $this->attributes['video_path'] ?? null;
+    }
+
+    /**
+     * Helper method to get the storage path (for local files)
+     */
+    public function getStoragePath($attribute)
+    {
+        $path = $this->$attribute;
+        
+        if (!$path || $this->isCdnUrl($path) || filter_var($path, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+        
+        return storage_path('app/public/' . $path);
+    }
+
+    /**
+     * Helper method to check if file exists (works with CDN and local)
+     */
+    public function fileExists($attribute)
+    {
+        $path = $this->$attribute;
+        
+        if (!$path) {
+            return false;
+        }
+        
+        // CDN URL - on considère que le fichier existe (on peut faire un HEAD request si besoin)
+        if ($this->isCdnUrl($path)) {
+            return true;
+        }
+        
+        // URL externe
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return true;
+        }
+        
+        // Fichier local
+        return Storage::disk('public')->exists($path);
+    }
+
+    /**
+     * Delete associated files from storage
+     */
+    public function deleteFiles()
+    {
+        $files = ['image_path', 'video_path', 'thumbnail_path'];
+        
+        foreach ($files as $file) {
+            $path = $this->$file;
+            
+            if ($path && !$this->isCdnUrl($path) && !filter_var($path, FILTER_VALIDATE_URL)) {
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+        }
+    }
+
+    /**
+     * Override delete method to handle file cleanup
+     */
+    public function delete()
+    {
+        // Ne supprimer les fichiers que si c'est une suppression définitive
+        // Pour soft delete, on garde les fichiers
+        if ($this->forceDeleting) {
+            $this->deleteFiles();
+        }
+        
+        return parent::delete();
     }
 }

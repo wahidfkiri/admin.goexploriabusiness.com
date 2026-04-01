@@ -687,6 +687,7 @@
         };
 
         // Render sliders
+               // Render sliders
         const renderSliders = (sliders) => {
             const tbody = document.getElementById('slidersTableBody');
             tbody.innerHTML = '';
@@ -750,13 +751,51 @@
                     statusIcon = 'fa-trash';
                 }
                 
-                // Image preview
-                const imageUrl = slider.image_path 
-                    ? `/storage/${slider.image_path}` 
-                    : 'https://via.placeholder.com/50';
+                // Preview content based on slider type
+                let previewContent = '';
+                let imageUrl = '';
+                
+                if (slider.type === 'image') {
+                    // Pour les images
+                    if (slider.image_path) {
+                        if (slider.image_path.startsWith('http')) {
+                            imageUrl = slider.image_path; // URL CDN
+                        } else {
+                            imageUrl = `/storage/${slider.image_path}`; // Local
+                        }
+                        previewContent = `<img src="${imageUrl}" alt="${slider.name}" class="slider-thumbnail" onerror="this.onerror=null; this.src='https://via.placeholder.com/60x60?text=Image'; this.classList.add('placeholder-image');">`;
+                    } else {
+                        // Pas d'image - afficher une icône par défaut
+                        previewContent = `<div class="slider-icon-placeholder">
+                                            <i class="fas fa-image"></i>
+                                          </div>`;
+                    }
+                } else if (slider.type === 'video') {
+                    // Pour les vidéos
+                    if (slider.thumbnail_path) {
+                        if (slider.thumbnail_path.startsWith('http')) {
+                            imageUrl = slider.thumbnail_path;
+                        } else {
+                            imageUrl = `/storage/${slider.thumbnail_path}`;
+                        }
+                        previewContent = `<img src="${imageUrl}" alt="${slider.name}" class="slider-thumbnail" onerror="this.onerror=null; this.src='https://via.placeholder.com/60x60?text=Video'; this.classList.add('placeholder-image');">`;
+                    } else if (slider.image_path) {
+                        if (slider.image_path.startsWith('http')) {
+                            imageUrl = slider.image_path;
+                        } else {
+                            imageUrl = `/storage/${slider.image_path}`;
+                        }
+                        previewContent = `<img src="${imageUrl}" alt="${slider.name}" class="slider-thumbnail" onerror="this.onerror=null; this.src='https://via.placeholder.com/60x60?text=Video'; this.classList.add('placeholder-image');">`;
+                    } else {
+                        // Pas de thumbnail - afficher une icône vidéo par défaut
+                        previewContent = `<div class="slider-icon-placeholder video-placeholder">
+                                            <i class="fas fa-video"></i>
+                                          </div>`;
+                    }
+                }
                 
                 row.innerHTML = `
-                    <td>
+                    <td style="width: 50px;">
                         <div class="order-badge" data-id="${slider.id}">
                             <i class="fas fa-arrows-alt me-1"></i>
                             ${slider.order}
@@ -765,10 +804,10 @@
                     <td class="slider-name-cell">
                         <div class="slider-name-modern">
                             <div class="slider-icon-modern">
-                                <img src="${imageUrl}" alt="${slider.name}" class="slider-thumbnail">
+                                ${previewContent}
                             </div>
                             <div>
-                                <div class="slider-name-text">${slider.name}</div>
+                                <div class="slider-name-text">${escapeHtml(slider.name)}</div>
                                 <small class="text-muted">ID: ${slider.id}</small>
                             </div>
                         </div>
@@ -789,7 +828,7 @@
                         <div>${formattedDate}</div>
                         <small class="text-muted">${formatTimeAgo(createdDate)}</small>
                     </td>
-                    <td>
+                    <td style="text-align: center;">
                         <div class="slider-actions-modern">
                             <button class="action-btn-modern preview-btn-modern" title="Aperçu" onclick="previewSlider(${slider.id})">
                                 <i class="fas fa-eye"></i>
@@ -819,6 +858,14 @@
             document.getElementById('emptyState').style.display = 'none';
             document.getElementById('tableContainer').style.display = 'block';
             document.getElementById('paginationContainer').style.display = 'flex';
+        };
+
+                // Escape HTML to prevent XSS
+        const escapeHtml = (text) => {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         };
 
         // Setup Sortable drag and drop
@@ -1014,6 +1061,7 @@
         };
 
         // Preview slider
+               // Preview slider
         const previewSlider = (sliderId) => {
             $.ajax({
                 url: `/sliders/${sliderId}/preview`,
@@ -1026,57 +1074,24 @@
                         let content = '';
                         
                         if (slider.type === 'image') {
-                            content = `
-                                <div class="slider-preview">
-                                    <h5 class="mb-3">${slider.name}</h5>
-                                    <div class="preview-image mb-3">
-                                        <img src="${slider.image_url}" alt="${slider.name}" class="img-fluid rounded" style="max-height: 400px; width: 100%; object-fit: cover;">
-                                    </div>
-                                    ${slider.description ? `<p class="mb-3">${slider.description}</p>` : ''}
-                                    ${slider.button_text && slider.button_url ? `
-                                        <div class="preview-button">
-                                            <a href="${slider.button_url}" class="btn btn-primary" target="_blank">${slider.button_text}</a>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
-                        } else if (slider.type === 'video') {
-                            if (slider.is_youtube) {
+                            // Vérifier si l'image existe
+                            const imageUrl = slider.image_url || null;
+                            
+                            if (imageUrl) {
                                 content = `
                                     <div class="slider-preview">
-                                        <h5 class="mb-3">${slider.name}</h5>
-                                        <div class="ratio ratio-16x9 mb-3">
-                                            <iframe src="${slider.video_url}" 
-                                                    title="${slider.name}" 
-                                                    frameborder="0" 
-                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                                    allowfullscreen>
-                                            </iframe>
+                                        <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
+                                        <div class="preview-image mb-3">
+                                            <img src="${imageUrl}" 
+                                                 alt="${escapeHtml(slider.name)}" 
+                                                 class="img-fluid rounded" 
+                                                 style="max-height: 400px; width: 100%; object-fit: cover;"
+                                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/800x400?text=Image+non+disponible';">
                                         </div>
-                                        ${slider.description ? `<p class="mb-3">${slider.description}</p>` : ''}
+                                        ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
                                         ${slider.button_text && slider.button_url ? `
                                             <div class="preview-button">
-                                                <a href="${slider.button_url}" class="btn btn-primary" target="_blank">${slider.button_text}</a>
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                `;
-                            } else if (slider.is_vimeo) {
-                                content = `
-                                    <div class="slider-preview">
-                                        <h5 class="mb-3">${slider.name}</h5>
-                                        <div class="ratio ratio-16x9 mb-3">
-                                            <iframe src="${slider.video_url}" 
-                                                    title="${slider.name}" 
-                                                    frameborder="0" 
-                                                    allow="autoplay; fullscreen; picture-in-picture" 
-                                                    allowfullscreen>
-                                            </iframe>
-                                        </div>
-                                        ${slider.description ? `<p class="mb-3">${slider.description}</p>` : ''}
-                                        ${slider.button_text && slider.button_url ? `
-                                            <div class="preview-button">
-                                                <a href="${slider.button_url}" class="btn btn-primary" target="_blank">${slider.button_text}</a>
+                                                <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
                                             </div>
                                         ` : ''}
                                     </div>
@@ -1084,17 +1099,99 @@
                             } else {
                                 content = `
                                     <div class="slider-preview">
-                                        <h5 class="mb-3">${slider.name}</h5>
+                                        <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
+                                        <div class="preview-placeholder mb-3">
+                                            <div class="placeholder-content">
+                                                <i class="fas fa-image fa-4x mb-3"></i>
+                                                <p>Aucune image disponible</p>
+                                            </div>
+                                        </div>
+                                        ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
+                                        ${slider.button_text && slider.button_url ? `
+                                            <div class="preview-button">
+                                                <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            }
+                        } else if (slider.type === 'video') {
+                            // Vérifier si c'est une vidéo YouTube ou Vimeo
+                            if (slider.is_youtube && slider.youtube_id) {
+                                const embedUrl = `https://www.youtube.com/embed/${slider.youtube_id}`;
+                                content = `
+                                    <div class="slider-preview">
+                                        <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
+                                        <div class="ratio ratio-16x9 mb-3">
+                                            <iframe src="${embedUrl}" 
+                                                    title="${escapeHtml(slider.name)}" 
+                                                    frameborder="0" 
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                                    allowfullscreen>
+                                            </iframe>
+                                        </div>
+                                        ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
+                                        ${slider.button_text && slider.button_url ? `
+                                            <div class="preview-button">
+                                                <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            } else if (slider.is_vimeo && slider.video_url) {
+                                content = `
+                                    <div class="slider-preview">
+                                        <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
+                                        <div class="ratio ratio-16x9 mb-3">
+                                            <iframe src="${escapeHtml(slider.video_url)}" 
+                                                    title="${escapeHtml(slider.name)}" 
+                                                    frameborder="0" 
+                                                    allow="autoplay; fullscreen; picture-in-picture" 
+                                                    allowfullscreen>
+                                            </iframe>
+                                        </div>
+                                        ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
+                                        ${slider.button_text && slider.button_url ? `
+                                            <div class="preview-button">
+                                                <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            } else if (slider.is_uploaded_video && slider.video_url) {
+                                const thumbnailUrl = slider.thumbnail_url || slider.image_url || '';
+                                content = `
+                                    <div class="slider-preview">
+                                        <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
                                         <div class="mb-3">
-                                            <video controls style="width: 100%; max-height: 400px;" poster="${slider.thumbnail_url}">
-                                                <source src="${slider.video_url}" type="video/mp4">
+                                            <video controls style="width: 100%; max-height: 400px;" poster="${thumbnailUrl}">
+                                                <source src="${escapeHtml(slider.video_url)}" type="video/mp4">
                                                 Votre navigateur ne supporte pas la lecture de vidéos.
                                             </video>
                                         </div>
-                                        ${slider.description ? `<p class="mb-3">${slider.description}</p>` : ''}
+                                        ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
                                         ${slider.button_text && slider.button_url ? `
                                             <div class="preview-button">
-                                                <a href="${slider.button_url}" class="btn btn-primary" target="_blank">${slider.button_text}</a>
+                                                <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            } else {
+                                content = `
+                                    <div class="slider-preview">
+                                        <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
+                                        <div class="preview-placeholder mb-3">
+                                            <div class="placeholder-content">
+                                                <i class="fas fa-video fa-4x mb-3"></i>
+                                                <p>Vidéo non disponible</p>
+                                                ${slider.video_url ? `<small class="text-muted">URL: ${escapeHtml(slider.video_url)}</small>` : ''}
+                                            </div>
+                                        </div>
+                                        ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
+                                        ${slider.button_text && slider.button_url ? `
+                                            <div class="preview-button">
+                                                <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
                                             </div>
                                         ` : ''}
                                     </div>
@@ -2363,6 +2460,171 @@
         color: #333;
         font-size: 1.1em;
     }
+    
+    .slider-info-type {
+        margin-top: 5px;
+    }
+        /* Slider icon placeholder styles */
+    .slider-icon-placeholder {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        color: white;
+        font-size: 1.5rem;
+    }
+    
+    .slider-icon-placeholder.video-placeholder {
+        background: linear-gradient(135deg, #ef476f, #d4335f);
+    }
+    
+    .slider-icon-placeholder i,
+    .slider-icon-placeholder.video-placeholder i {
+        filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+    }
+    
+    /* Placeholder image fallback */
+    .slider-thumbnail.placeholder-image {
+        object-fit: contain;
+        background: #f8f9fa;
+        padding: 10px;
+    }
+    
+    /* Preview placeholder */
+    .preview-placeholder {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 8px;
+        padding: 60px 20px;
+        text-align: center;
+        min-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .placeholder-content {
+        color: #6c757d;
+    }
+    
+    .placeholder-content i {
+        color: #adb5bd;
+    }
+    
+    .placeholder-content p {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+    
+    /* Badge styles for video types */
+    .badge.bg-youtube {
+        background-color: #ff0000 !important;
+    }
+    
+    .badge.bg-vimeo {
+        background-color: #1ab7ea !important;
+    }
+    
+    .badge.bg-upload {
+        background-color: #6f42c1 !important;
+    }
+    
+    /* Status badge for deleted */
+    .status-deleted-modern {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    /* Restore button */
+    .restore-btn-modern {
+        background-color: #198754;
+        color: white;
+    }
+    
+    .restore-btn-modern:hover {
+        background-color: #157347;
+    }
+    
+    /* Preview button */
+    .preview-btn-modern {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .preview-btn-modern:hover {
+        background-color: #0b5ed7;
+    }
+    
+    /* Status toggle button */
+    .status-btn-modern {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .status-btn-modern:hover {
+        background-color: #5c636a;
+    }
+    
+    /* Restore modal */
+    .restore-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #20c997, #198754);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: white;
+        font-size: 2rem;
+    }
+    
+    .restore-title {
+        color: #198754;
+        margin-bottom: 10px;
+    }
+    
+    .restore-message {
+        color: #666;
+        margin-bottom: 20px;
+    }
+    
+    /* Slider info in modals */
+    .slider-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .slider-info-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+    
+    .slider-info-name {
+        font-weight: 600;
+        color: #333;
+        font-size: 1.1em;
+    }
+    
     
     .slider-info-type {
         margin-top: 5px;
