@@ -16,7 +16,7 @@ Auth::routes();
 Route::middleware(['auth','web'])->group(function () {
 
 
-Route::prefix('locations')->group(function () {
+Route::prefix('api/locations')->group(function () {
     Route::get('/countries', [LocationController::class, 'getCountries']);
     Route::get('/countries/{countryId}/provinces', [LocationController::class, 'getProvinces']);
     Route::get('/provinces/{provinceId}/regions', [LocationController::class, 'getRegions']);

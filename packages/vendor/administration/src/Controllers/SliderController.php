@@ -4,6 +4,10 @@ namespace Vendor\Administration\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Slider;
+use App\Models\Country;
+use App\Models\Province;
+use App\Models\Region;
+use App\Models\Ville;
 use App\Services\CDNService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -45,10 +49,16 @@ class SliderController extends Controller
         $search = $request->input('search', '');
         $status = $request->input('status', '');
         $type = $request->input('type', '');
+        $countryId = $request->input('country_id', '');
+        $provinceId = $request->input('province_id', '');
+        $regionId = $request->input('region_id', '');
+        $villeId = $request->input('ville_id', '');
         $perPage = $request->input('per_page', 10);
 
         // Construire la requête
-        $query = Slider::withTrashed()->ordered();
+        $query = Slider::withTrashed()
+            ->with(['country', 'province', 'region', 'ville'])
+            ->ordered();
 
         // Appliquer les filtres
         if (!empty($search)) {
@@ -63,11 +73,28 @@ class SliderController extends Controller
             $query->ofType($type);
         }
 
+        // Filtres hiérarchiques de localisation
+        if (!empty($villeId)) {
+            $query->where('ville_id', $villeId);
+        } elseif (!empty($regionId)) {
+            $query->where('region_id', $regionId);
+        } elseif (!empty($provinceId)) {
+            $query->where('province_id', $provinceId);
+        } elseif (!empty($countryId)) {
+            $query->where('country_id', $countryId);
+        }
+
         $duration = round((microtime(true) - $startTime) * 1000, 2);
         
         // Si c'est une requête AJAX
         if ($request->ajax()) {
             $sliders = $query->paginate($perPage);
+            
+            // Ajouter la localisation complète à chaque slider
+            $sliders->getCollection()->transform(function($slider) {
+                $slider->full_location = $slider->getFullLocationAttribute();
+                return $slider;
+            });
             
             Log::channel('slider')->info('Slider index completed (AJAX)', [
                 'request_id' => $requestId,
@@ -115,6 +142,7 @@ class SliderController extends Controller
             'has_image' => $request->hasFile('image'),
             'has_video' => $request->hasFile('video_file'),
             'type' => $request->type,
+            'video_source' => $request->video_source,
             'cdn_enabled' => env('CDN_ENABLED', false)
         ]);
         
@@ -125,12 +153,17 @@ class SliderController extends Controller
             'type' => 'required|in:image,video',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'video_file' => 'nullable|mimes:mp4,avi,mov,wmv|max:102400',
-            'video_type' => 'nullable',
-            'video_url' => 'nullable',
+            'video_source' => 'required_if:type,video|in:url,upload',
+            'video_platform' => 'required_if:video_source,url|in:youtube,vimeo,other',
+            'video_url' => 'required_if:video_source,url|nullable|url',
             'order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'button_text' => 'nullable|string|max:50',
             'button_url' => 'nullable',
+            'country_id' => 'nullable|exists:countries,id',
+            'province_id' => 'nullable|exists:provinces,id',
+            'region_id' => 'nullable|exists:regions,id',
+            'ville_id' => 'nullable|exists:villes,id',
         ]);
 
         if ($validator->fails()) {
@@ -145,10 +178,39 @@ class SliderController extends Controller
             ], 422);
         }
 
+        // Validation hiérarchique de la localisation
+        if ($request->filled('ville_id')) {
+            $ville = Ville::with('region.province.country')->find($request->ville_id);
+            if ($ville) {
+                $request->merge([
+                    'region_id' => $ville->region_id,
+                    'province_id' => $ville->region->province_id,
+                    'country_id' => $ville->region->province->country_id,
+                ]);
+            }
+        } elseif ($request->filled('region_id')) {
+            $region = Region::with('province.country')->find($request->region_id);
+            if ($region) {
+                $request->merge([
+                    'province_id' => $region->province_id,
+                    'country_id' => $region->province->country_id,
+                ]);
+            }
+        } elseif ($request->filled('province_id')) {
+            $province = Province::with('country')->find($request->province_id);
+            if ($province) {
+                $request->merge([
+                    'country_id' => $province->country_id,
+                ]);
+            }
+        }
+
         // Traitement des fichiers
         $imagePath = null;
         $videoPath = null;
         $thumbnailPath = null;
+        $videoType = null;
+        $videoUrl = null;
 
         // Traitement de l'image
         if ($request->hasFile('image')) {
@@ -171,24 +233,53 @@ class SliderController extends Controller
             }
         }
 
-        // Traitement de la vidéo uploadée
-        if ($request->hasFile('video_file')) {
-            try {
-                $videoPath = $this->uploadFile($request->file('video_file'), 'sliders/videos', $requestId);
-                Log::channel('slider')->debug('Video uploaded', [
+        // Traitement de la vidéo selon la source
+        if ($request->type === 'video') {
+            $videoSource = $request->video_source;
+            
+            if ($videoSource === 'url') {
+                // Mode URL (YouTube, Vimeo ou Autre)
+                $videoUrl = $request->video_url;
+                $videoPath = $request->video_url; // Stocker l'URL dans video_path pour faciliter l'accès   
+                $videoPlatform = $request->video_platform;
+                
+                // Définir le type selon la plateforme sélectionnée
+                if ($videoPlatform === 'youtube') {
+                    $videoType = 'youtube';
+                } elseif ($videoPlatform === 'vimeo') {
+                    $videoType = 'vimeo';
+                } else {
+                    $videoType = 'other';
+                }
+                
+                Log::channel('slider')->debug('Video URL provided', [
                     'request_id' => $requestId,
-                    'path' => $videoPath
+                    'url' => $videoUrl,
+                    'platform' => $videoPlatform,
+                    'type' => $videoType
                 ]);
-            } catch (\Exception $e) {
-                Log::channel('slider')->error('Video upload failed', [
-                    'request_id' => $requestId,
-                    'error' => $e->getMessage()
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erreur lors de l\'upload de la vidéo',
-                    'error' => $e->getMessage()
-                ], 500);
+                
+            } elseif ($videoSource === 'upload' && $request->hasFile('video_file')) {
+                // Mode Upload local
+                try {
+                    $videoPath = $this->uploadFile($request->file('video_file'), 'sliders/videos', $requestId);
+                    $videoType = 'upload';
+                    
+                    Log::channel('slider')->debug('Video file uploaded', [
+                        'request_id' => $requestId,
+                        'path' => $videoPath
+                    ]);
+                } catch (\Exception $e) {
+                    Log::channel('slider')->error('Video upload failed', [
+                        'request_id' => $requestId,
+                        'error' => $e->getMessage()
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Erreur lors de l\'upload de la vidéo',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
             }
         }
 
@@ -204,13 +295,17 @@ class SliderController extends Controller
             'type' => $request->type,
             'image_path' => $imagePath,
             'video_path' => $videoPath,
-            'video_type' => $request->video_type,
-            'video_url' => $request->video_url,
+            'video_type' => $videoType,
+            'video_url' => $videoUrl,
             'thumbnail_path' => $thumbnailPath,
             'order' => $request->order ?? (Slider::max('order') + 1),
             'is_active' => $request->boolean('is_active', true),
             'button_text' => $request->button_text,
             'button_url' => $request->button_url,
+            'country_id' => $request->country_id,
+            'province_id' => $request->province_id,
+            'region_id' => $request->region_id,
+            'ville_id' => $request->ville_id,
         ];
 
         $slider = Slider::create($sliderData);
@@ -223,13 +318,22 @@ class SliderController extends Controller
             'slider_name' => $slider->name,
             'image_path' => $imagePath,
             'video_path' => $videoPath,
+            'video_url' => $videoUrl,
+            'video_type' => $videoType,
+            'video_source' => $videoSource ?? null,
+            'location' => [
+                'country_id' => $request->country_id,
+                'province_id' => $request->province_id,
+                'region_id' => $request->region_id,
+                'ville_id' => $request->ville_id,
+            ],
             'duration_ms' => $duration
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Slider créé avec succès !',
-            'data' => $slider
+            'data' => $slider->load(['country', 'province', 'region', 'ville'])
         ]);
     }
 
@@ -247,7 +351,9 @@ class SliderController extends Controller
             'user_id' => auth()->id()
         ]);
         
-        $slider = Slider::withTrashed()->findOrFail($id);
+        $slider = Slider::withTrashed()
+            ->with(['country', 'province', 'region', 'ville'])
+            ->findOrFail($id);
         
         $duration = round((microtime(true) - $startTime) * 1000, 2);
         
@@ -275,7 +381,9 @@ class SliderController extends Controller
             'user_id' => auth()->id(),
             'request_data' => $request->except(['image', 'video_file']),
             'has_image' => $request->hasFile('image'),
-            'has_video' => $request->hasFile('video_file')
+            'has_video' => $request->hasFile('video_file'),
+            'video_source' => $request->edit_video_source,
+            'video_platform' => $request->edit_video_platform
         ]);
         
         $slider = Slider::withTrashed()->findOrFail($id);
@@ -287,12 +395,17 @@ class SliderController extends Controller
             'type' => 'required|in:image,video',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'video_file' => 'nullable|mimes:mp4,avi,mov,wmv|max:102400',
-            'video_type' => 'in:youtube,vimeo,upload',
-            'video_url' => 'nullable|url',
+            'edit_video_source' => 'required_if:type,video|in:url,upload',
+            'edit_video_platform' => 'required_if:edit_video_source,url|in:youtube,vimeo,other',
+            'video_url' => 'required_if:edit_video_source,url|nullable|url',
             'order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'button_text' => 'nullable|string|max:50',
             'button_url' => 'nullable',
+            'country_id' => 'nullable|exists:countries,id',
+            'province_id' => 'nullable|exists:provinces,id',
+            'region_id' => 'nullable|exists:regions,id',
+            'ville_id' => 'nullable|exists:villes,id',
         ]);
 
         if ($validator->fails()) {
@@ -306,6 +419,33 @@ class SliderController extends Controller
                 'success' => false,
                 'errors' => $validator->errors()
             ], 422);
+        }
+
+        // Validation hiérarchique de la localisation
+        if ($request->filled('ville_id')) {
+            $ville = Ville::with('region.province.country')->find($request->ville_id);
+            if ($ville) {
+                $request->merge([
+                    'region_id' => $ville->region_id,
+                    'province_id' => $ville->region->province_id,
+                    'country_id' => $ville->region->province->country_id,
+                ]);
+            }
+        } elseif ($request->filled('region_id')) {
+            $region = Region::with('province.country')->find($request->region_id);
+            if ($region) {
+                $request->merge([
+                    'province_id' => $region->province_id,
+                    'country_id' => $region->province->country_id,
+                ]);
+            }
+        } elseif ($request->filled('province_id')) {
+            $province = Province::with('country')->find($request->province_id);
+            if ($province) {
+                $request->merge([
+                    'country_id' => $province->country_id,
+                ]);
+            }
         }
 
         // Traitement de l'image
@@ -343,41 +483,69 @@ class SliderController extends Controller
             }
         }
 
-        // Traitement de la vidéo uploadée
-        if ($request->hasFile('video_file')) {
-            try {
-                // Supprimer l'ancienne vidéo
-                if ($slider->video_path) {
-                    $this->deleteFile($slider->video_path, $requestId);
-                }
-                
-                $videoPath = $this->uploadFile($request->file('video_file'), 'sliders/videos', $requestId);
-                $slider->video_path = $videoPath;
-                $slider->video_type = 'upload';
-                $slider->video_url = null;
-                
-                Log::channel('slider')->debug('Video updated', [
-                    'request_id' => $requestId,
-                    'slider_id' => $id,
-                    'new_path' => $videoPath
-                ]);
-            } catch (\Exception $e) {
-                Log::channel('slider')->error('Video update failed', [
-                    'request_id' => $requestId,
-                    'slider_id' => $id,
-                    'error' => $e->getMessage()
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erreur lors de l\'upload de la vidéo',
-                    'error' => $e->getMessage()
-                ], 500);
-            }
-        } elseif ($request->type === 'video' && $request->video_type !== 'upload') {
-            // Si c'est une vidéo externe, supprimer la vidéo uploadée
+        // Traitement de la vidéo selon la source
+        if ($request->type === 'video') {
+            $videoSource = $request->edit_video_source;
+            
+            // Supprimer l'ancienne vidéo
             if ($slider->video_path) {
                 $this->deleteFile($slider->video_path, $requestId);
                 $slider->video_path = null;
+            }
+            
+            if ($videoSource === 'url') {
+                // Mode URL
+                $slider->video_url = $request->video_url;
+                $slider->video_path = $request->video_url; // Stocker l'URL dans video_path pour faciliter l'accès
+                $videoPlatform = $request->edit_video_platform;
+                
+                if ($videoPlatform === 'youtube') {
+                    $slider->video_type = 'youtube';
+                } elseif ($videoPlatform === 'vimeo') {
+                    $slider->video_type = 'vimeo';
+                } else {
+                    $slider->video_type = 'other';
+                }
+                
+                Log::channel('slider')->debug('Video URL updated', [
+                    'request_id' => $requestId,
+                    'url' => $request->video_url,
+                    'platform' => $videoPlatform,
+                    'type' => $slider->video_type
+                ]);
+                
+            } elseif ($videoSource === 'upload' && $request->hasFile('video_file')) {
+                // Mode Upload
+                try {
+                    $videoPath = $this->uploadFile($request->file('video_file'), 'sliders/videos', $requestId);
+                    $slider->video_path = $videoPath;
+                    $slider->video_type = 'upload';
+                    $slider->video_url = null;
+                    
+                    Log::channel('slider')->debug('Video file updated', [
+                        'request_id' => $requestId,
+                        'new_path' => $videoPath
+                    ]);
+                } catch (\Exception $e) {
+                    Log::channel('slider')->error('Video update failed', [
+                        'request_id' => $requestId,
+                        'slider_id' => $id,
+                        'error' => $e->getMessage()
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Erreur lors de l\'upload de la vidéo',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
+            } elseif ($videoSource === 'upload' && !$request->hasFile('video_file')) {
+                // Garder la vidéo existante si elle est déjà uploadée
+                if ($slider->video_path && $slider->video_type === 'upload') {
+                    Log::channel('slider')->debug('Keeping existing uploaded video', [
+                        'request_id' => $requestId,
+                        'path' => $slider->video_path
+                    ]);
+                }
             }
         }
 
@@ -385,11 +553,15 @@ class SliderController extends Controller
         $slider->name = $request->name;
         $slider->description = $request->description;
         $slider->type = $request->type;
-        $slider->video_type = $request->video_type;
-        $slider->video_url = $request->video_url;
         $slider->is_active = $request->boolean('is_active', true);
         $slider->button_text = $request->button_text;
         $slider->button_url = $request->button_url;
+        
+        // Mise à jour de la localisation
+        $slider->country_id = $request->country_id;
+        $slider->province_id = $request->province_id;
+        $slider->region_id = $request->region_id;
+        $slider->ville_id = $request->ville_id;
 
         // Gestion du thumbnail pour les vidéos
         if ($request->type === 'video' && empty($slider->thumbnail_path) && $slider->image_path) {
@@ -407,13 +579,21 @@ class SliderController extends Controller
             'slider_name' => $slider->name,
             'image_path' => $slider->image_path,
             'video_path' => $slider->video_path,
+            'video_url' => $slider->video_url,
+            'video_type' => $slider->video_type,
+            'location' => [
+                'country_id' => $slider->country_id,
+                'province_id' => $slider->province_id,
+                'region_id' => $slider->region_id,
+                'ville_id' => $slider->ville_id,
+            ],
             'duration_ms' => $duration
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Slider mis à jour avec succès !',
-            'data' => $slider
+            'data' => $slider->load(['country', 'province', 'region', 'ville'])
         ]);
     }
 
@@ -688,7 +868,7 @@ class SliderController extends Controller
             'user_id' => auth()->id()
         ]);
         
-        $slider = Slider::findOrFail($id);
+        $slider = Slider::with(['country', 'province', 'region', 'ville'])->findOrFail($id);
         
         $duration = round((microtime(true) - $startTime) * 1000, 2);
         
@@ -699,15 +879,40 @@ class SliderController extends Controller
                 'type' => $slider->type,
                 'image_url' => $slider->image_url,
                 'video_url' => $slider->video_url,
+                'video_embed_url' => $slider->video_embed_url,
                 'thumbnail_url' => $slider->thumbnail_url,
                 'description' => $slider->description,
                 'button_text' => $slider->button_text,
                 'button_url' => $slider->button_url,
                 'is_youtube' => $slider->is_youtube,
                 'is_vimeo' => $slider->is_vimeo,
+                'is_uploaded_video' => $slider->is_uploaded_video,
                 'youtube_id' => $slider->youtube_id,
+                'location' => $slider->full_location,
+                'location_hierarchy' => $slider->location_hierarchy,
+                'video_source' => $slider->video_path ? 'upload' : ($slider->video_url ? 'url' : null),
+                'video_platform' => $this->getVideoPlatform($slider->video_type),
             ]
         ]);
+    }
+    
+    /**
+     * Get video platform label
+     */
+    private function getVideoPlatform($type)
+    {
+        switch ($type) {
+            case 'youtube':
+                return 'YouTube';
+            case 'vimeo':
+                return 'Vimeo';
+            case 'upload':
+                return 'Upload local';
+            case 'other':
+                return 'Autre URL';
+            default:
+                return null;
+        }
     }
     
     /**
@@ -741,11 +946,10 @@ class SliderController extends Controller
                 'full_url' => $cdnUrl
             ]);
             
-            // Retourne l'URL complète du CDN
             return $cdnUrl;
         }
         
-        // Si CDN échoue, on utilise le stockage local en fallback
+        // Fallback local
         Log::channel('slider')->warning('CDN upload failed, falling back to local storage', [
             'request_id' => $requestId,
             'error' => $result
@@ -773,7 +977,6 @@ class SliderController extends Controller
         }
         
         try {
-            // Vérifier si c'est une URL CDN
             if ($this->isCdnUrl($filePath)) {
                 $path = $this->extractPathFromCdnUrl($filePath);
                 Log::channel('slider')->debug('Deleting from CDN', [
@@ -790,15 +993,8 @@ class SliderController extends Controller
                         'path' => $path
                     ]);
                     return true;
-                } else {
-                    Log::channel('slider')->warning('CDN deletion failed', [
-                        'request_id' => $requestId,
-                        'path' => $path,
-                        'result' => $result
-                    ]);
                 }
             } else {
-                // Supprimer du stockage local
                 Log::channel('slider')->debug('Deleting from local storage', [
                     'request_id' => $requestId,
                     'path' => $filePath
@@ -843,8 +1039,6 @@ class SliderController extends Controller
     private function extractPathFromCdnUrl($url)
     {
         $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
-        // L'URL est comme: https://upload.goexploriabusiness.com/storage/cdn/sliders/xxx.jpg
-        // On extrait la partie après /storage/
         $path = str_replace($cdnUrl . '/storage/', '', $url);
         return $path;
     }

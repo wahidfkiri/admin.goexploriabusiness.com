@@ -505,6 +505,9 @@ class TaskController extends Controller
     /**
  * Store a newly created task in storage.
  */
+/**
+ * Store a newly created task in storage.
+ */
 public function store(Request $request)
 {
     $validator = Validator::make($request->all(), [
@@ -528,6 +531,8 @@ public function store(Request $request)
         'module_url' => 'nullable|url|max:255',
         'priority' => 'nullable|in:low,medium,high,urgent',
         'tags' => 'nullable|string',
+        'files' => 'nullable|array',
+        'files.*' => 'nullable|file|max:10240|mimes:jpeg,png,jpg,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip'
     ], [
         'name.required' => 'Le nom de la tâche est obligatoire',
         'project_id.required' => 'Le projet est obligatoire',
@@ -590,9 +595,13 @@ public function store(Request $request)
             'files_count' => 0,
         ]);
 
+        // ============================================
+        // GESTION DES FICHIERS - UN SEUL BLOC
+        // ============================================
+        $uploadedCount = 0;
+        
+        // Vérifier si des fichiers sont présents dans la requête
         if ($request->hasFile('files')) {
-            $uploadedCount = 0;
-            
             foreach ($request->file('files') as $file) {
                 try {
                     $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
@@ -626,23 +635,24 @@ public function store(Request $request)
                     \Log::error('Error uploading file during task creation: ' . $e->getMessage());
                 }
             }
-            
-            if ($uploadedCount > 0) {
-                $task->files_count = $uploadedCount;
-                $task->save();
-            }
         }
+        
+        // Mettre à jour le compteur de fichiers si nécessaire
+        if ($uploadedCount > 0) {
+            $task->files_count = $uploadedCount;
+            $task->save();
+        }
+        // ============================================
+        // FIN GESTION DES FICHIERS
+        // ============================================
 
         // ============================================
         // ENVOI D'EMAIL À L'UTILISATEUR ASSIGNÉ
         // ============================================
         try {
-            // Récupérer l'utilisateur assigné
             $assignedUser = User::find($request->user_id);
             
-            // Vérifier si l'utilisateur existe et a un email
             if ($assignedUser && $assignedUser->email) {
-                // Envoyer l'email
                 Mail::to($assignedUser->email)->send(new TaskCreated($task));
                 
                 \Log::info('Email sent to assigned user', [
@@ -659,7 +669,6 @@ public function store(Request $request)
             }
             
         } catch (\Exception $e) {
-            // Ne pas bloquer la création de la tâche si l'email échoue
             \Log::error('Failed to send email to assigned user', [
                 'task_id' => $task->id,
                 'user_id' => $request->user_id,
@@ -675,14 +684,14 @@ public function store(Request $request)
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Tâche créée avec succès' . ($task->files_count > 0 ? ' (' . $task->files_count . ' fichier(s))' : ''),
+                'message' => 'Tâche créée avec succès' . ($uploadedCount > 0 ? ' (' . $uploadedCount . ' fichier(s))' : ''),
                 'data' => $task,
                 'redirect' => route('tasks.show', $task->id)
             ]);
         }
         
         return redirect()->route('tasks.show', $task->id)
-            ->with('success', 'Tâche créée avec succès');
+            ->with('success', 'Tâche créée avec succès' . ($uploadedCount > 0 ? ' (' . $uploadedCount . ' fichier(s) uploadé(s))' : ''));
             
     } catch (\Exception $e) {
         DB::rollBack();
@@ -697,7 +706,7 @@ public function store(Request $request)
         }
         
         return redirect()->back()
-            ->with('error', 'Erreur lors de la création de la tâche')
+            ->with('error', 'Erreur lors de la création de la tâche: ' . $e->getMessage())
             ->withInput();
     }
 }

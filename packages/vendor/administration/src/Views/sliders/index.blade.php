@@ -34,33 +34,58 @@
                     </button>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-md-3">
-                    <label for="filterStatus" class="form-label-modern">Statut</label>
-                    <select class="form-select-modern" id="filterStatus">
-                        <option value="">Tous les statuts</option>
-                        <option value="active">Actif</option>
-                        <option value="inactive">Inactif</option>
-                        <option value="deleted">Supprimé</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="filterType" class="form-label-modern">Type</label>
-                    <select class="form-select-modern" id="filterType">
-                        <option value="">Tous les types</option>
-                        <option value="image">Image</option>
-                        <option value="video">Vidéo</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="filterDateFrom" class="form-label-modern">Date de début</label>
-                    <input type="date" class="form-control-modern" id="filterDateFrom">
-                </div>
-                <div class="col-md-3">
-                    <label for="filterDateTo" class="form-label-modern">Date de fin</label>
-                    <input type="date" class="form-control-modern" id="filterDateTo">
-                </div>
-            </div>
+            <!-- Filter Section - Remplacer la ligne des filtres par ceci -->
+<div class="row">
+    <div class="col-md-3">
+        <label for="filterStatus" class="form-label-modern">Statut</label>
+        <select class="form-select-modern" id="filterStatus">
+            <option value="">Tous les statuts</option>
+            <option value="active">Actif</option>
+            <option value="inactive">Inactif</option>
+            <option value="deleted">Supprimé</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="filterType" class="form-label-modern">Type</label>
+        <select class="form-select-modern" id="filterType">
+            <option value="">Tous les types</option>
+            <option value="image">Image</option>
+            <option value="video">Vidéo</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="filterCountry" class="form-label-modern">Pays</label>
+        <select class="form-select-modern" id="filterCountry">
+            <option value="">Tous les pays</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="filterProvince" class="form-label-modern">Province</label>
+        <select class="form-select-modern" id="filterProvince" disabled>
+            <option value="">Toutes les provinces</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="filterRegion" class="form-label-modern">Région</label>
+        <select class="form-select-modern" id="filterRegion" disabled>
+            <option value="">Toutes les régions</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="filterVille" class="form-label-modern">Ville</label>
+        <select class="form-select-modern" id="filterVille" disabled>
+            <option value="">Toutes les villes</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="filterDateFrom" class="form-label-modern">Date de début</label>
+        <input type="date" class="form-control-modern" id="filterDateFrom">
+    </div>
+    <div class="col-md-3">
+        <label for="filterDateTo" class="form-label-modern">Date de fin</label>
+        <input type="date" class="form-control-modern" id="filterDateTo">
+    </div>
+</div>
         </div>
         
         <!-- Stats Cards -->
@@ -166,7 +191,7 @@
         <th style="width: 50px;">Ordre</th>
         <th>Slider</th>
         <th>Type</th>
-        <th>Région</th>
+        <th>Localisation</th>
         <th>Statut</th>
         <th>Créé le</th>
         <th style="text-align: center;">Actions</th>
@@ -256,30 +281,45 @@
                             </div>
                         </div>
 
-                        <div class="row">
-    <div class="col-md-6 mb-4">
-        <label for="sliderType" class="form-label-modern">Type de contenu *</label>
-        <select class="form-select-modern" id="sliderType" name="type" required>
-            <option value="image">Image</option>
-            <option value="video">Vidéo</option>
-        </select>
-    </div>
-    
-    <div class="col-md-6 mb-4">
-        <label for="sliderOrder" class="form-label-modern">Ordre d'affichage</label>
-        <input type="number" class="form-control-modern" id="sliderOrder" name="order" min="1" value="1">
-        <div class="form-text-modern">Position dans le slider (1 = premier)</div>
+                        
+
+<!-- Localisation Section - À ajouter après le champ order -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <label class="form-label-modern">Recherche rapide de localisation</label>
+        <input type="text" class="form-control-modern" id="locationSearchInput" 
+               placeholder="Rechercher par pays, province, région ou ville...">
+        <div class="form-text-modern">Commencez à taper pour rechercher une localisation</div>
     </div>
 </div>
 
-<!-- AJOUTER CETTE LIGNE - SÉLECTION DE RÉGION -->
 <div class="row">
-    <div class="col-md-12 mb-4">
-        <label for="sliderRegion" class="form-label-modern">Région *</label>
-        <select class="form-select-modern region-select" id="sliderRegion" name="region_id" required>
-            <option value="">Sélectionnez une région...</option>
+    <div class="col-md-3 mb-4">
+        <label for="sliderCountry" class="form-label-modern">Pays</label>
+        <select class="form-select-modern" id="sliderCountry" name="country_id">
+            <option value="">Sélectionnez un pays...</option>
         </select>
-        <div class="form-text-modern">Sélectionnez la région associée à ce slider</div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <label for="sliderProvince" class="form-label-modern">Province</label>
+        <select class="form-select-modern" id="sliderProvince" name="province_id" disabled>
+            <option value="">Sélectionnez d'abord un pays...</option>
+        </select>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <label for="sliderRegion" class="form-label-modern">Région</label>
+        <select class="form-select-modern" id="sliderRegion" name="region_id" disabled>
+            <option value="">Sélectionnez d'abord une province...</option>
+        </select>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <label for="sliderVille" class="form-label-modern">Ville</label>
+        <select class="form-select-modern" id="sliderVille" name="ville_id" disabled>
+            <option value="">Sélectionnez d'abord une région...</option>
+        </select>
     </div>
 </div>
                         
@@ -298,48 +338,84 @@
                         </div>
                         
                         <!-- Video Upload Section (hidden by default) -->
-                        <div class="upload-section" id="videoUploadSection" style="display: none;">
-                            <div class="row">
-                                <div class="col-md-12 mb-4">
-                                    <label for="videoType" class="form-label-modern">Type de vidéo *</label>
-                                    <select class="form-select-modern" id="videoType" name="video_type">
-                                        <option value="youtube">YouTube</option>
-                                        <option value="vimeo">Vimeo</option>
-                                        <option value="upload">Upload</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <!-- YouTube/Vimeo URL -->
-                            <div class="row" id="videoUrlSection">
-                                <div class="col-md-12 mb-4">
-                                    <label for="videoUrl" class="form-label-modern">URL de la vidéo *</label>
-                                    <input type="url" class="form-control-modern" id="videoUrl" name="video_url" placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/...">
-                                    <div class="form-text-modern">Collez l'URL complète de la vidéo YouTube ou Vimeo</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Video File Upload -->
-                            <div class="row" id="videoFileSection" style="display: none;">
-                                <div class="col-md-12 mb-4">
-                                    <label for="videoFile" class="form-label-modern">Fichier vidéo *</label>
-                                    <input type="file" class="form-control-modern" id="videoFile" name="video_file" accept="video/*">
-                                    <div class="form-text-modern">Format: MP4, AVI, MOV, WMV - Max: 10MB</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Video Thumbnail -->
-                            <div class="row">
-                                <div class="col-md-12 mb-4">
-                                    <label for="videoThumbnail" class="form-label-modern">Image de prévisualisation</label>
-                                    <input type="file" class="form-control-modern" id="videoThumbnail" name="image" accept="image/*">
-                                    <div class="form-text-modern">Image affichée avant la lecture de la vidéo (optionnel)</div>
-                                    <div class="image-preview mt-2" id="videoThumbnailPreview" style="display: none;">
-                                        <img id="previewVideoThumbnail" class="img-thumbnail" style="max-width: 300px;">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+<div class="upload-section" id="videoUploadSection" style="display: none;">
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <label class="form-label-modern">Source de la vidéo *</label>
+            <div class="d-flex gap-4">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="video_source" id="videoSourceUrl" value="url" checked>
+                    <label class="form-check-label" for="videoSourceUrl">
+                        <i class="fas fa-link me-1"></i> URL (YouTube, Vimeo, Autre)
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="video_source" id="videoSourceUpload" value="upload">
+                    <label class="form-check-label" for="videoSourceUpload">
+                        <i class="fas fa-upload me-1"></i> Upload local
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- YouTube/Vimeo/Autre URL Section -->
+    <div class="row" id="videoUrlSection">
+        <div class="col-md-12 mb-4">
+            <label for="videoPlatform" class="form-label-modern">Plateforme vidéo *</label>
+            <select class="form-select-modern" id="videoPlatform" name="video_platform">
+                <option value="youtube">YouTube</option>
+                <option value="vimeo">Vimeo</option>
+                <option value="other">Autre URL</option>
+            </select>
+            <div class="form-text-modern">Sélectionnez la plateforme de votre vidéo</div>
+        </div>
+        
+        <div class="col-md-12 mb-4">
+            <label for="videoUrl" class="form-label-modern">URL de la vidéo *</label>
+            <input type="url" class="form-control-modern" id="videoUrl" name="video_url" placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/... ou autre URL">
+            <div class="form-text-modern" id="videoUrlHelp">Collez l'URL complète de la vidéo</div>
+            
+            <!-- Aperçu de l'URL -->
+            <div class="video-url-preview mt-2" id="videoUrlPreview" style="display: none;">
+                <div class="alert alert-info">
+                    <i class="fas fa-link me-2" id="videoPreviewIcon"></i>
+                    <span id="videoUrlPreviewText"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Video File Upload Section -->
+    <div class="row" id="videoFileSection" style="display: none;">
+        <div class="col-md-12 mb-4">
+            <label for="videoFile" class="form-label-modern">Fichier vidéo *</label>
+            <input type="file" class="form-control-modern" id="videoFile" name="video_file" accept="video/*">
+            <div class="form-text-modern">Format: MP4, AVI, MOV, WMV - Max: 100MB</div>
+            
+            <!-- Aperçu du fichier vidéo -->
+            <div class="video-file-preview mt-2" id="videoFilePreview" style="display: none;">
+                <div class="alert alert-info">
+                    <i class="fas fa-file-video me-2"></i>
+                    <span id="videoFileName"></span>
+                    <span id="videoFileSize" class="ms-2 text-muted"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Video Thumbnail -->
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <label for="videoThumbnail" class="form-label-modern">Image de prévisualisation</label>
+            <input type="file" class="form-control-modern" id="videoThumbnail" name="image" accept="image/*">
+            <div class="form-text-modern">Image affichée avant la lecture de la vidéo (optionnel)</div>
+            <div class="image-preview mt-2" id="videoThumbnailPreview" style="display: none;">
+                <img id="previewVideoThumbnail" class="img-thumbnail" style="max-width: 300px;">
+            </div>
+        </div>
+    </div>
+</div>
                         
                         <!-- Button Section -->
                         <div class="row">
@@ -361,7 +437,7 @@
                                     <label class="form-check-label" for="sliderIsActive">Slider actif</label>
                                 </div>
                             </div>
-                        </div>
+                        </div><input type="hidden" id="videoType" name="video_type" value="youtube">
                     </form>
                 </div>
                 <div class="modal-footer modal-footer-modern">
@@ -376,191 +452,239 @@
         </div>
     </div>
     
-    <!-- EDIT SLIDER MODAL -->
-    <div class="modal fade" id="editSliderModal" tabindex="-1" aria-labelledby="editSliderModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content modal-content-modern">
-                <div class="modal-header modal-header-modern">
-                    <h5 class="modal-title modal-title-modern" id="editSliderModalLabel">
-                        <i class="fas fa-edit me-2"></i>Modifier le slider
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body modal-body-modern">
-                    <form id="editSliderForm" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" id="editSliderId" name="id">
+<!-- EDIT SLIDER MODAL -->
+<div class="modal fade" id="editSliderModal" tabindex="-1" aria-labelledby="editSliderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content modal-content-modern">
+            <div class="modal-header modal-header-modern">
+                <h5 class="modal-title modal-title-modern" id="editSliderModalLabel">
+                    <i class="fas fa-edit me-2"></i>Modifier le slider
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-body-modern">
+                <form id="editSliderForm" enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" id="editSliderId" name="id">
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            <label for="editSliderName" class="form-label-modern">Nom du slider *</label>
+                            <input type="text" class="form-control-modern" id="editSliderName" name="name" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            <label for="editSliderDescription" class="form-label-modern">Description</label>
+                            <textarea class="form-control-modern" id="editSliderDescription" name="description" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label for="editSliderType" class="form-label-modern">Type de contenu *</label>
+                            <select class="form-select-modern" id="editSliderType" name="type" required>
+                                <option value="image">Image</option>
+                                <option value="video">Vidéo</option>
+                            </select>
+                        </div>
                         
+                        <div class="col-md-6 mb-4">
+                            <label for="editSliderOrder" class="form-label-modern">Ordre d'affichage</label>
+                            <input type="number" class="form-control-modern" id="editSliderOrder" name="order" min="1">
+                        </div>
+                    </div>
+
+                    <!-- Localisation Section -->
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            <label class="form-label-modern">Recherche rapide de localisation</label>
+                            <input type="text" class="form-control-modern" id="editLocationSearchInput" 
+                                   placeholder="Rechercher par pays, province, région ou ville...">
+                            <div class="form-text-modern">Commencez à taper pour rechercher une localisation</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3 mb-4">
+                            <label for="editSliderCountry" class="form-label-modern">Pays</label>
+                            <select class="form-select-modern" id="editSliderCountry" name="country_id">
+                                <option value="">Sélectionnez un pays...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3 mb-4">
+                            <label for="editSliderProvince" class="form-label-modern">Province</label>
+                            <select class="form-select-modern" id="editSliderProvince" name="province_id" disabled>
+                                <option value="">Sélectionnez d'abord un pays...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3 mb-4">
+                            <label for="editSliderRegion" class="form-label-modern">Région</label>
+                            <select class="form-select-modern" id="editSliderRegion" name="region_id" disabled>
+                                <option value="">Sélectionnez d'abord une province...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3 mb-4">
+                            <label for="editSliderVille" class="form-label-modern">Ville</label>
+                            <select class="form-select-modern" id="editSliderVille" name="ville_id" disabled>
+                                <option value="">Sélectionnez d'abord une région...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Current Image Preview -->
+                    <div class="row" id="currentImageSection">
+                        <div class="col-md-12 mb-4">
+                            <label class="form-label-modern">Image actuelle</label>
+                            <div id="currentImagePreview" class="mb-2"></div>
+                            <div class="form-text-modern">Télécharger une nouvelle image pour remplacer l'actuelle</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Image Upload Section -->
+                    <div class="upload-section" id="editImageUploadSection">
                         <div class="row">
                             <div class="col-md-12 mb-4">
-                                <label for="editSliderName" class="form-label-modern">Nom du slider *</label>
-                                <input type="text" class="form-control-modern" id="editSliderName" name="name" required>
+                                <label for="editSliderImage" class="form-label-modern">Nouvelle image</label>
+                                <input type="file" class="form-control-modern" id="editSliderImage" name="image" accept="image/*">
+                                <div class="form-text-modern">Laisser vide pour conserver l'image actuelle</div>
+                                <div class="image-preview mt-2" id="editImagePreview" style="display: none;">
+                                    <img id="previewEditImage" class="img-thumbnail" style="max-width: 300px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Video Upload Section -->
+                    <div class="upload-section" id="editVideoUploadSection" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-12 mb-4">
+                                <label class="form-label-modern">Source de la vidéo *</label>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="edit_video_source" id="editVideoSourceUrl" value="url" checked>
+                                        <label class="form-check-label" for="editVideoSourceUrl">
+                                            <i class="fas fa-link me-1"></i> URL (YouTube, Vimeo, Autre)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="edit_video_source" id="editVideoSourceUpload" value="upload">
+                                        <label class="form-check-label" for="editVideoSourceUpload">
+                                            <i class="fas fa-upload me-1"></i> Upload local
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="row">
+                        <!-- Current Video Preview -->
+                        <div class="row" id="editCurrentVideoSection">
                             <div class="col-md-12 mb-4">
-                                <label for="editSliderDescription" class="form-label-modern">Description</label>
-                                <textarea class="form-control-modern" id="editSliderDescription" name="description" rows="2"></textarea>
+                                <label class="form-label-modern">Vidéo actuelle</label>
+                                <div id="currentVideoPreview" class="mb-2"></div>
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-4">
-                                <label for="editSliderType" class="form-label-modern">Type de contenu *</label>
-                                <select class="form-select-modern" id="editSliderType" name="type" required>
-                                    <option value="image">Image</option>
-                                    <option value="video">Vidéo</option>
+                        <!-- YouTube/Vimeo/Autre URL Section -->
+                        <div class="row" id="editVideoUrlSection">
+                            <div class="col-md-12 mb-4">
+                                <label for="editVideoPlatform" class="form-label-modern">Plateforme vidéo *</label>
+                                <select class="form-select-modern" id="editVideoPlatform" name="edit_video_platform">
+                                    <option value="youtube">YouTube</option>
+                                    <option value="vimeo">Vimeo</option>
+                                    <option value="other">Autre URL</option>
                                 </select>
+                                <div class="form-text-modern">Sélectionnez la plateforme de votre vidéo</div>
                             </div>
                             
-                            <div class="col-md-6 mb-4">
-                                <label for="editSliderOrder" class="form-label-modern">Ordre d'affichage</label>
-                                <input type="number" class="form-control-modern" id="editSliderOrder" name="order" min="1">
-                            </div>
-                        </div>
-
-                        <div class="row">
-    <div class="col-md-6 mb-4">
-        <label for="editSliderType" class="form-label-modern">Type de contenu *</label>
-        <select class="form-select-modern" id="editSliderType" name="type" required>
-            <option value="image">Image</option>
-            <option value="video">Vidéo</option>
-        </select>
-    </div>
-    
-    <div class="col-md-6 mb-4">
-        <label for="editSliderOrder" class="form-label-modern">Ordre d'affichage</label>
-        <input type="number" class="form-control-modern" id="editSliderOrder" name="order" min="1">
-    </div>
-</div>
-
-<!-- AJOUTER CETTE LIGNE - SÉLECTION DE RÉGION POUR L'ÉDITION -->
-<div class="row">
-    <div class="col-md-12 mb-4">
-        <label for="editSliderRegion" class="form-label-modern">Région *</label>
-        <select class="form-select-modern region-select" id="editSliderRegion" name="region_id" required>
-            <option value="">Sélectionnez une région...</option>
-        </select>
-        <div class="form-text-modern">Sélectionnez la région associée à ce slider</div>
-    </div>
-</div>
-                        
-                        <!-- Current Image Preview -->
-                        <div class="row" id="currentImageSection">
                             <div class="col-md-12 mb-4">
-                                <label class="form-label-modern">Image actuelle</label>
-                                <div id="currentImagePreview" class="mb-2">
-                                    <!-- Current image will be loaded here -->
-                                </div>
-                                <div class="form-text-modern">Télécharger une nouvelle image pour remplacer l'actuelle</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Image Upload Section -->
-                        <div class="upload-section" id="editImageUploadSection">
-                            <div class="row">
-                                <div class="col-md-12 mb-4">
-                                    <label for="editSliderImage" class="form-label-modern">Nouvelle image</label>
-                                    <input type="file" class="form-control-modern" id="editSliderImage" name="image" accept="image/*">
-                                    <div class="form-text-modern">Laisser vide pour conserver l'image actuelle</div>
-                                    <div class="image-preview mt-2" id="editImagePreview" style="display: none;">
-                                        <img id="previewEditImage" class="img-thumbnail" style="max-width: 300px;">
+                                <label for="editVideoUrl" class="form-label-modern">URL de la vidéo</label>
+                                <input type="url" class="form-control-modern" id="editVideoUrl" name="video_url" placeholder="https://www.youtube.com/watch?v=...">
+                                <div class="form-text-modern" id="editVideoUrlHelp">Collez l'URL complète de la vidéo</div>
+                                
+                                <!-- Aperçu de l'URL -->
+                                <div class="video-url-preview mt-2" id="editVideoUrlPreview" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-link me-2" id="editVideoPreviewIcon"></i>
+                                        <span id="editVideoUrlPreviewText"></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Video Upload Section -->
-                        <div class="upload-section" id="editVideoUploadSection" style="display: none;">
-                            <div class="row">
-                                <div class="col-md-12 mb-4">
-                                    <label for="editVideoType" class="form-label-modern">Type de vidéo *</label>
-                                    <select class="form-select-modern" id="editVideoType" name="video_type">
-                                        <option value="youtube">YouTube</option>
-                                        <option value="vimeo">Vimeo</option>
-                                        <option value="upload">Upload</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <!-- Current Video Preview -->
-                            <div class="row" id="currentVideoSection">
-                                <div class="col-md-12 mb-4">
-                                    <label class="form-label-modern">Vidéo actuelle</label>
-                                    <div id="currentVideoPreview" class="mb-2">
-                                        <!-- Current video info will be loaded here -->
+                        <!-- Video File Upload Section -->
+                        <div class="row" id="editVideoFileSection" style="display: none;">
+                            <div class="col-md-12 mb-4">
+                                <label for="editVideoFile" class="form-label-modern">Nouveau fichier vidéo</label>
+                                <input type="file" class="form-control-modern" id="editVideoFile" name="video_file" accept="video/*">
+                                <div class="form-text-modern">Format: MP4, AVI, MOV, WMV - Max: 100MB</div>
+                                
+                                <!-- Aperçu du fichier vidéo -->
+                                <div class="video-file-preview mt-2" id="editVideoFilePreview" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-file-video me-2"></i>
+                                        <span id="editVideoFileName"></span>
+                                        <span id="editVideoFileSize" class="ms-2 text-muted"></span>
                                     </div>
-                                </div>
-                            </div>
-                            
-                            <!-- YouTube/Vimeo URL -->
-                            <div class="row" id="editVideoUrlSection">
-                                <div class="col-md-12 mb-4">
-                                    <label for="editVideoUrl" class="form-label-modern">URL de la vidéo</label>
-                                    <input type="url" class="form-control-modern" id="editVideoUrl" name="video_url" placeholder="https://www.youtube.com/watch?v=...">
-                                    <div class="form-text-modern">Nouvelle URL YouTube ou Vimeo</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Video File Upload -->
-                            <div class="row" id="editVideoFileSection" style="display: none;">
-                                <div class="col-md-12 mb-4">
-                                    <label for="editVideoFile" class="form-label-modern">Nouveau fichier vidéo</label>
-                                    <input type="file" class="form-control-modern" id="editVideoFile" name="video_file" accept="video/*">
-                                    <div class="form-text-modern">Remplacer la vidéo actuelle</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Video Thumbnail -->
-                            <div class="row">
-                                <div class="col-md-12 mb-4">
-                                    <label class="form-label-modern">Image de prévisualisation actuelle</label>
-                                    <div id="currentThumbnailPreview" class="mb-2">
-                                        <!-- Current thumbnail will be loaded here -->
-                                    </div>
-                                    <label for="editVideoThumbnail" class="form-label-modern">Nouvelle image de prévisualisation</label>
-                                    <input type="file" class="form-control-modern" id="editVideoThumbnail" name="image" accept="image/*">
-                                    <div class="form-text-modern">Laisser vide pour conserver l'image actuelle</div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Button Section -->
-                        <div class="row">
-                            <div class="col-md-6 mb-4">
-                                <label for="editButtonText" class="form-label-modern">Texte du bouton</label>
-                                <input type="text" class="form-control-modern" id="editButtonText" name="button_text">
-                            </div>
-                            
-                            <div class="col-md-6 mb-4">
-                                <label for="editButtonUrl" class="form-label-modern">URL du bouton</label>
-                                <input type="text" class="form-control-modern" id="editButtonUrl" name="button_url">
-                            </div>
-                        </div>
-                        
+                        <!-- Video Thumbnail -->
                         <div class="row">
                             <div class="col-md-12 mb-4">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="editSliderIsActive" name="is_active" value="1">
-                                    <label class="form-check-label" for="editSliderIsActive">Slider actif</label>
+                                <label class="form-label-modern">Image de prévisualisation actuelle</label>
+                                <div id="currentThumbnailPreview" class="mb-2"></div>
+                                <label for="editVideoThumbnail" class="form-label-modern">Nouvelle image de prévisualisation</label>
+                                <input type="file" class="form-control-modern" id="editVideoThumbnail" name="image" accept="image/*">
+                                <div class="form-text-modern">Laisser vide pour conserver l'image actuelle</div>
+                                <div class="image-preview mt-2" id="editVideoThumbnailPreview" style="display: none;">
+                                    <img id="previewEditVideoThumbnail" class="img-thumbnail" style="max-width: 300px;">
                                 </div>
                             </div>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer modal-footer-modern">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" id="updateSliderBtn">
-                        <span class="btn-text">
-                            <i class="fas fa-save me-2"></i>Enregistrer les modifications
-                        </span>
-                    </button>
-                </div>
+                    </div>
+                    
+                    <!-- Button Section -->
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label for="editButtonText" class="form-label-modern">Texte du bouton</label>
+                            <input type="text" class="form-control-modern" id="editButtonText" name="button_text">
+                        </div>
+                        
+                        <div class="col-md-6 mb-4">
+                            <label for="editButtonUrl" class="form-label-modern">URL du bouton</label>
+                            <input type="text" class="form-control-modern" id="editButtonUrl" name="button_url">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editSliderIsActive" name="is_active" value="1">
+                                <label class="form-check-label" for="editSliderIsActive">Slider actif</label>
+                            </div>
+                        </div>
+                    </div>
+<input type="hidden" id="editVideoType" name="video_type" value="">
+                </form>
+            </div>
+            <div class="modal-footer modal-footer-modern">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="updateSliderBtn">
+                    <span class="btn-text">
+                        <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                    </span>
+                </button>
             </div>
         </div>
     </div>
+</div>
     
     <!-- PREVIEW MODAL -->
     <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
@@ -670,17 +794,22 @@
     let sliderToRestore = null;
     let sortable = null;
     let originalOrder = [];
-    let regions = [];
 
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
         setupAjax();
         loadSliders();
         loadStatistics();
-        loadRegions();
+        loadLocations();
         setupEventListeners();
         setupImagePreview();
         setupVideoTypeToggle();
+        setupLocationSearch();
+        setupHierarchicalSelects();
+        setupVideoSourceToggle();
+        setupVideoUrlPreview();
+        setupVideoFilePreview();
+        setupVideoPlatformToggle();
     });
 
     // AJAX setup
@@ -695,130 +824,421 @@
         });
     };
 
-    // Charger les régions avec recherche par suggestion
-    const loadRegions = () => {
+    // ==================== LOCALISATION (HIÉRARCHIQUE) ====================
+    const loadLocations = () => {
         $.ajax({
-            url: '/api/regions/data',
+            url: '/api/locations/countries',
             type: 'GET',
             success: function(response) {
                 if (response.success) {
-                    regions = response.data;
-                    populateRegionSelects(regions);
-                    populateRegionFilter();
-                    setupRegionSearch();
+                    populateCountrySelects(response.data);
                 }
             },
             error: function() {
-                console.error('Erreur lors du chargement des régions');
-                showAlert('danger', 'Erreur lors du chargement des régions');
+                console.error('Erreur lors du chargement des pays');
             }
         });
     };
 
-    // Populer les selects de région (création et édition)
-    const populateRegionSelects = (regions) => {
-        const selectElements = ['sliderRegion', 'editSliderRegion'];
-        
-        selectElements.forEach(selectId => {
+    const populateCountrySelects = (countries) => {
+        const selects = ['sliderCountry', 'editSliderCountry', 'filterCountry'];
+        selects.forEach(selectId => {
             const select = document.getElementById(selectId);
             if (select) {
-                select.innerHTML = '<option value="">Sélectionnez une région...</option>';
-                
-                regions.forEach(region => {
+                select.innerHTML = '<option value="">Sélectionnez un pays...</option>';
+                countries.forEach(country => {
                     const option = document.createElement('option');
-                    option.value = region.id;
-                    option.textContent = region.name;
+                    option.value = country.id;
+                    option.textContent = country.name;
                     select.appendChild(option);
                 });
             }
         });
     };
 
-    // Populer le filtre de région
-    const populateRegionFilter = () => {
-        const filterSelect = document.getElementById('filterRegion');
-        if (filterSelect) {
-            const currentValue = filterSelect.value;
-            filterSelect.innerHTML = '<option value="">Toutes les régions</option>';
-            
-            if (regions && regions.length > 0) {
-                regions.forEach(region => {
-                    const option = document.createElement('option');
-                    option.value = region.id;
-                    option.textContent = region.name;
-                    filterSelect.appendChild(option);
-                });
-            }
-            
-            if (currentValue && regions && regions.some(r => r.id == currentValue)) {
-                filterSelect.value = currentValue;
-            }
+    const setupHierarchicalSelects = () => {
+        // Création modal
+        const countrySelect = document.getElementById('sliderCountry');
+        const provinceSelect = document.getElementById('sliderProvince');
+        const regionSelect = document.getElementById('sliderRegion');
+        const villeSelect = document.getElementById('sliderVille');
+
+        if (countrySelect) {
+            countrySelect.addEventListener('change', function() {
+                const countryId = this.value;
+                if (countryId) {
+                    loadProvinces(countryId, provinceSelect);
+                    resetSelect(provinceSelect);
+                    resetSelect(regionSelect);
+                    resetSelect(villeSelect);
+                } else {
+                    resetSelect(provinceSelect);
+                    resetSelect(regionSelect);
+                    resetSelect(villeSelect);
+                }
+            });
+        }
+
+        if (provinceSelect) {
+            provinceSelect.addEventListener('change', function() {
+                const provinceId = this.value;
+                if (provinceId) {
+                    loadRegions(provinceId, regionSelect);
+                    resetSelect(regionSelect);
+                    resetSelect(villeSelect);
+                } else {
+                    resetSelect(regionSelect);
+                    resetSelect(villeSelect);
+                }
+            });
+        }
+
+        if (regionSelect) {
+            regionSelect.addEventListener('change', function() {
+                const regionId = this.value;
+                if (regionId) {
+                    loadVilles(regionId, villeSelect);
+                    resetSelect(villeSelect);
+                } else {
+                    resetSelect(villeSelect);
+                }
+            });
+        }
+
+        // Édition modal
+        const editCountrySelect = document.getElementById('editSliderCountry');
+        const editProvinceSelect = document.getElementById('editSliderProvince');
+        const editRegionSelect = document.getElementById('editSliderRegion');
+        const editVilleSelect = document.getElementById('editSliderVille');
+
+        if (editCountrySelect) {
+            editCountrySelect.addEventListener('change', function() {
+                const countryId = this.value;
+                if (countryId) {
+                    loadProvinces(countryId, editProvinceSelect);
+                    resetSelect(editProvinceSelect);
+                    resetSelect(editRegionSelect);
+                    resetSelect(editVilleSelect);
+                } else {
+                    resetSelect(editProvinceSelect);
+                    resetSelect(editRegionSelect);
+                    resetSelect(editVilleSelect);
+                }
+            });
+        }
+
+        if (editProvinceSelect) {
+            editProvinceSelect.addEventListener('change', function() {
+                const provinceId = this.value;
+                if (provinceId) {
+                    loadRegions(provinceId, editRegionSelect);
+                    resetSelect(editRegionSelect);
+                    resetSelect(editVilleSelect);
+                } else {
+                    resetSelect(editRegionSelect);
+                    resetSelect(editVilleSelect);
+                }
+            });
+        }
+
+        if (editRegionSelect) {
+            editRegionSelect.addEventListener('change', function() {
+                const regionId = this.value;
+                if (regionId) {
+                    loadVilles(regionId, editVilleSelect);
+                    resetSelect(editVilleSelect);
+                } else {
+                    resetSelect(editVilleSelect);
+                }
+            });
+        }
+
+        // Filtres
+        const filterCountry = document.getElementById('filterCountry');
+        const filterProvince = document.getElementById('filterProvince');
+        const filterRegion = document.getElementById('filterRegion');
+        const filterVille = document.getElementById('filterVille');
+
+        if (filterCountry) {
+            filterCountry.addEventListener('change', function() {
+                const countryId = this.value;
+                if (countryId) {
+                    loadProvincesForFilter(countryId, filterProvince);
+                    resetSelect(filterProvince);
+                    resetSelect(filterRegion);
+                    resetSelect(filterVille);
+                } else {
+                    resetSelect(filterProvince);
+                    resetSelect(filterRegion);
+                    resetSelect(filterVille);
+                }
+            });
+        }
+
+        if (filterProvince) {
+            filterProvince.addEventListener('change', function() {
+                const provinceId = this.value;
+                if (provinceId) {
+                    loadRegionsForFilter(provinceId, filterRegion);
+                    resetSelect(filterRegion);
+                    resetSelect(filterVille);
+                } else {
+                    resetSelect(filterRegion);
+                    resetSelect(filterVille);
+                }
+            });
+        }
+
+        if (filterRegion) {
+            filterRegion.addEventListener('change', function() {
+                const regionId = this.value;
+                if (regionId) {
+                    loadVillesForFilter(regionId, filterVille);
+                    resetSelect(filterVille);
+                } else {
+                    resetSelect(filterVille);
+                }
+            });
         }
     };
 
-    // Configuration de la recherche par suggestion avec TomSelect
-    const setupRegionSearch = () => {
-        // Pour le select de création
-        const createSelect = document.getElementById('sliderRegion');
-        if (createSelect && typeof TomSelect !== 'undefined') {
-            if (createSelect.tomselect) createSelect.tomselect.destroy();
-            new TomSelect(createSelect, {
-                create: false,
-                sortField: {
-                    field: "text",
-                    direction: "asc"
-                },
-                searchField: ["text"],
-                placeholder: "Rechercher une région...",
-                maxOptions: 10,
-                closeAfterSelect: true,
-                render: {
-                    option: function(data, escape) {
-                        return `<div class="region-option">
-                                    <i class="fas fa-map-marker-alt me-2" style="color: #667eea;"></i>
-                                    ${escape(data.text)}
-                                </div>`;
-                    },
-                    item: function(data, escape) {
-                        return `<div class="region-selected">
-                                    <i class="fas fa-map-marker-alt me-1"></i>
-                                    ${escape(data.text)}
-                                </div>`;
-                    }
+    const loadProvinces = (countryId, selectElement) => {
+        if (!selectElement) return;
+        $.ajax({
+            url: `/api/locations/countries/${countryId}/provinces`,
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    selectElement.innerHTML = '<option value="">Sélectionnez une province...</option>';
+                    response.data.forEach(province => {
+                        const option = document.createElement('option');
+                        option.value = province.id;
+                        option.textContent = province.name;
+                        selectElement.appendChild(option);
+                    });
+                    selectElement.disabled = false;
                 }
-            });
-        }
-        
-        // Pour le select d'édition
-        const editSelect = document.getElementById('editSliderRegion');
-        if (editSelect && typeof TomSelect !== 'undefined') {
-            if (editSelect.tomselect) editSelect.tomselect.destroy();
-            new TomSelect(editSelect, {
-                create: false,
-                sortField: {
-                    field: "text",
-                    direction: "asc"
-                },
-                searchField: ["text"],
-                placeholder: "Rechercher une région...",
-                maxOptions: 10,
-                closeAfterSelect: true,
-                render: {
-                    option: function(data, escape) {
-                        return `<div class="region-option">
-                                    <i class="fas fa-map-marker-alt me-2" style="color: #667eea;"></i>
-                                    ${escape(data.text)}
-                                </div>`;
-                    },
-                    item: function(data, escape) {
-                        return `<div class="region-selected">
-                                    <i class="fas fa-map-marker-alt me-1"></i>
-                                    ${escape(data.text)}
-                                </div>`;
-                    }
+            }
+        });
+    };
+
+    const loadRegions = (provinceId, selectElement) => {
+        if (!selectElement) return;
+        $.ajax({
+            url: `/api/locations/provinces/${provinceId}/regions`,
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    selectElement.innerHTML = '<option value="">Sélectionnez une région...</option>';
+                    response.data.forEach(region => {
+                        const option = document.createElement('option');
+                        option.value = region.id;
+                        option.textContent = region.name;
+                        selectElement.appendChild(option);
+                    });
+                    selectElement.disabled = false;
                 }
-            });
+            }
+        });
+    };
+
+    const loadVilles = (regionId, selectElement) => {
+        if (!selectElement) return;
+        $.ajax({
+            url: `/api/locations/regions/${regionId}/villes`,
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    selectElement.innerHTML = '<option value="">Sélectionnez une ville...</option>';
+                    response.data.forEach(ville => {
+                        const option = document.createElement('option');
+                        option.value = ville.id;
+                        option.textContent = ville.name;
+                        selectElement.appendChild(option);
+                    });
+                    selectElement.disabled = false;
+                }
+            }
+        });
+    };
+
+    const loadProvincesForFilter = (countryId, selectElement) => {
+        if (!selectElement) return;
+        $.ajax({
+            url: `/api/locations/countries/${countryId}/provinces`,
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    selectElement.innerHTML = '<option value="">Toutes les provinces</option>';
+                    response.data.forEach(province => {
+                        const option = document.createElement('option');
+                        option.value = province.id;
+                        option.textContent = province.name;
+                        selectElement.appendChild(option);
+                    });
+                    selectElement.disabled = false;
+                }
+            }
+        });
+    };
+
+    const loadRegionsForFilter = (provinceId, selectElement) => {
+        if (!selectElement) return;
+        $.ajax({
+            url: `/api/locations/provinces/${provinceId}/regions`,
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    selectElement.innerHTML = '<option value="">Toutes les régions</option>';
+                    response.data.forEach(region => {
+                        const option = document.createElement('option');
+                        option.value = region.id;
+                        option.textContent = region.name;
+                        selectElement.appendChild(option);
+                    });
+                    selectElement.disabled = false;
+                }
+            }
+        });
+    };
+
+    const loadVillesForFilter = (regionId, selectElement) => {
+        if (!selectElement) return;
+        $.ajax({
+            url: `/api/locations/regions/${regionId}/villes`,
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    selectElement.innerHTML = '<option value="">Toutes les villes</option>';
+                    response.data.forEach(ville => {
+                        const option = document.createElement('option');
+                        option.value = ville.id;
+                        option.textContent = ville.name;
+                        selectElement.appendChild(option);
+                    });
+                    selectElement.disabled = false;
+                }
+            }
+        });
+    };
+
+    const resetSelect = (selectElement) => {
+        if (selectElement) {
+            selectElement.innerHTML = '<option value="">Sélectionnez d\'abord...</option>';
+            selectElement.disabled = true;
         }
+    };
+
+    const setupLocationSearch = () => {
+        const searchInput = document.getElementById('locationSearchInput');
+        if (!searchInput) return;
+
+        let timeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timeout);
+            const keyword = this.value;
+            if (keyword.length < 2) {
+                hideLocationResults();
+                return;
+            }
+            timeout = setTimeout(() => searchLocation(keyword), 300);
+        });
+    };
+
+    const searchLocation = (keyword) => {
+        $.ajax({
+            url: `/api/locations/search?q=${encodeURIComponent(keyword)}`,
+            type: 'GET',
+            success: function(response) {
+                if (response.success && response.data.length > 0) {
+                    displayLocationResults(response.data);
+                } else {
+                    hideLocationResults();
+                }
+            }
+        });
+    };
+
+    const displayLocationResults = (results) => {
+        let resultsContainer = document.getElementById('locationSearchResults');
+        if (!resultsContainer) {
+            resultsContainer = document.createElement('div');
+            resultsContainer.id = 'locationSearchResults';
+            resultsContainer.className = 'location-search-results';
+            const searchInput = document.getElementById('locationSearchInput');
+            if (searchInput && searchInput.parentNode) {
+                searchInput.parentNode.style.position = 'relative';
+                searchInput.parentNode.appendChild(resultsContainer);
+            }
+        }
+
+        resultsContainer.innerHTML = '';
+        resultsContainer.style.display = 'block';
+
+        results.forEach(result => {
+            const item = document.createElement('div');
+            item.className = 'location-result-item';
+            item.innerHTML = `
+                <div class="result-type-badge ${result.type}">${result.type_label}</div>
+                <div class="result-name">${escapeHtml(result.name)}</div>
+                <div class="result-hierarchy">${escapeHtml(result.hierarchy)}</div>
+            `;
+            item.addEventListener('click', () => selectLocation(result));
+            resultsContainer.appendChild(item);
+        });
+    };
+
+    const hideLocationResults = () => {
+        const container = document.getElementById('locationSearchResults');
+        if (container) container.style.display = 'none';
+    };
+
+    const selectLocation = (location) => {
+        const createModal = document.getElementById('createSliderModal');
+        const editModal = document.getElementById('editSliderModal');
+        const isEditModal = editModal?.classList.contains('show');
+
+        if (isEditModal) {
+            switch(location.type) {
+                case 'country':
+                    document.getElementById('editSliderCountry').value = location.id;
+                    document.getElementById('editSliderCountry').dispatchEvent(new Event('change'));
+                    break;
+                case 'province':
+                    document.getElementById('editSliderProvince').value = location.id;
+                    document.getElementById('editSliderProvince').dispatchEvent(new Event('change'));
+                    break;
+                case 'region':
+                    document.getElementById('editSliderRegion').value = location.id;
+                    document.getElementById('editSliderRegion').dispatchEvent(new Event('change'));
+                    break;
+                case 'ville':
+                    document.getElementById('editSliderVille').value = location.id;
+                    break;
+            }
+        } else {
+            switch(location.type) {
+                case 'country':
+                    document.getElementById('sliderCountry').value = location.id;
+                    document.getElementById('sliderCountry').dispatchEvent(new Event('change'));
+                    break;
+                case 'province':
+                    document.getElementById('sliderProvince').value = location.id;
+                    document.getElementById('sliderProvince').dispatchEvent(new Event('change'));
+                    break;
+                case 'region':
+                    document.getElementById('sliderRegion').value = location.id;
+                    document.getElementById('sliderRegion').dispatchEvent(new Event('change'));
+                    break;
+                case 'ville':
+                    document.getElementById('sliderVille').value = location.id;
+                    break;
+            }
+        }
+
+        const searchInput = document.getElementById('locationSearchInput');
+        if (searchInput) searchInput.value = location.hierarchy;
+        hideLocationResults();
     };
 
     // Load sliders
@@ -895,7 +1315,6 @@
                 year: 'numeric'
             });
             
-            // Type badge
             let typeClass = 'type-image-modern';
             let typeIcon = 'fa-image';
             let typeText = 'Image';
@@ -914,10 +1333,12 @@
                 } else if (slider.video_type === 'upload') {
                     typeText = 'Upload';
                     typeIcon = 'fa-upload';
+                } else if (slider.video_type === 'other') {
+                    typeText = 'Autre';
+                    typeIcon = 'fa-link';
                 }
             }
             
-            // Status badge
             let statusClass = 'status-active-modern';
             let statusText = 'Actif';
             let statusIcon = 'fa-check-circle';
@@ -934,7 +1355,6 @@
                 statusIcon = 'fa-trash';
             }
             
-            // Preview content based on slider type
             let previewContent = '';
             let imageUrl = '';
             
@@ -947,9 +1367,7 @@
                     }
                     previewContent = `<img src="${imageUrl}" alt="${slider.name}" class="slider-thumbnail" onerror="this.onerror=null; this.src='https://via.placeholder.com/60x60?text=Image'; this.classList.add('placeholder-image');">`;
                 } else {
-                    previewContent = `<div class="slider-icon-placeholder">
-                                        <i class="fas fa-image"></i>
-                                      </div>`;
+                    previewContent = `<div class="slider-icon-placeholder"><i class="fas fa-image"></i></div>`;
                 }
             } else if (slider.type === 'video') {
                 if (slider.thumbnail_path) {
@@ -967,76 +1385,37 @@
                     }
                     previewContent = `<img src="${imageUrl}" alt="${slider.name}" class="slider-thumbnail" onerror="this.onerror=null; this.src='https://via.placeholder.com/60x60?text=Video'; this.classList.add('placeholder-image');">`;
                 } else {
-                    previewContent = `<div class="slider-icon-placeholder video-placeholder">
-                                        <i class="fas fa-video"></i>
-                                      </div>`;
+                    previewContent = `<div class="slider-icon-placeholder video-placeholder"><i class="fas fa-video"></i></div>`;
                 }
             }
             
-            row.innerHTML = `
-                <td style="width: 50px;">
-                    <div class="order-badge" data-id="${slider.id}">
-                        <i class="fas fa-arrows-alt me-1"></i>
-                        ${slider.order}
-                    </div>
-                </td>
-                <td class="slider-name-cell">
-                    <div class="slider-name-modern">
-                        <div class="slider-icon-modern">
-                            ${previewContent}
-                        </div>
-                        <div>
-                            <div class="slider-name-text">${escapeHtml(slider.name)}</div>
-                            <small class="text-muted">ID: ${slider.id}</small>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <span class="slider-type-modern ${typeClass}">
-                        <i class="fab ${typeIcon} me-1"></i>
-                        ${typeText}
-                    </span>
-                </td>
-                <td>
-                    <span class="slider-region-modern">
-                        <i class="fas fa-map-marker-alt me-1"></i>
-                        ${escapeHtml(slider.region?.name || 'Non assigné')}
-                    </span>
-                </td>
-                <td>
-                    <span class="slider-status-modern ${statusClass}">
-                        <i class="fas ${statusIcon} me-1"></i>
-                        ${statusText}
-                    </span>
-                </td>
-                <td>
-                    <div>${formattedDate}</div>
-                    <small class="text-muted">${formatTimeAgo(createdDate)}</small>
-                </td>
-                <td style="text-align: center;">
-                    <div class="slider-actions-modern">
-                        <button class="action-btn-modern preview-btn-modern" title="Aperçu" onclick="previewSlider(${slider.id})">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        ${slider.deleted_at ? `
-                            <button class="action-btn-modern restore-btn-modern" title="Restaurer" onclick="showRestoreConfirmation(${slider.id})">
-                                <i class="fas fa-undo"></i>
-                            </button>
-                        ` : `
-                            <button class="action-btn-modern edit-btn-modern" title="Modifier" onclick="openEditModal(${slider.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="action-btn-modern status-btn-modern" title="Changer statut" onclick="toggleSliderStatus(${slider.id})">
-                                <i class="fas fa-power-off"></i>
-                            </button>
-                            <button class="action-btn-modern delete-btn-modern" title="Supprimer" onclick="showDeleteConfirmation(${slider.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        `}
-                    </div>
-                </td>
-            `;
+            let fullLocation = slider.full_location || '';
+            if (!fullLocation) {
+                const parts = [];
+                if (slider.country) parts.push(slider.country.name);
+                if (slider.province) parts.push(slider.province.name);
+                if (slider.region) parts.push(slider.region.name);
+                if (slider.ville) parts.push(slider.ville.name);
+                fullLocation = parts.join(' › ') || 'Non assigné';
+            }
             
+            row.innerHTML = `
+                <td style="width: 50px;"><div class="order-badge" data-id="${slider.id}"><i class="fas fa-arrows-alt me-1"></i>${slider.order}</div></td>
+                <td class="slider-name-cell"><div class="slider-name-modern"><div class="slider-icon-modern">${previewContent}</div><div><div class="slider-name-text">${escapeHtml(slider.name)}</div><small class="text-muted">ID: ${slider.id}</small></div></div></td>
+                <td><span class="slider-type-modern ${typeClass}"><i class="fab ${typeIcon} me-1"></i>${typeText}</span></td>
+                <td><span class="slider-region-modern"><i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(fullLocation)}</span></td>
+                <td><span class="slider-status-modern ${statusClass}"><i class="fas ${statusIcon} me-1"></i>${statusText}</span></td>
+                <td><div>${formattedDate}</div><small class="text-muted">${formatTimeAgo(createdDate)}</small></td>
+                <td style="text-align: center;"><div class="slider-actions-modern">
+                    <button class="action-btn-modern preview-btn-modern" title="Aperçu" onclick="previewSlider(${slider.id})"><i class="fas fa-eye"></i></button>
+                    ${slider.deleted_at ? 
+                        `<button class="action-btn-modern restore-btn-modern" title="Restaurer" onclick="showRestoreConfirmation(${slider.id})"><i class="fas fa-undo"></i></button>` :
+                        `<button class="action-btn-modern edit-btn-modern" title="Modifier" onclick="openEditModal(${slider.id})"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn-modern status-btn-modern" title="Changer statut" onclick="toggleSliderStatus(${slider.id})"><i class="fas fa-power-off"></i></button>
+                        <button class="action-btn-modern delete-btn-modern" title="Supprimer" onclick="showDeleteConfirmation(${slider.id})"><i class="fas fa-trash"></i></button>`
+                    }
+                </div></td>
+            `;
             tbody.appendChild(row);
         });
         
@@ -1045,7 +1424,6 @@
         document.getElementById('paginationContainer').style.display = 'flex';
     };
 
-    // Escape HTML to prevent XSS
     const escapeHtml = (text) => {
         if (!text) return '';
         const div = document.createElement('div');
@@ -1053,7 +1431,6 @@
         return div.innerHTML;
     };
 
-    // Setup Sortable drag and drop
     const setupSortable = (sliders) => {
         const sortableList = document.getElementById('sortableList');
         sortableList.innerHTML = '';
@@ -1072,91 +1449,54 @@
             if (slider.type === 'video') {
                 typeIcon = 'fa-video';
                 typeText = 'Vidéo';
-                
-                if (slider.video_type === 'youtube') {
-                    typeIcon = 'fa-youtube';
-                    typeText = 'YouTube';
-                } else if (slider.video_type === 'vimeo') {
-                    typeIcon = 'fa-vimeo';
-                    typeText = 'Vimeo';
-                }
+                if (slider.video_type === 'youtube') { typeIcon = 'fa-youtube'; typeText = 'YouTube'; }
+                else if (slider.video_type === 'vimeo') { typeIcon = 'fa-vimeo'; typeText = 'Vimeo'; }
             }
             
-            const imageUrl = slider.image_path 
-                ? `/storage/${slider.image_path}` 
-                : 'https://via.placeholder.com/60';
+            const imageUrl = slider.image_path ? `/storage/${slider.image_path}` : 'https://via.placeholder.com/60';
             
             item.innerHTML = `
                 <div class="sortable-item-content">
-                    <div class="sortable-handle">
-                        <i class="fas fa-arrows-alt"></i>
-                    </div>
-                    <div class="sortable-image">
-                        <img src="${imageUrl}" alt="${slider.name}">
-                    </div>
+                    <div class="sortable-handle"><i class="fas fa-arrows-alt"></i></div>
+                    <div class="sortable-image"><img src="${imageUrl}" alt="${slider.name}"></div>
                     <div class="sortable-info">
                         <div class="sortable-name">${slider.name}</div>
                         <div class="sortable-details">
-                            <span class="badge bg-secondary me-2">
-                                <i class="fas ${typeIcon} me-1"></i>${typeText}
-                            </span>
-                            <span class="badge ${slider.is_active ? 'bg-success' : 'bg-secondary'}">
-                                <i class="fas ${slider.is_active ? 'fa-check' : 'fa-ban'} me-1"></i>
-                                ${slider.is_active ? 'Actif' : 'Inactif'}
-                            </span>
+                            <span class="badge bg-secondary me-2"><i class="fas ${typeIcon} me-1"></i>${typeText}</span>
+                            <span class="badge ${slider.is_active ? 'bg-success' : 'bg-secondary'}"><i class="fas ${slider.is_active ? 'fa-check' : 'fa-ban'} me-1"></i>${slider.is_active ? 'Actif' : 'Inactif'}</span>
                         </div>
                     </div>
-                    <div class="sortable-order">
-                        <span class="order-badge">${slider.order}</span>
-                    </div>
+                    <div class="sortable-order"><span class="order-badge">${slider.order}</span></div>
                 </div>
             `;
-            
             sortableList.appendChild(item);
         });
         
-        if (sortable) {
-            sortable.destroy();
-        }
-        
+        if (sortable) sortable.destroy();
         sortable = new Sortable(sortableList, {
             animation: 150,
             handle: '.sortable-handle',
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
             dragClass: 'sortable-drag',
-            onEnd: function(evt) {
-                updateOrderNumbers();
-            }
+            onEnd: () => updateOrderNumbers()
         });
     };
 
-    // Update order numbers after drag and drop
     const updateOrderNumbers = () => {
-        const items = document.querySelectorAll('.sortable-item');
-        items.forEach((item, index) => {
-            const orderBadge = item.querySelector('.order-badge');
-            orderBadge.textContent = index + 1;
+        document.querySelectorAll('.sortable-item').forEach((item, index) => {
+            item.querySelector('.order-badge').textContent = index + 1;
         });
     };
 
-    // Save order to server
     const saveOrder = () => {
         const items = document.querySelectorAll('.sortable-item');
         const slidersData = [];
-        
-        items.forEach((item, index) => {
-            const sliderId = item.dataset.id;
-            slidersData.push({
-                id: parseInt(sliderId),
-                order: index + 1
-            });
-        });
+        items.forEach((item, index) => slidersData.push({ id: parseInt(item.dataset.id), order: index + 1 }));
         
         const saveBtn = document.getElementById('saveOrderBtn');
         const saveBtn2 = document.getElementById('saveOrderBtn2');
         const originalText = saveBtn.innerHTML;
-        const originalText2 = saveBtn2.innerHTML;
         
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sauvegarde...';
         saveBtn2.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sauvegarde...';
@@ -1166,9 +1506,7 @@
         $.ajax({
             url: '{{ route("sliders.update-order") }}',
             type: 'POST',
-            data: {
-                sliders: slidersData
-            },
+            data: { sliders: slidersData },
             success: function(response) {
                 if (response.success) {
                     showAlert('success', 'Ordre sauvegardé avec succès !');
@@ -1176,22 +1514,19 @@
                     loadStatistics();
                     toggleOrderView();
                 } else {
-                    showAlert('danger', response.message || 'Erreur lors de la sauvegarde de l\'ordre');
+                    showAlert('danger', response.message || 'Erreur lors de la sauvegarde');
                 }
             },
-            error: function() {
-                showAlert('danger', 'Erreur lors de la sauvegarde de l\'ordre');
-            },
-            complete: function() {
+            error: () => showAlert('danger', 'Erreur lors de la sauvegarde'),
+            complete: () => {
                 saveBtn.innerHTML = originalText;
-                saveBtn2.innerHTML = originalText2;
+                saveBtn2.innerHTML = originalText;
                 saveBtn.disabled = false;
                 saveBtn2.disabled = false;
             }
         });
     };
 
-    // Toggle between table view and order view
     const toggleOrderView = () => {
         const tableView = document.getElementById('tableView');
         const orderContainer = document.getElementById('orderContainer');
@@ -1208,7 +1543,6 @@
                 showAlert('info', 'Aucun slider à réorganiser');
                 return;
             }
-            
             tableView.style.display = 'none';
             orderContainer.style.display = 'block';
             saveBtn.style.display = 'inline-block';
@@ -1217,21 +1551,14 @@
         }
     };
 
-    // Cancel order editing
     const cancelOrder = () => {
-        const tableView = document.getElementById('tableView');
-        const orderContainer = document.getElementById('orderContainer');
-        const toggleBtn = document.getElementById('toggleOrderView');
-        const saveBtn = document.getElementById('saveOrderBtn');
-        
-        tableView.style.display = 'block';
-        orderContainer.style.display = 'none';
-        saveBtn.style.display = 'none';
-        toggleBtn.innerHTML = '<i class="fas fa-sort me-1"></i>Vue par ordre';
+        document.getElementById('tableView').style.display = 'block';
+        document.getElementById('orderContainer').style.display = 'none';
+        document.getElementById('saveOrderBtn').style.display = 'none';
+        document.getElementById('toggleOrderView').innerHTML = '<i class="fas fa-sort me-1"></i>Vue par ordre';
         setupSortable(allSliders);
     };
 
-    // Preview slider
     const previewSlider = (sliderId) => {
         $.ajax({
             url: `/sliders/${sliderId}/preview`,
@@ -1240,387 +1567,186 @@
                 if (response.success) {
                     const slider = response.data;
                     const previewContent = document.getElementById('previewContent');
-                    
                     let content = '';
                     
                     if (slider.type === 'image') {
-                        const imageUrl = slider.image_url || null;
-                        
-                        if (imageUrl) {
-                            content = `
-                                <div class="slider-preview">
-                                    <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
-                                    <div class="preview-image mb-3">
-                                        <img src="${imageUrl}" 
-                                             alt="${escapeHtml(slider.name)}" 
-                                             class="img-fluid rounded" 
-                                             style="max-height: 400px; width: 100%; object-fit: cover;"
-                                             onerror="this.onerror=null; this.src='https://via.placeholder.com/800x400?text=Image+non+disponible';">
-                                    </div>
-                                    ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
-                                    ${slider.button_text && slider.button_url ? `
-                                        <div class="preview-button">
-                                            <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
-                        } else {
-                            content = `
-                                <div class="slider-preview">
-                                    <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
-                                    <div class="preview-placeholder mb-3">
-                                        <div class="placeholder-content">
-                                            <i class="fas fa-image fa-4x mb-3"></i>
-                                            <p>Aucune image disponible</p>
-                                        </div>
-                                    </div>
-                                    ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
-                                    ${slider.button_text && slider.button_url ? `
-                                        <div class="preview-button">
-                                            <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
-                        }
+                        content = `
+                            <div class="slider-preview text-center">
+                                <h5>${escapeHtml(slider.name)}</h5>
+                                <img src="${slider.image_url}" class="img-fluid rounded mb-3" style="max-height: 400px;">
+                                ${slider.description ? `<p>${escapeHtml(slider.description)}</p>` : ''}
+                                ${slider.button_text && slider.button_url ? `<a href="${slider.button_url}" class="btn btn-primary" target="_blank">${slider.button_text}</a>` : ''}
+                            </div>`;
                     } else if (slider.type === 'video') {
                         if (slider.is_youtube && slider.youtube_id) {
-                            const embedUrl = `https://www.youtube.com/embed/${slider.youtube_id}`;
                             content = `
-                                <div class="slider-preview">
-                                    <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
+                                <div class="slider-preview text-center">
+                                    <h5>${escapeHtml(slider.name)}</h5>
                                     <div class="ratio ratio-16x9 mb-3">
-                                        <iframe src="${embedUrl}" 
-                                                title="${escapeHtml(slider.name)}" 
-                                                frameborder="0" 
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                                allowfullscreen>
-                                        </iframe>
+                                        <iframe src="https://www.youtube.com/embed/${slider.youtube_id}" frameborder="0" allowfullscreen></iframe>
                                     </div>
-                                    ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
-                                    ${slider.button_text && slider.button_url ? `
-                                        <div class="preview-button">
-                                            <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
+                                    ${slider.description ? `<p>${escapeHtml(slider.description)}</p>` : ''}
+                                    ${slider.button_text && slider.button_url ? `<a href="${slider.button_url}" class="btn btn-primary" target="_blank">${slider.button_text}</a>` : ''}
+                                </div>`;
                         } else if (slider.is_vimeo && slider.video_url) {
                             content = `
-                                <div class="slider-preview">
-                                    <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
+                                <div class="slider-preview text-center">
+                                    <h5>${escapeHtml(slider.name)}</h5>
                                     <div class="ratio ratio-16x9 mb-3">
-                                        <iframe src="${escapeHtml(slider.video_url)}" 
-                                                title="${escapeHtml(slider.name)}" 
-                                                frameborder="0" 
-                                                allow="autoplay; fullscreen; picture-in-picture" 
-                                                allowfullscreen>
-                                        </iframe>
+                                        <iframe src="${slider.video_url.replace('vimeo.com', 'player.vimeo.com/video')}" frameborder="0" allowfullscreen></iframe>
                                     </div>
-                                    ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
-                                    ${slider.button_text && slider.button_url ? `
-                                        <div class="preview-button">
-                                            <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
+                                    ${slider.description ? `<p>${escapeHtml(slider.description)}</p>` : ''}
+                                    ${slider.button_text && slider.button_url ? `<a href="${slider.button_url}" class="btn btn-primary" target="_blank">${slider.button_text}</a>` : ''}
+                                </div>`;
                         } else if (slider.video_url) {
-                            const thumbnailUrl = slider.thumbnail_url || slider.image_url || '';
                             content = `
-                                <div class="slider-preview">
-                                    <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
-                                    <div class="mb-3">
-                                        <video controls style="width: 100%; max-height: 400px;" poster="${thumbnailUrl}">
-                                            <source src="${escapeHtml(slider.video_url)}" type="video/mp4">
-                                            Votre navigateur ne supporte pas la lecture de vidéos.
-                                        </video>
-                                    </div>
-                                    ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
-                                    ${slider.button_text && slider.button_url ? `
-                                        <div class="preview-button">
-                                            <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
+                                <div class="slider-preview text-center">
+                                    <h5>${escapeHtml(slider.name)}</h5>
+                                    <video controls style="width:100%; max-height:400px;" poster="${slider.thumbnail_url}">
+                                        <source src="${slider.video_url}" type="video/mp4">
+                                    </video>
+                                    ${slider.description ? `<p>${escapeHtml(slider.description)}</p>` : ''}
+                                    ${slider.button_text && slider.button_url ? `<a href="${slider.button_url}" class="btn btn-primary" target="_blank">${slider.button_text}</a>` : ''}
+                                </div>`;
                         } else {
-                            content = `
-                                <div class="slider-preview">
-                                    <h5 class="mb-3">${escapeHtml(slider.name)}</h5>
-                                    <div class="preview-placeholder mb-3">
-                                        <div class="placeholder-content">
-                                            <i class="fas fa-video fa-4x mb-3"></i>
-                                            <p>Vidéo non disponible</p>
-                                            ${slider.video_url ? `<small class="text-muted">URL: ${escapeHtml(slider.video_url)}</small>` : ''}
-                                        </div>
-                                    </div>
-                                    ${slider.description ? `<p class="mb-3">${escapeHtml(slider.description)}</p>` : ''}
-                                    ${slider.button_text && slider.button_url ? `
-                                        <div class="preview-button">
-                                            <a href="${escapeHtml(slider.button_url)}" class="btn btn-primary" target="_blank">${escapeHtml(slider.button_text)}</a>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
+                            content = `<div class="slider-preview text-center"><h5>${escapeHtml(slider.name)}</h5><div class="preview-placeholder"><i class="fas fa-video fa-4x mb-3"></i><p>Vidéo non disponible</p></div></div>`;
                         }
                     }
-                    
                     previewContent.innerHTML = content;
-                    
-                    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
-                    previewModal.show();
+                    new bootstrap.Modal(document.getElementById('previewModal')).show();
                 }
             },
-            error: function() {
-                showAlert('danger', 'Erreur lors du chargement de l\'aperçu');
-            }
+            error: () => showAlert('danger', 'Erreur lors du chargement de l\'aperçu')
         });
     };
 
-    // Show delete confirmation modal
     const showDeleteConfirmation = (sliderId) => {
         const slider = allSliders.find(s => s.id === sliderId);
-        
-        if (!slider) {
-            showAlert('danger', 'Slider non trouvé');
-            return;
-        }
-        
+        if (!slider) { showAlert('danger', 'Slider non trouvé'); return; }
         sliderToDelete = slider;
         
         const createdDate = new Date(slider.created_at);
-        const formattedDate = createdDate.toLocaleDateString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
+        const formattedDate = createdDate.toLocaleDateString('fr-FR');
         
         document.getElementById('sliderToDeleteInfo').innerHTML = `
-            <div class="slider-info">
-                <div class="slider-info-icon">
-                    <i class="fas fa-sliders-h"></i>
-                </div>
-                <div>
-                    <div class="slider-info-name">${slider.name}</div>
-                    <div class="slider-info-type">
-                        <span class="badge ${slider.type === 'image' ? 'bg-info' : 'bg-warning'}">
-                            ${slider.type === 'image' ? 'Image' : 'Vidéo'}
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <div class="row small text-muted">
-                <div class="col-6">
-                    <div><strong>ID:</strong> ${slider.id}</div>
-                    <div><strong>Ordre:</strong> ${slider.order}</div>
-                </div>
-                <div class="col-6">
-                    <div><strong>Créé le:</strong> ${formattedDate}</div>
-                    <div><strong>Statut:</strong> ${slider.is_active ? 'Actif' : 'Inactif'}</div>
-                </div>
-            </div>
-        `;
+            <div class="slider-info"><div class="slider-info-icon"><i class="fas fa-sliders-h"></i></div>
+            <div><div class="slider-info-name">${slider.name}</div><div class="slider-info-type"><span class="badge bg-secondary">${slider.type === 'image' ? 'Image' : 'Vidéo'}</span></div></div></div>
+            <div class="row small text-muted"><div class="col-6"><strong>ID:</strong> ${slider.id}</div><div class="col-6"><strong>Ordre:</strong> ${slider.order}</div>
+            <div class="col-6"><strong>Créé le:</strong> ${formattedDate}</div><div class="col-6"><strong>Statut:</strong> ${slider.is_active ? 'Actif' : 'Inactif'}</div></div>`;
         
-        const deleteBtn = document.getElementById('confirmDeleteBtn');
-        deleteBtn.innerHTML = `
-            <span class="btn-text">
-                <i class="fas fa-trash me-2"></i>Supprimer définitivement
-            </span>
-        `;
-        deleteBtn.disabled = false;
-        
-        const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
-        deleteModal.show();
+        document.getElementById('confirmDeleteBtn').innerHTML = `<span class="btn-text"><i class="fas fa-trash me-2"></i>Supprimer définitivement</span>`;
+        document.getElementById('confirmDeleteBtn').disabled = false;
+        new bootstrap.Modal(document.getElementById('deleteConfirmationModal')).show();
     };
 
-    // Show restore confirmation modal
     const showRestoreConfirmation = (sliderId) => {
         const slider = allSliders.find(s => s.id === sliderId);
-        
-        if (!slider) {
-            showAlert('danger', 'Slider non trouvé');
-            return;
-        }
-        
+        if (!slider) { showAlert('danger', 'Slider non trouvé'); return; }
         sliderToRestore = slider;
-        
-        document.getElementById('sliderToRestoreInfo').innerHTML = `
-            <div class="slider-info">
-                <div class="slider-info-icon">
-                    <i class="fas fa-sliders-h"></i>
-                </div>
-                <div>
-                    <div class="slider-info-name">${slider.name}</div>
-                    <div class="slider-info-type">
-                        <span class="badge ${slider.type === 'image' ? 'bg-info' : 'bg-warning'}">
-                            ${slider.type === 'image' ? 'Image' : 'Vidéo'}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        const restoreModal = new bootstrap.Modal(document.getElementById('restoreConfirmationModal'));
-        restoreModal.show();
+        document.getElementById('sliderToRestoreInfo').innerHTML = `<div class="slider-info"><div class="slider-info-icon"><i class="fas fa-sliders-h"></i></div><div><div class="slider-info-name">${slider.name}</div></div></div>`;
+        new bootstrap.Modal(document.getElementById('restoreConfirmationModal')).show();
     };
 
-    // Delete slider
     const deleteSlider = () => {
-        if (!sliderToDelete) {
-            showAlert('danger', 'Aucun slider à supprimer');
-            return;
-        }
-        
-        const sliderId = sliderToDelete.id;
+        if (!sliderToDelete) return;
         const deleteBtn = document.getElementById('confirmDeleteBtn');
-        
-        deleteBtn.innerHTML = `
-            <span class="btn-text" style="display: none;">
-                <i class="fas fa-trash me-2"></i>Supprimer définitivement
-            </span>
-            <div class="spinner-border spinner-border-sm text-light" role="status">
-                <span class="visually-hidden">Suppression...</span>
-            </div>
-            Suppression en cours...
-        `;
+        deleteBtn.innerHTML = '<div class="spinner-border spinner-border-sm text-light me-2"></div>Suppression...';
         deleteBtn.disabled = true;
         
         $.ajax({
-            url: `/sliders/${sliderId}`,
+            url: `/sliders/${sliderToDelete.id}`,
             type: 'DELETE',
-            dataType: 'json',
             success: function(response) {
-                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
-                deleteModal.hide();
-                
+                bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal')).hide();
                 if (response.success) {
                     loadStatistics();
-                    showAlert('success', response.message || 'Slider supprimé avec succès !');
                     loadSliders(currentPage, currentFilters);
-                } else {
-                    showAlert('danger', response.message || 'Erreur lors de la suppression du slider');
+                    showAlert('success', response.message);
                 }
             },
-            error: function(xhr) {
-                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
-                deleteModal.hide();
-                
-                if (xhr.status === 404) {
-                    showAlert('danger', 'Slider non trouvé');
-                    loadSliders(currentPage, currentFilters);
-                } else {
-                    showAlert('danger', 'Erreur lors de la suppression du slider');
-                }
-            },
-            complete: function() {
-                sliderToDelete = null;
-            }
+            error: () => showAlert('danger', 'Erreur lors de la suppression'),
+            complete: () => { sliderToDelete = null; }
         });
     };
 
-    // Restore slider
     const restoreSlider = () => {
-        if (!sliderToRestore) {
-            showAlert('danger', 'Aucun slider à restaurer');
-            return;
-        }
-        
-        const sliderId = sliderToRestore.id;
+        if (!sliderToRestore) return;
         const restoreBtn = document.getElementById('confirmRestoreBtn');
-        
-        restoreBtn.innerHTML = `
-            <span class="btn-text" style="display: none;">
-                <i class="fas fa-undo me-2"></i>Restaurer
-            </span>
-            <div class="spinner-border spinner-border-sm text-light" role="status">
-                <span class="visually-hidden">Restauration...</span>
-            </div>
-            Restauration en cours...
-        `;
+        restoreBtn.innerHTML = '<div class="spinner-border spinner-border-sm text-light me-2"></div>Restauration...';
         restoreBtn.disabled = true;
         
         $.ajax({
-            url: `/sliders/${sliderId}/restore`,
+            url: `/sliders/${sliderToRestore.id}/restore`,
             type: 'POST',
-            dataType: 'json',
             success: function(response) {
-                const restoreModal = bootstrap.Modal.getInstance(document.getElementById('restoreConfirmationModal'));
-                restoreModal.hide();
-                
+                bootstrap.Modal.getInstance(document.getElementById('restoreConfirmationModal')).hide();
                 if (response.success) {
                     loadStatistics();
-                    showAlert('success', response.message || 'Slider restauré avec succès !');
                     loadSliders(currentPage, currentFilters);
-                } else {
-                    showAlert('danger', response.message || 'Erreur lors de la restauration du slider');
+                    showAlert('success', response.message);
                 }
             },
-            error: function() {
-                const restoreModal = bootstrap.Modal.getInstance(document.getElementById('restoreConfirmationModal'));
-                restoreModal.hide();
-                showAlert('danger', 'Erreur lors de la restauration du slider');
-            },
-            complete: function() {
-                sliderToRestore = null;
-            }
+            error: () => showAlert('danger', 'Erreur lors de la restauration'),
+            complete: () => { sliderToRestore = null; }
         });
     };
 
-    // Toggle slider status
     const toggleSliderStatus = (sliderId) => {
         $.ajax({
             url: `/sliders/${sliderId}/toggle-status`,
             type: 'POST',
-            dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    showAlert('success', response.message || 'Statut modifié avec succès !');
                     loadSliders(currentPage, currentFilters);
                     loadStatistics();
-                } else {
-                    showAlert('danger', response.message || 'Erreur lors du changement de statut');
+                    showAlert('success', response.message);
                 }
             },
-            error: function() {
-                showAlert('danger', 'Erreur lors du changement de statut');
-            }
+            error: () => showAlert('danger', 'Erreur lors du changement de statut')
         });
     };
 
-    // Store slider
     const storeSlider = () => {
         const form = document.getElementById('createSliderForm');
         const submitBtn = document.getElementById('submitSliderBtn');
         
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
+        if (!form.checkValidity()) { form.reportValidity(); return; }
         
         const type = document.getElementById('sliderType').value;
-        const videoType = document.getElementById('videoType').value;
-        const videoUrl = document.getElementById('videoUrl').value;
+        const videoSourceUrl = document.getElementById('videoSourceUrl');
+        const videoSourceUpload = document.getElementById('videoSourceUpload');
+        const videoPlatform = document.getElementById('videoPlatform');
+        let videoSource = '';
+        let videoUrl = '';
         
-        if (type === 'video' && (videoType === 'youtube' || videoType === 'vimeo') && !videoUrl) {
-            showAlert('danger', 'Veuillez entrer l\'URL de la vidéo');
-            return;
+        if (type === 'video') {
+            if (videoSourceUrl && videoSourceUrl.checked) {
+                videoSource = 'url';
+                videoUrl = document.getElementById('videoUrl').value;
+                if (!videoUrl) { showAlert('danger', 'Veuillez entrer l\'URL de la vidéo'); return; }
+                if (videoPlatform && !videoPlatform.value) { showAlert('danger', 'Veuillez sélectionner la plateforme vidéo'); return; }
+            } else if (videoSourceUpload && videoSourceUpload.checked) {
+                videoSource = 'upload';
+                const videoFile = document.getElementById('videoFile').files[0];
+                if (!videoFile) { showAlert('danger', 'Veuillez sélectionner un fichier vidéo'); return; }
+            } else {
+                showAlert('danger', 'Veuillez choisir une source de vidéo');
+                return;
+            }
         }
         
         submitBtn.classList.add('btn-processing');
-        submitBtn.innerHTML = `
-            <span class="btn-text" style="display: none;">
-                <i class="fas fa-save me-2"></i>Créer le slider
-            </span>
-            <div class="spinner-border spinner-border-sm text-light" role="status">
-                <span class="visually-hidden">Chargement...</span>
-            </div>
-            Création en cours...
-        `;
+        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm text-light me-2"></div>Création en cours...';
         submitBtn.disabled = true;
         
         const formData = new FormData(form);
+        if (type === 'video') {
+            formData.append('video_source', videoSource);
+            if (videoSource === 'url') {
+                formData.append('video_url', videoUrl);
+                if (videoPlatform) formData.append('video_platform', videoPlatform.value);
+            }
+        }
         
         $.ajax({
             url: '{{ route("sliders.store") }}',
@@ -1628,79 +1754,84 @@
             data: formData,
             contentType: false,
             processData: false,
-            dataType: 'json',
             success: function(response) {
                 submitBtn.classList.remove('btn-processing');
-                submitBtn.innerHTML = `
-                    <span class="btn-text">
-                        <i class="fas fa-save me-2"></i>Créer le slider
-                    </span>
-                `;
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Créer le slider';
                 submitBtn.disabled = false;
                 
                 if (response.success) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('createSliderModal'));
-                    modal.hide();
-                    
+                    bootstrap.Modal.getInstance(document.getElementById('createSliderModal')).hide();
                     form.reset();
                     document.getElementById('imagePreview').style.display = 'none';
                     document.getElementById('videoThumbnailPreview').style.display = 'none';
-                    
+                    resetSelect(document.getElementById('sliderProvince'));
+                    resetSelect(document.getElementById('sliderRegion'));
+                    resetSelect(document.getElementById('sliderVille'));
+                    if (videoSourceUrl) videoSourceUrl.checked = true;
+                    document.getElementById('videoUrlSection').style.display = 'block';
+                    document.getElementById('videoFileSection').style.display = 'none';
+                    document.getElementById('videoUrl').value = '';
+                    document.getElementById('videoFile').value = '';
                     loadStatistics();
                     loadSliders(1, currentFilters);
                     showAlert('success', 'Slider créé avec succès !');
                 } else {
-                    showAlert('danger', response.message || 'Erreur lors de la création du slider');
+                    showAlert('danger', response.message || 'Erreur lors de la création');
                 }
             },
             error: function(xhr) {
                 submitBtn.classList.remove('btn-processing');
-                submitBtn.innerHTML = `
-                    <span class="btn-text">
-                        <i class="fas fa-save me-2"></i>Créer le slider
-                    </span>
-                `;
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Créer le slider';
                 submitBtn.disabled = false;
-                
                 if (xhr.status === 422) {
-                    const errors = xhr.responseJSON.errors;
-                    let errorMessage = 'Veuillez corriger les erreurs suivantes:<br>';
-                    for (const field in errors) {
-                        errorMessage += `- ${errors[field].join('<br>')}<br>`;
-                    }
-                    showAlert('danger', errorMessage);
+                    let msg = 'Veuillez corriger les erreurs:<br>';
+                    for (let field in xhr.responseJSON.errors) msg += `- ${xhr.responseJSON.errors[field].join('<br>')}<br>`;
+                    showAlert('danger', msg);
                 } else {
-                    showAlert('danger', 'Erreur lors de la création du slider');
+                    showAlert('danger', 'Erreur lors de la création');
                 }
             }
         });
     };
 
-    // Update slider
     const updateSlider = () => {
         const form = document.getElementById('editSliderForm');
         const submitBtn = document.getElementById('updateSliderBtn');
         const sliderId = document.getElementById('editSliderId').value;
         
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        
+        const type = document.getElementById('editSliderType').value;
+        const editVideoSourceUrl = document.getElementById('editVideoSourceUrl');
+        const editVideoSourceUpload = document.getElementById('editVideoSourceUpload');
+        const editVideoPlatform = document.getElementById('editVideoPlatform');
+        let videoSource = '';
+        
+        if (type === 'video') {
+            if (editVideoSourceUrl && editVideoSourceUrl.checked) {
+                videoSource = 'url';
+                const videoUrl = document.getElementById('editVideoUrl').value;
+                if (!videoUrl && !document.getElementById('currentVideoPreview').innerHTML.includes('URL')) {
+                    showAlert('danger', 'Veuillez entrer l\'URL de la vidéo');
+                    return;
+                }
+            } else if (editVideoSourceUpload && editVideoSourceUpload.checked) {
+                videoSource = 'upload';
+            }
         }
         
         submitBtn.classList.add('btn-processing');
-        submitBtn.innerHTML = `
-            <span class="btn-text" style="display: none;">
-                <i class="fas fa-save me-2"></i>Enregistrer les modifications
-            </span>
-            <div class="spinner-border spinner-border-sm text-light" role="status">
-                <span class="visually-hidden">Chargement...</span>
-            </div>
-            Enregistrement...
-        `;
+        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm text-light me-2"></div>Enregistrement...';
         submitBtn.disabled = true;
         
         const formData = new FormData(form);
         formData.append('_method', 'PUT');
+        if (type === 'video' && videoSource) {
+            formData.append('edit_video_source', videoSource);
+            if (videoSource === 'url' && editVideoPlatform) {
+                formData.append('edit_video_platform', editVideoPlatform.value);
+            }
+        }
         
         $.ajax({
             url: `/sliders/${sliderId}`,
@@ -1708,374 +1839,476 @@
             data: formData,
             contentType: false,
             processData: false,
-            dataType: 'json',
             success: function(response) {
                 submitBtn.classList.remove('btn-processing');
-                submitBtn.innerHTML = `
-                    <span class="btn-text">
-                        <i class="fas fa-save me-2"></i>Enregistrer les modifications
-                    </span>
-                `;
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
                 submitBtn.disabled = false;
                 
                 if (response.success) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editSliderModal'));
-                    modal.hide();
-                    
+                    bootstrap.Modal.getInstance(document.getElementById('editSliderModal')).hide();
                     loadSliders(currentPage, currentFilters);
                     showAlert('success', 'Slider mis à jour avec succès !');
                 } else {
-                    showAlert('danger', response.message || 'Erreur lors de la mise à jour du slider');
+                    showAlert('danger', response.message || 'Erreur lors de la mise à jour');
                 }
             },
             error: function(xhr) {
                 submitBtn.classList.remove('btn-processing');
-                submitBtn.innerHTML = `
-                    <span class="btn-text">
-                        <i class="fas fa-save me-2"></i>Enregistrer les modifications
-                    </span>
-                `;
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
                 submitBtn.disabled = false;
-                
                 if (xhr.status === 422) {
-                    const errors = xhr.responseJSON.errors;
-                    let errorMessage = 'Veuillez corriger les erreurs suivantes:<br>';
-                    for (const field in errors) {
-                        errorMessage += `- ${errors[field].join('<br>')}<br>`;
-                    }
-                    showAlert('danger', errorMessage);
+                    let msg = 'Veuillez corriger les erreurs:<br>';
+                    for (let field in xhr.responseJSON.errors) msg += `- ${xhr.responseJSON.errors[field].join('<br>')}<br>`;
+                    showAlert('danger', msg);
                 } else {
-                    showAlert('danger', 'Erreur lors de la mise à jour du slider');
+                    showAlert('danger', 'Erreur lors de la mise à jour');
                 }
             }
         });
     };
 
-    // Open edit modal
-    const openEditModal = (sliderId) => {
-        const slider = allSliders.find(s => s.id === sliderId);
-        
-        if (!slider) {
-            showAlert('danger', 'Slider non trouvé');
-            return;
-        }
-        
-        document.getElementById('editSliderId').value = slider.id;
-        document.getElementById('editSliderName').value = slider.name;
-        document.getElementById('editSliderDescription').value = slider.description || '';
-        document.getElementById('editSliderType').value = slider.type;
-        document.getElementById('editSliderOrder').value = slider.order;
-        document.getElementById('editButtonText').value = slider.button_text || '';
-        document.getElementById('editButtonUrl').value = slider.button_url || '';
-        document.getElementById('editSliderIsActive').checked = slider.is_active;
-        
-        const editRegionSelect = document.getElementById('editSliderRegion');
-        if (editRegionSelect && slider.region_id) {
-            editRegionSelect.value = slider.region_id;
-            if (editRegionSelect.tomselect) {
-                editRegionSelect.tomselect.setValue(slider.region_id);
-            }
-        }
-        
-        if (slider.type === 'video') {
-            document.getElementById('editVideoType').value = slider.video_type || 'youtube';
-            document.getElementById('editVideoUrl').value = slider.video_url || '';
-            
-            const currentVideoPreview = document.getElementById('currentVideoPreview');
-            if (slider.video_type === 'youtube' || slider.video_type === 'vimeo') {
-                currentVideoPreview.innerHTML = `
-                    <div class="alert alert-info">
-                        <i class="fas fa-link me-2"></i>
-                        <strong>URL actuelle:</strong> ${slider.video_url || 'Non définie'}
-                    </div>
-                `;
-            } else if (slider.video_type === 'upload' && slider.video_path) {
-                currentVideoPreview.innerHTML = `
-                    <div class="alert alert-info">
-                        <i class="fas fa-file-video me-2"></i>
-                        <strong>Vidéo uploadée:</strong> ${slider.video_path.split('/').pop()}
-                    </div>
-                `;
-            }
-            
-            const currentThumbnailPreview = document.getElementById('currentThumbnailPreview');
-            if (slider.image_path) {
-                currentThumbnailPreview.innerHTML = `
-                    <img src="/storage/${slider.image_path}" alt="Thumbnail actuel" class="img-thumbnail" style="max-width: 200px;">
-                `;
-            } else {
-                currentThumbnailPreview.innerHTML = '<div class="text-muted">Aucun thumbnail défini</div>';
-            }
-        } else {
-            const currentImagePreview = document.getElementById('currentImagePreview');
-            if (slider.image_path) {
-                currentImagePreview.innerHTML = `
-                    <img src="/storage/${slider.image_path}" alt="Image actuelle" class="img-thumbnail" style="max-width: 300px;">
-                `;
-            }
-        }
-        
-        toggleEditSections(slider.type);
-        
-        const editModal = new bootstrap.Modal(document.getElementById('editSliderModal'));
-        editModal.show();
-    };
-
-    // Setup image preview
     const setupImagePreview = () => {
         const createImageInput = document.getElementById('sliderImage');
-        const createPreview = document.getElementById('previewImage');
-        const createPreviewContainer = document.getElementById('imagePreview');
-        
         if (createImageInput) {
             createImageInput.addEventListener('change', function() {
                 const file = this.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = function(e) {
-                        createPreview.src = e.target.result;
-                        createPreviewContainer.style.display = 'block';
-                    }
+                    reader.onload = e => {
+                        document.getElementById('previewImage').src = e.target.result;
+                        document.getElementById('imagePreview').style.display = 'block';
+                    };
                     reader.readAsDataURL(file);
-                } else {
-                    createPreviewContainer.style.display = 'none';
                 }
             });
         }
         
         const videoThumbnailInput = document.getElementById('videoThumbnail');
-        const videoThumbnailPreview = document.getElementById('previewVideoThumbnail');
-        const videoThumbnailContainer = document.getElementById('videoThumbnailPreview');
-        
         if (videoThumbnailInput) {
             videoThumbnailInput.addEventListener('change', function() {
                 const file = this.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = function(e) {
-                        videoThumbnailPreview.src = e.target.result;
-                        videoThumbnailContainer.style.display = 'block';
-                    }
+                    reader.onload = e => {
+                        document.getElementById('previewVideoThumbnail').src = e.target.result;
+                        document.getElementById('videoThumbnailPreview').style.display = 'block';
+                    };
                     reader.readAsDataURL(file);
-                } else {
-                    videoThumbnailContainer.style.display = 'none';
                 }
             });
         }
         
         const editImageInput = document.getElementById('editSliderImage');
-        const editPreview = document.getElementById('previewEditImage');
-        const editPreviewContainer = document.getElementById('editImagePreview');
-        
         if (editImageInput) {
             editImageInput.addEventListener('change', function() {
                 const file = this.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = function(e) {
-                        editPreview.src = e.target.result;
-                        editPreviewContainer.style.display = 'block';
-                    }
+                    reader.onload = e => {
+                        document.getElementById('previewEditImage').src = e.target.result;
+                        document.getElementById('editImagePreview').style.display = 'block';
+                    };
                     reader.readAsDataURL(file);
-                } else {
-                    editPreviewContainer.style.display = 'none';
                 }
             });
         }
     };
 
-    // Setup video type toggle
     const setupVideoTypeToggle = () => {
         const sliderType = document.getElementById('sliderType');
-        const imageUploadSection = document.getElementById('imageUploadSection');
-        const videoUploadSection = document.getElementById('videoUploadSection');
-        
         if (sliderType) {
             sliderType.addEventListener('change', function() {
                 if (this.value === 'image') {
-                    imageUploadSection.style.display = 'block';
-                    videoUploadSection.style.display = 'none';
+                    document.getElementById('imageUploadSection').style.display = 'block';
+                    document.getElementById('videoUploadSection').style.display = 'none';
                     document.getElementById('sliderImage').required = true;
                 } else {
-                    imageUploadSection.style.display = 'none';
-                    videoUploadSection.style.display = 'block';
+                    document.getElementById('imageUploadSection').style.display = 'none';
+                    document.getElementById('videoUploadSection').style.display = 'block';
                     document.getElementById('sliderImage').required = false;
-                    toggleVideoType();
                 }
             });
-        }
-        
-        const videoType = document.getElementById('videoType');
-        
-        if (videoType) {
-            videoType.addEventListener('change', toggleVideoType);
         }
         
         const editSliderType = document.getElementById('editSliderType');
-        const editImageUploadSection = document.getElementById('editImageUploadSection');
-        const editVideoUploadSection = document.getElementById('editVideoUploadSection');
-        const currentImageSection = document.getElementById('currentImageSection');
-        
         if (editSliderType) {
             editSliderType.addEventListener('change', function() {
                 if (this.value === 'image') {
-                    editImageUploadSection.style.display = 'block';
-                    editVideoUploadSection.style.display = 'none';
-                    currentImageSection.style.display = 'block';
+                    document.getElementById('editImageUploadSection').style.display = 'block';
+                    document.getElementById('editVideoUploadSection').style.display = 'none';
+                    document.getElementById('currentImageSection').style.display = 'block';
                     document.getElementById('currentVideoSection').style.display = 'none';
                 } else {
-                    editImageUploadSection.style.display = 'none';
-                    editVideoUploadSection.style.display = 'block';
-                    currentImageSection.style.display = 'none';
+                    document.getElementById('editImageUploadSection').style.display = 'none';
+                    document.getElementById('editVideoUploadSection').style.display = 'block';
+                    document.getElementById('currentImageSection').style.display = 'none';
                     document.getElementById('currentVideoSection').style.display = 'block';
-                    toggleEditVideoType();
+                }
+            });
+        }
+    };
+
+    const toggleEditSections = (type) => {
+        if (type === 'image') {
+            document.getElementById('editImageUploadSection').style.display = 'block';
+            document.getElementById('editVideoUploadSection').style.display = 'none';
+            document.getElementById('currentImageSection').style.display = 'block';
+            document.getElementById('currentVideoSection').style.display = 'none';
+        } else {
+            document.getElementById('editImageUploadSection').style.display = 'none';
+            document.getElementById('editVideoUploadSection').style.display = 'block';
+            document.getElementById('currentImageSection').style.display = 'none';
+            document.getElementById('currentVideoSection').style.display = 'block';
+        }
+    };
+
+    const setupVideoSourceToggle = () => {
+        const videoSourceUrl = document.getElementById('videoSourceUrl');
+        const videoSourceUpload = document.getElementById('videoSourceUpload');
+        const videoUrlSection = document.getElementById('videoUrlSection');
+        const videoFileSection = document.getElementById('videoFileSection');
+        const videoUrlInput = document.getElementById('videoUrl');
+        const videoFileInput = document.getElementById('videoFile');
+        
+        if (videoSourceUrl && videoSourceUpload) {
+            const toggle = () => {
+                if (videoSourceUrl.checked) {
+                    videoUrlSection.style.display = 'block';
+                    videoFileSection.style.display = 'none';
+                    if (videoUrlInput) videoUrlInput.required = true;
+                    if (videoFileInput) videoFileInput.required = false;
+                    if (videoFileInput) videoFileInput.value = '';
+                } else {
+                    videoUrlSection.style.display = 'none';
+                    videoFileSection.style.display = 'block';
+                    if (videoUrlInput) videoUrlInput.required = false;
+                    if (videoFileInput) videoFileInput.required = true;
+                    if (videoUrlInput) videoUrlInput.value = '';
+                }
+            };
+            videoSourceUrl.addEventListener('change', toggle);
+            videoSourceUpload.addEventListener('change', toggle);
+        }
+        
+        const editVideoSourceUrl = document.getElementById('editVideoSourceUrl');
+        const editVideoSourceUpload = document.getElementById('editVideoSourceUpload');
+        const editVideoUrlSection = document.getElementById('editVideoUrlSection');
+        const editVideoFileSection = document.getElementById('editVideoFileSection');
+        
+        if (editVideoSourceUrl && editVideoSourceUpload) {
+            const toggleEdit = () => {
+                if (editVideoSourceUrl.checked) {
+                    editVideoUrlSection.style.display = 'block';
+                    editVideoFileSection.style.display = 'none';
+                } else {
+                    editVideoUrlSection.style.display = 'none';
+                    editVideoFileSection.style.display = 'block';
+                }
+            };
+            editVideoSourceUrl.addEventListener('change', toggleEdit);
+            editVideoSourceUpload.addEventListener('change', toggleEdit);
+        }
+    };
+
+    const setupVideoPlatformToggle = () => {
+        const videoPlatform = document.getElementById('videoPlatform');
+        const videoUrlHelp = document.getElementById('videoUrlHelp');
+        const videoUrlInput = document.getElementById('videoUrl');
+        
+        if (videoPlatform) {
+            videoPlatform.addEventListener('change', function() {
+                const platform = this.value;
+                let placeholder = '', helpText = '';
+                
+                switch(platform) {
+                    case 'youtube':
+                        placeholder = 'https://www.youtube.com/watch?v=xxxxxxxxxxx';
+                        helpText = 'Collez l\'URL complète YouTube (ex: https://www.youtube.com/watch?v=dQw4w9WgXcQ)';
+                        break;
+                    case 'vimeo':
+                        placeholder = 'https://vimeo.com/xxxxxxxxx';
+                        helpText = 'Collez l\'URL complète Vimeo (ex: https://vimeo.com/123456789)';
+                        break;
+                    case 'other':
+                        placeholder = 'https://...';
+                        helpText = 'Collez l\'URL complète de votre vidéo';
+                        break;
+                }
+                if (videoUrlInput) videoUrlInput.placeholder = placeholder;
+                if (videoUrlHelp) videoUrlHelp.innerHTML = helpText;
+            });
+        }
+        
+        const editVideoPlatform = document.getElementById('editVideoPlatform');
+        const editVideoUrlHelp = document.getElementById('editVideoUrlHelp');
+        const editVideoUrlInput = document.getElementById('editVideoUrl');
+        
+        if (editVideoPlatform) {
+            editVideoPlatform.addEventListener('change', function() {
+                const platform = this.value;
+                let placeholder = '', helpText = '';
+                
+                switch(platform) {
+                    case 'youtube':
+                        placeholder = 'https://www.youtube.com/watch?v=xxxxxxxxxxx';
+                        helpText = 'Collez l\'URL complète YouTube (ex: https://www.youtube.com/watch?v=dQw4w9WgXcQ)';
+                        break;
+                    case 'vimeo':
+                        placeholder = 'https://vimeo.com/xxxxxxxxx';
+                        helpText = 'Collez l\'URL complète Vimeo (ex: https://vimeo.com/123456789)';
+                        break;
+                    case 'other':
+                        placeholder = 'https://...';
+                        helpText = 'Collez l\'URL complète de votre vidéo';
+                        break;
+                }
+                if (editVideoUrlInput) editVideoUrlInput.placeholder = placeholder;
+                if (editVideoUrlHelp) editVideoUrlHelp.innerHTML = helpText;
+            });
+        }
+    };
+
+    const setupVideoUrlPreview = () => {
+        const videoUrlInput = document.getElementById('videoUrl');
+        const videoUrlPreview = document.getElementById('videoUrlPreview');
+        const videoUrlPreviewText = document.getElementById('videoUrlPreviewText');
+        
+        if (videoUrlInput) {
+            videoUrlInput.addEventListener('input', function() {
+                const url = this.value;
+                if (url) {
+                    let platform = 'URL';
+                    if (url.includes('youtube.com') || url.includes('youtu.be')) platform = 'YouTube';
+                    else if (url.includes('vimeo.com')) platform = 'Vimeo';
+                    videoUrlPreviewText.innerHTML = `<i class="fab fa-${platform.toLowerCase()} me-1"></i> ${platform}: ${url}`;
+                    videoUrlPreview.style.display = 'block';
+                } else {
+                    videoUrlPreview.style.display = 'none';
                 }
             });
         }
         
-        const editVideoType = document.getElementById('editVideoType');
+        const editVideoUrlInput = document.getElementById('editVideoUrl');
+        const editVideoUrlPreview = document.getElementById('editVideoUrlPreview');
+        const editVideoUrlPreviewText = document.getElementById('editVideoUrlPreviewText');
         
-        if (editVideoType) {
-            editVideoType.addEventListener('change', toggleEditVideoType);
+        if (editVideoUrlInput) {
+            editVideoUrlInput.addEventListener('input', function() {
+                const url = this.value;
+                if (url) {
+                    let platform = 'URL';
+                    if (url.includes('youtube.com') || url.includes('youtu.be')) platform = 'YouTube';
+                    else if (url.includes('vimeo.com')) platform = 'Vimeo';
+                    editVideoUrlPreviewText.innerHTML = `<i class="fab fa-${platform.toLowerCase()} me-1"></i> ${platform}: ${url}`;
+                    editVideoUrlPreview.style.display = 'block';
+                } else {
+                    editVideoUrlPreview.style.display = 'none';
+                }
+            });
         }
     };
 
-    // Toggle video type sections (create modal)
-    const toggleVideoType = () => {
-        const videoType = document.getElementById('videoType').value;
-        const videoUrlSection = document.getElementById('videoUrlSection');
-        const videoFileSection = document.getElementById('videoFileSection');
+    const setupVideoFilePreview = () => {
+        const videoFileInput = document.getElementById('videoFile');
+        const videoFilePreview = document.getElementById('videoFilePreview');
+        const videoFileName = document.getElementById('videoFileName');
+        const videoFileSize = document.getElementById('videoFileSize');
         
-        if (videoType === 'upload') {
-            videoUrlSection.style.display = 'none';
-            videoFileSection.style.display = 'block';
-            document.getElementById('videoFile').required = true;
-            document.getElementById('videoUrl').required = false;
+        if (videoFileInput) {
+            videoFileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    videoFileName.textContent = file.name;
+                    videoFileSize.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                    videoFilePreview.style.display = 'block';
+                } else {
+                    videoFilePreview.style.display = 'none';
+                }
+            });
+        }
+        
+        const editVideoFileInput = document.getElementById('editVideoFile');
+        const editVideoFilePreview = document.getElementById('editVideoFilePreview');
+        const editVideoFileName = document.getElementById('editVideoFileName');
+        const editVideoFileSize = document.getElementById('editVideoFileSize');
+        
+        if (editVideoFileInput) {
+            editVideoFileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    editVideoFileName.textContent = file.name;
+                    editVideoFileSize.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                    editVideoFilePreview.style.display = 'block';
+                } else {
+                    editVideoFilePreview.style.display = 'none';
+                }
+            });
+        }
+    };
+
+    const openEditModal = (sliderId) => {
+    const slider = allSliders.find(s => s.id === sliderId);
+    if (!slider) { showAlert('danger', 'Slider non trouvé'); return; }
+    
+    document.getElementById('editSliderId').value = slider.id;
+    document.getElementById('editSliderName').value = slider.name;
+    document.getElementById('editSliderDescription').value = slider.description || '';
+    document.getElementById('editSliderType').value = slider.type;
+    document.getElementById('editSliderOrder').value = slider.order;
+    document.getElementById('editButtonText').value = slider.button_text || '';
+    document.getElementById('editButtonUrl').value = slider.button_url || '';
+    document.getElementById('editSliderIsActive').checked = slider.is_active;
+    
+    // Charger la hiérarchie de localisation
+    if (slider.country_id) {
+        document.getElementById('editSliderCountry').value = slider.country_id;
+        document.getElementById('editSliderCountry').dispatchEvent(new Event('change'));
+        
+        setTimeout(() => {
+            if (slider.province_id) {
+                document.getElementById('editSliderProvince').value = slider.province_id;
+                document.getElementById('editSliderProvince').dispatchEvent(new Event('change'));
+                
+                setTimeout(() => {
+                    if (slider.region_id) {
+                        document.getElementById('editSliderRegion').value = slider.region_id;
+                        document.getElementById('editSliderRegion').dispatchEvent(new Event('change'));
+                        
+                        setTimeout(() => {
+                            if (slider.ville_id) {
+                                document.getElementById('editSliderVille').value = slider.ville_id;
+                            }
+                        }, 100);
+                    }
+                }, 100);
+            }
+        }, 100);
+    }
+    
+    if (slider.type === 'video') {
+        // Déterminer la source de la vidéo
+        const isUploaded = slider.video_type === 'upload' || (slider.video_path && !slider.video_url);
+        const editVideoTypeInput = document.getElementById('editVideoType');
+        
+        if (isUploaded && slider.video_path) {
+            // Mode Upload
+            document.getElementById('editVideoSourceUpload').checked = true;
+            document.getElementById('editVideoUrlSection').style.display = 'none';
+            document.getElementById('editVideoFileSection').style.display = 'block';
+            if (editVideoTypeInput) editVideoTypeInput.value = 'upload';
+            
+            // Afficher la vidéo actuelle
+            const currentVideoPreview = document.getElementById('currentVideoPreview');
+            currentVideoPreview.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-file-video me-2"></i>
+                    <strong>Vidéo uploadée:</strong> ${slider.video_path.split('/').pop()}
+                </div>
+            `;
         } else {
-            videoUrlSection.style.display = 'block';
-            videoFileSection.style.display = 'none';
-            document.getElementById('videoFile').required = false;
-            document.getElementById('videoUrl').required = true;
+            // Mode URL
+            document.getElementById('editVideoSourceUrl').checked = true;
+            document.getElementById('editVideoUrlSection').style.display = 'block';
+            document.getElementById('editVideoFileSection').style.display = 'none';
+            
+            // Définir le type de vidéo
+            if (editVideoTypeInput) editVideoTypeInput.value = slider.video_type || 'youtube';
+            
+            // Définir la plateforme dans le select
+            const platformSelect = document.getElementById('editVideoPlatform');
+            if (platformSelect) {
+                let platform = 'other';
+                if (slider.video_type === 'youtube') platform = 'youtube';
+                if (slider.video_type === 'vimeo') platform = 'vimeo';
+                platformSelect.value = platform;
+                platformSelect.dispatchEvent(new Event('change'));
+            }
+            
+            // Définir l'URL
+            const videoUrlInput = document.getElementById('editVideoUrl');
+            if (videoUrlInput) videoUrlInput.value = slider.video_url || '';
+            
+            // Déclencher l'événement input pour l'aperçu
+            if (videoUrlInput) {
+                const inputEvent = new Event('input', { bubbles: true });
+                videoUrlInput.dispatchEvent(inputEvent);
+            }
+            
+            // Afficher la vidéo actuelle
+            const currentVideoPreview = document.getElementById('currentVideoPreview');
+            if (slider.video_url) {
+                let platformIcon = 'fa-link';
+                let platformName = 'URL';
+                if (slider.video_type === 'youtube') { platformIcon = 'fa-youtube'; platformName = 'YouTube'; }
+                else if (slider.video_type === 'vimeo') { platformIcon = 'fa-vimeo'; platformName = 'Vimeo'; }
+                
+                currentVideoPreview.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fab ${platformIcon} me-2"></i>
+                        <strong>${platformName}:</strong> ${slider.video_url}
+                    </div>
+                `;
+            } else {
+                currentVideoPreview.innerHTML = '<div class="alert alert-warning">Aucune vidéo configurée</div>';
+            }
         }
-    };
-
-    // Toggle edit video type sections (edit modal)
-    const toggleEditVideoType = () => {
-        const videoType = document.getElementById('editVideoType').value;
-        const editVideoUrlSection = document.getElementById('editVideoUrlSection');
-        const editVideoFileSection = document.getElementById('editVideoFileSection');
         
-        if (videoType === 'upload') {
-            editVideoUrlSection.style.display = 'none';
-            editVideoFileSection.style.display = 'block';
-        } else {
-            editVideoUrlSection.style.display = 'block';
-            editVideoFileSection.style.display = 'none';
+        // Afficher le thumbnail actuel
+        const currentThumbnailPreview = document.getElementById('currentThumbnailPreview');
+        if (currentThumbnailPreview) {
+            if (slider.image_path) {
+                const imageUrl = slider.image_path.startsWith('http') ? slider.image_path : `/storage/${slider.image_path}`;
+                currentThumbnailPreview.innerHTML = `<img src="${imageUrl}" class="img-thumbnail" style="max-width: 200px;">`;
+            } else {
+                currentThumbnailPreview.innerHTML = '<div class="text-muted">Aucun thumbnail défini</div>';
+            }
         }
-    };
-
-    // Toggle edit sections
-    const toggleEditSections = (type) => {
-        const editImageUploadSection = document.getElementById('editImageUploadSection');
-        const editVideoUploadSection = document.getElementById('editVideoUploadSection');
-        const currentImageSection = document.getElementById('currentImageSection');
-        const currentVideoSection = document.getElementById('currentVideoSection');
-        
-        if (type === 'image') {
-            editImageUploadSection.style.display = 'block';
-            editVideoUploadSection.style.display = 'none';
-            currentImageSection.style.display = 'block';
-            currentVideoSection.style.display = 'none';
-        } else {
-            editImageUploadSection.style.display = 'none';
-            editVideoUploadSection.style.display = 'block';
-            currentImageSection.style.display = 'none';
-            currentVideoSection.style.display = 'block';
+    } else {
+        // Afficher l'image actuelle
+        const currentImagePreview = document.getElementById('currentImagePreview');
+        if (currentImagePreview) {
+            if (slider.image_path) {
+                const imageUrl = slider.image_path.startsWith('http') ? slider.image_path : `/storage/${slider.image_path}`;
+                currentImagePreview.innerHTML = `<img src="${imageUrl}" class="img-thumbnail" style="max-width: 300px;">`;
+            } else {
+                currentImagePreview.innerHTML = '<div class="text-muted">Aucune image</div>';
+            }
         }
-    };
+    }
+    
+    toggleEditSections(slider.type);
+    new bootstrap.Modal(document.getElementById('editSliderModal')).show();
+};
 
-    // Render pagination
     const renderPagination = (response) => {
         const pagination = document.getElementById('pagination');
         const paginationInfo = document.getElementById('paginationInfo');
-        
         const start = (response.current_page - 1) * response.per_page + 1;
         const end = Math.min(response.current_page * response.per_page, response.total);
         paginationInfo.textContent = `Affichage de ${start} à ${end} sur ${response.total} slider${response.total > 1 ? 's' : ''}`;
         
-        let paginationHtml = '';
+        let html = '';
+        if (response.prev_page_url) html += `<li class="page-item"><a class="page-link-modern" href="#" onclick="changePage(${response.current_page - 1})"><i class="fas fa-chevron-left"></i></a></li>`;
+        else html += `<li class="page-item disabled"><span class="page-link-modern"><i class="fas fa-chevron-left"></i></span></li>`;
         
-        if (response.prev_page_url) {
-            paginationHtml += `
-                <li class="page-item">
-                    <a class="page-link-modern" href="#" onclick="changePage(${response.current_page - 1})">
-                        <i class="fas fa-chevron-left"></i>
-                    </a>
-                </li>
-            `;
-        } else {
-            paginationHtml += `
-                <li class="page-item disabled">
-                    <span class="page-link-modern"><i class="fas fa-chevron-left"></i></span>
-                </li>
-            `;
-        }
-        
-        const maxPages = 5;
-        let startPage = Math.max(1, response.current_page - Math.floor(maxPages / 2));
-        let endPage = Math.min(response.last_page, startPage + maxPages - 1);
-        
-        if (endPage - startPage + 1 < maxPages) {
-            startPage = Math.max(1, endPage - maxPages + 1);
-        }
+        let startPage = Math.max(1, response.current_page - 2);
+        let endPage = Math.min(response.last_page, startPage + 4);
+        if (endPage - startPage + 1 < 5) startPage = Math.max(1, endPage - 4);
         
         for (let i = startPage; i <= endPage; i++) {
-            if (i === response.current_page) {
-                paginationHtml += `
-                    <li class="page-item active">
-                        <span class="page-link-modern">${i}</span>
-                    </li>
-                `;
-            } else {
-                paginationHtml += `
-                    <li class="page-item">
-                        <a class="page-link-modern" href="#" onclick="changePage(${i})">${i}</a>
-                    </li>
-                `;
-            }
+            if (i === response.current_page) html += `<li class="page-item active"><span class="page-link-modern">${i}</span></li>`;
+            else html += `<li class="page-item"><a class="page-link-modern" href="#" onclick="changePage(${i})">${i}</a></li>`;
         }
         
-        if (response.next_page_url) {
-            paginationHtml += `
-                <li class="page-item">
-                    <a class="page-link-modern" href="#" onclick="changePage(${response.current_page + 1})">
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                </li>
-            `;
-        } else {
-            paginationHtml += `
-                <li class="page-item disabled">
-                    <span class="page-link-modern"><i class="fas fa-chevron-right"></i></span>
-                </li>
-            `;
-        }
+        if (response.next_page_url) html += `<li class="page-item"><a class="page-link-modern" href="#" onclick="changePage(${response.current_page + 1})"><i class="fas fa-chevron-right"></i></a></li>`;
+        else html += `<li class="page-item disabled"><span class="page-link-modern"><i class="fas fa-chevron-right"></i></span></li>`;
         
-        pagination.innerHTML = paginationHtml;
+        pagination.innerHTML = html;
     };
 
-    // Change page
-    const changePage = (page) => {
-        currentPage = page;
-        loadSliders(page, currentFilters);
-    };
-
-    // Format time ago
+    const changePage = (page) => { currentPage = page; loadSliders(page, currentFilters); };
     const formatTimeAgo = (date) => {
-        const now = new Date();
-        const diffMs = now - date;
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        
+        const diffDays = Math.floor((new Date() - date) / (1000 * 60 * 60 * 24));
         if (diffDays === 0) return "Aujourd'hui";
         if (diffDays === 1) return 'Hier';
         if (diffDays < 7) return `Il y a ${diffDays} jours`;
@@ -2083,68 +2316,45 @@
         if (diffDays < 365) return `Il y a ${Math.floor(diffDays / 30)} mois`;
         return `Il y a ${Math.floor(diffDays / 365)} ans`;
     };
-
-    // Show loading state
+    
     const showLoading = () => {
         document.getElementById('loadingSpinner').style.display = 'flex';
         document.getElementById('tableContainer').style.display = 'none';
         document.getElementById('emptyState').style.display = 'none';
         document.getElementById('paginationContainer').style.display = 'none';
     };
-
-    // Hide loading state
-    const hideLoading = () => {
-        document.getElementById('loadingSpinner').style.display = 'none';
-    };
-
-    // Show alert
+    
+    const hideLoading = () => document.getElementById('loadingSpinner').style.display = 'none';
+    
     const showAlert = (type, message) => {
         const existingAlert = document.querySelector('.alert-custom-modern');
         if (existingAlert) existingAlert.remove();
-        
         const alert = document.createElement('div');
         alert.className = `alert alert-${type} alert-custom-modern alert-dismissible fade show`;
-        alert.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
+        alert.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
         document.body.appendChild(alert);
-        
-        setTimeout(() => {
-            if (alert.parentNode) alert.remove();
-        }, 5000);
+        setTimeout(() => alert.remove(), 5000);
     };
-
-    // Show error
-    const showError = (message) => {
-        showAlert('danger', message);
-    };
-
-    // Setup event listeners
+    
+    const showError = (message) => showAlert('danger', message);
+    
     const setupEventListeners = () => {
         const searchInput = document.getElementById('searchInput');
         let searchTimeout;
-        
         if (searchInput) {
             searchInput.addEventListener('input', function() {
                 clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    loadSliders(1, currentFilters);
-                }, 500);
+                searchTimeout = setTimeout(() => loadSliders(1, currentFilters), 500);
             });
         }
         
         const toggleFilterBtn = document.getElementById('toggleFilterBtn');
         const filterSection = document.getElementById('filterSection');
-        
         if (toggleFilterBtn && filterSection) {
             toggleFilterBtn.addEventListener('click', () => {
                 const isVisible = filterSection.style.display === 'block';
                 filterSection.style.display = isVisible ? 'none' : 'block';
-                toggleFilterBtn.innerHTML = isVisible 
-                    ? '<i class="fas fa-sliders-h me-2"></i>Filtres'
-                    : '<i class="fas fa-times me-2"></i>Masquer les filtres';
+                toggleFilterBtn.innerHTML = isVisible ? '<i class="fas fa-sliders-h me-2"></i>Filtres' : '<i class="fas fa-times me-2"></i>Masquer les filtres';
             });
         }
         
@@ -2154,7 +2364,10 @@
                 currentFilters = {
                     status: document.getElementById('filterStatus').value,
                     type: document.getElementById('filterType').value,
+                    country_id: document.getElementById('filterCountry')?.value || '',
+                    province_id: document.getElementById('filterProvince')?.value || '',
                     region_id: document.getElementById('filterRegion')?.value || '',
+                    ville_id: document.getElementById('filterVille')?.value || '',
                     date_from: document.getElementById('filterDateFrom').value,
                     date_to: document.getElementById('filterDateTo').value
                 };
@@ -2167,8 +2380,13 @@
             clearFiltersBtn.addEventListener('click', () => {
                 document.getElementById('filterStatus').value = '';
                 document.getElementById('filterType').value = '';
-                const filterRegion = document.getElementById('filterRegion');
-                if (filterRegion) filterRegion.value = '';
+                if (document.getElementById('filterCountry')) document.getElementById('filterCountry').value = '';
+                const fp = document.getElementById('filterProvince');
+                const fr = document.getElementById('filterRegion');
+                const fv = document.getElementById('filterVille');
+                if (fp) { fp.innerHTML = '<option value="">Toutes les provinces</option>'; fp.disabled = true; }
+                if (fr) { fr.innerHTML = '<option value="">Toutes les régions</option>'; fr.disabled = true; }
+                if (fv) { fv.innerHTML = '<option value="">Toutes les villes</option>'; fv.disabled = true; }
                 document.getElementById('filterDateFrom').value = '';
                 document.getElementById('filterDateTo').value = '';
                 currentFilters = {};
@@ -2176,99 +2394,44 @@
             });
         }
         
-        const submitSliderBtn = document.getElementById('submitSliderBtn');
-        if (submitSliderBtn) {
-            submitSliderBtn.addEventListener('click', storeSlider);
-        }
+        document.getElementById('submitSliderBtn')?.addEventListener('click', storeSlider);
+        document.getElementById('updateSliderBtn')?.addEventListener('click', updateSlider);
+        document.getElementById('confirmDeleteBtn')?.addEventListener('click', deleteSlider);
+        document.getElementById('confirmRestoreBtn')?.addEventListener('click', restoreSlider);
+        document.getElementById('toggleOrderView')?.addEventListener('click', toggleOrderView);
+        document.getElementById('saveOrderBtn')?.addEventListener('click', saveOrder);
+        document.getElementById('saveOrderBtn2')?.addEventListener('click', saveOrder);
+        document.getElementById('cancelOrderBtn')?.addEventListener('click', cancelOrder);
         
-        const updateSliderBtn = document.getElementById('updateSliderBtn');
-        if (updateSliderBtn) {
-            updateSliderBtn.addEventListener('click', updateSlider);
-        }
+        document.getElementById('deleteConfirmationModal')?.addEventListener('hidden.bs.modal', () => {
+            sliderToDelete = null;
+            document.getElementById('confirmDeleteBtn').innerHTML = '<span class="btn-text"><i class="fas fa-trash me-2"></i>Supprimer définitivement</span>';
+            document.getElementById('confirmDeleteBtn').disabled = false;
+        });
         
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-        if (confirmDeleteBtn) {
-            confirmDeleteBtn.addEventListener('click', deleteSlider);
-        }
+        document.getElementById('restoreConfirmationModal')?.addEventListener('hidden.bs.modal', () => sliderToRestore = null);
         
-        const confirmRestoreBtn = document.getElementById('confirmRestoreBtn');
-        if (confirmRestoreBtn) {
-            confirmRestoreBtn.addEventListener('click', restoreSlider);
-        }
+        document.getElementById('createSliderModal')?.addEventListener('hidden.bs.modal', () => {
+            document.getElementById('createSliderForm').reset();
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('videoThumbnailPreview').style.display = 'none';
+            document.getElementById('imageUploadSection').style.display = 'block';
+            document.getElementById('videoUploadSection').style.display = 'none';
+            resetSelect(document.getElementById('sliderProvince'));
+            resetSelect(document.getElementById('sliderRegion'));
+            resetSelect(document.getElementById('sliderVille'));
+            const submitBtn = document.getElementById('submitSliderBtn');
+            submitBtn.classList.remove('btn-processing');
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Créer le slider';
+            submitBtn.disabled = false;
+        });
         
-        const toggleOrderViewBtn = document.getElementById('toggleOrderView');
-        if (toggleOrderViewBtn) {
-            toggleOrderViewBtn.addEventListener('click', toggleOrderView);
-        }
-        
-        const saveOrderBtn = document.getElementById('saveOrderBtn');
-        const saveOrderBtn2 = document.getElementById('saveOrderBtn2');
-        if (saveOrderBtn) {
-            saveOrderBtn.addEventListener('click', saveOrder);
-        }
-        if (saveOrderBtn2) {
-            saveOrderBtn2.addEventListener('click', saveOrder);
-        }
-        
-        const cancelOrderBtn = document.getElementById('cancelOrderBtn');
-        if (cancelOrderBtn) {
-            cancelOrderBtn.addEventListener('click', cancelOrder);
-        }
-        
-        const deleteModal = document.getElementById('deleteConfirmationModal');
-        if (deleteModal) {
-            deleteModal.addEventListener('hidden.bs.modal', function() {
-                sliderToDelete = null;
-                const deleteBtn = document.getElementById('confirmDeleteBtn');
-                deleteBtn.innerHTML = `
-                    <span class="btn-text">
-                        <i class="fas fa-trash me-2"></i>Supprimer définitivement
-                    </span>
-                `;
-                deleteBtn.disabled = false;
-            });
-        }
-        
-        const restoreModal = document.getElementById('restoreConfirmationModal');
-        if (restoreModal) {
-            restoreModal.addEventListener('hidden.bs.modal', function() {
-                sliderToRestore = null;
-            });
-        }
-        
-        const createModal = document.getElementById('createSliderModal');
-        if (createModal) {
-            createModal.addEventListener('hidden.bs.modal', function() {
-                document.getElementById('createSliderForm').reset();
-                document.getElementById('imagePreview').style.display = 'none';
-                document.getElementById('videoThumbnailPreview').style.display = 'none';
-                document.getElementById('imageUploadSection').style.display = 'block';
-                document.getElementById('videoUploadSection').style.display = 'none';
-                
-                const submitBtn = document.getElementById('submitSliderBtn');
-                submitBtn.classList.remove('btn-processing');
-                submitBtn.innerHTML = `
-                    <span class="btn-text">
-                        <i class="fas fa-save me-2"></i>Créer le slider
-                    </span>
-                `;
-                submitBtn.disabled = false;
-            });
-        }
-        
-        const editModal = document.getElementById('editSliderModal');
-        if (editModal) {
-            editModal.addEventListener('hidden.bs.modal', function() {
-                const submitBtn = document.getElementById('updateSliderBtn');
-                submitBtn.classList.remove('btn-processing');
-                submitBtn.innerHTML = `
-                    <span class="btn-text">
-                        <i class="fas fa-save me-2"></i>Enregistrer les modifications
-                    </span>
-                `;
-                submitBtn.disabled = false;
-            });
-        }
+        document.getElementById('editSliderModal')?.addEventListener('hidden.bs.modal', () => {
+            const submitBtn = document.getElementById('updateSliderBtn');
+            submitBtn.classList.remove('btn-processing');
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
+            submitBtn.disabled = false;
+        });
     };
 </script>
 <style>
@@ -3224,6 +3387,160 @@
     .ts-control {
         padding: 6px 12px !important;
     }
+}
+    /* Styles pour la recherche de localisation */
+    .location-search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        display: none;
+    }
+
+    .location-result-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+        transition: all 0.3s ease;
+    }
+
+    .location-result-item:hover {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    }
+
+    .result-type-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-right: 8px;
+    }
+
+    .result-type-badge.country {
+        background-color: #e3f2fd;
+        color: #1565c0;
+    }
+
+    .result-type-badge.province {
+        background-color: #fff3e0;
+        color: #ef6c00;
+    }
+
+    .result-type-badge.region {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .result-type-badge.ville {
+        background-color: #fce4ec;
+        color: #c2185b;
+    }
+
+    .result-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+
+    .result-hierarchy {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+
+    /* Style pour l'affichage de la localisation dans le tableau */
+    .slider-region-modern {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        background-color: #e8f0fe;
+        color: #1a73e8;
+        font-weight: 500;
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Style pour les selects désactivés */
+    select[disabled] {
+        background-color: #e9ecef;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .slider-region-modern {
+            font-size: 0.75em;
+            padding: 2px 8px;
+            max-width: 150px;
+        }
+        
+        .location-result-item {
+            padding: 8px 12px;
+        }
+        
+        .result-type-badge {
+            font-size: 0.65rem;
+        }
+        
+        .result-name {
+            font-size: 0.9rem;
+        }
+        
+        .result-hierarchy {
+            font-size: 0.7rem;
+        }
+    }
+    /* Styles pour les boutons radio */
+.form-check {
+    margin-bottom: 0;
+}
+
+.form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.form-check-label {
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.form-check-label:hover {
+    background-color: #f8f9fa;
+}
+
+/* Styles pour les aperçus */
+.video-url-preview,
+.video-file-preview {
+    margin-top: 10px;
+}
+
+.video-url-preview .alert,
+.video-file-preview .alert {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+
+/* Animation pour les sections */
+#videoUrlSection,
+#videoFileSection,
+#editVideoUrlSection,
+#editVideoFileSection {
+    transition: all 0.3s ease;
 }
 </style>
 @endsection
