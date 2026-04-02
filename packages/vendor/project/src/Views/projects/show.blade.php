@@ -578,7 +578,7 @@
         </div>
     </main>
 
-    <!-- CREATE TASK MODAL -->
+  <!-- CREATE TASK MODAL -->
 <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -681,7 +681,7 @@
                                         <p class="text-muted mb-2">ou cliquez pour sélectionner</p>
                                         <small class="text-muted">Taille max: 10MB par fichier</small>
                                     </div>
-                                    <input type="file" class="file-input" id="create_task_files" name="files[]" multiple style="display: none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.zip">
+                                    <!-- SUPPRIMÉ : input en double -->
                                 </div>
 
                                 <!-- Liste des fichiers sélectionnés -->
@@ -788,7 +788,7 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="edit-files-tab" data-bs-toggle="tab" data-bs-target="#edit-files" type="button" role="tab">
                                 <i class="fas fa-paperclip me-2"></i>Fichiers
-                                <span class="badge bg-primary ms-2" id="filesCount"></span>
+                                <span class="badge bg-primary ms-2" id="filesCountEdit">0</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -878,7 +878,7 @@
                                             <p class="text-muted mb-2">ou cliquez pour sélectionner</p>
                                             <small class="text-muted">Taille max: 10MB par fichier</small>
                                         </div>
-                                        <input type="file" class="file-input" id="edit_task_files" name="new_files[]" multiple style="display: none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.zip">
+                                        <!-- SUPPRIMÉ : input en double -->
                                     </div>
 
                                     <!-- Liste des nouveaux fichiers sélectionnés -->
@@ -1898,68 +1898,83 @@
     // ============================================
     class FileManager {
         constructor(context) {
-            this.context = context; // 'create', 'edit', ou 'project'
-            this.selectedFiles = [];
-            this.existingFiles = [];
-            this.maxSize = 10 * 1024 * 1024; // 10MB
-            this.allowedTypes = [
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/vnd.ms-powerpoint',
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'text/plain',
-                'image/jpeg',
-                'image/png',
-                'image/gif',
-                'application/zip',
-                'application/x-zip-compressed'
-            ];
-            
-            this.init();
+        this.context = context; // 'create', 'edit', ou 'project'
+        this.selectedFiles = [];
+        this.existingFiles = [];
+        this.maxSize = 10 * 1024 * 1024; // 10MB
+        this.allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'text/plain',
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'application/zip',
+            'application/x-zip-compressed'
+        ];
+        
+        this.init();
+    }
+    
+    init() {
+        this.dropzone = document.getElementById(`${this.context}TaskDropzone`) || 
+                       document.getElementById(`${this.context}FileDropzone`);
+        
+        // Créer l'input de fichier dynamiquement (UN SEUL)
+        const inputId = `${this.context}_task_files_input`;
+        let fileInput = document.getElementById(inputId);
+        
+        if (!fileInput) {
+            fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.id = inputId;
+            fileInput.name = 'files[]';
+            fileInput.multiple = true;
+            fileInput.style.display = 'none';
+            fileInput.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.zip';
+            document.body.appendChild(fileInput);
         }
         
-        init() {
-            this.dropzone = document.getElementById(`${this.context}TaskDropzone`) || 
-                           document.getElementById(`${this.context}FileDropzone`);
-            this.fileInput = document.getElementById(`${this.context}_task_files`) || 
-                            document.getElementById(`${this.context}_files`);
-            this.selectedList = document.getElementById(`${this.context}SelectedFiles`);
-            
-            if (!this.dropzone || !this.fileInput) return;
-            
-            this.bindEvents();
-        }
+        this.fileInput = fileInput;
+        this.selectedList = document.getElementById(`${this.context}SelectedFiles`);
         
-        bindEvents() {
-            // Click sur la dropzone
-            this.dropzone.addEventListener('click', () => {
-                this.fileInput.click();
-            });
-            
-            // Drag & Drop
-            this.dropzone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                this.dropzone.classList.add('dragover');
-            });
-            
-            this.dropzone.addEventListener('dragleave', () => {
-                this.dropzone.classList.remove('dragover');
-            });
-            
-            this.dropzone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                this.dropzone.classList.remove('dragover');
-                this.handleFiles(e.dataTransfer.files);
-            });
-            
-            // Sélection de fichiers
-            this.fileInput.addEventListener('change', (e) => {
-                this.handleFiles(e.target.files);
-            });
-        }
+        if (!this.dropzone || !this.fileInput) return;
+        
+        this.bindEvents();
+    }
+    
+    bindEvents() {
+        // Click sur la dropzone
+        this.dropzone.addEventListener('click', () => {
+            this.fileInput.click();
+        });
+        
+        // Drag & Drop
+        this.dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.dropzone.classList.add('dragover');
+        });
+        
+        this.dropzone.addEventListener('dragleave', () => {
+            this.dropzone.classList.remove('dragover');
+        });
+        
+        this.dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            this.dropzone.classList.remove('dragover');
+            this.handleFiles(e.dataTransfer.files);
+        });
+        
+        // Sélection de fichiers
+        this.fileInput.addEventListener('change', (e) => {
+            this.handleFiles(e.target.files);
+        });
+    }
         
         handleFiles(files) {
             Array.from(files).forEach(file => {
