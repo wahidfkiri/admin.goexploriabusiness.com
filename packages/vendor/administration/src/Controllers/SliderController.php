@@ -942,7 +942,8 @@ class SliderController extends Controller
         $extension = $file->getClientOriginalExtension();
         $filename = Str::random(40) . '.' . $extension;
         
-        $cdnEnabled = env('CDN_ENABLED', false);
+        $cdnEnabled = false;
+        //env('CDN_ENABLED', false);
         
         Log::channel('slider_debug')->info('Uploading file', [
             'request_id' => $requestId,
