@@ -1049,77 +1049,134 @@
     };
 
     const updateSlider = () => {
-        const form = document.getElementById('editSliderForm');
-        const submitBtn = document.getElementById('updateSliderBtn');
-        const sliderId = document.getElementById('editSliderId').value;
-        
-        if (!form.checkValidity()) { form.reportValidity(); return; }
-        
-        const type = document.getElementById('editSliderType').value;
-        const editVideoSourceUrl = document.getElementById('editVideoSourceUrl');
-        const editVideoSourceUpload = document.getElementById('editVideoSourceUpload');
-        const editVideoPlatform = document.getElementById('editVideoPlatform');
-        let videoSource = '';
-        
-        if (type === 'video') {
-            if (editVideoSourceUrl && editVideoSourceUrl.checked) {
+    const form = document.getElementById('editSliderForm');
+    const submitBtn = document.getElementById('updateSliderBtn');
+    const sliderId = document.getElementById('editSliderId').value;
+    
+    if (!form.checkValidity()) { 
+        form.reportValidity(); 
+        return; 
+    }
+    
+    const type = document.getElementById('editSliderType').value;
+    const editVideoSourceUrl = document.getElementById('editVideoSourceUrl');
+    const editVideoSourceUpload = document.getElementById('editVideoSourceUpload');
+    const editVideoPlatform = document.getElementById('editVideoPlatform');
+    const editVideoFileInput = document.getElementById('editVideoFile');
+    
+    let videoSource = null;
+    let hasNewVideoFile = false;
+    
+    // 🔥 CRUCIAL: Vérifier si un NOUVEAU fichier vidéo a été sélectionné
+    if (type === 'video') {
+        if (editVideoSourceUrl && editVideoSourceUrl.checked) {
+            const videoUrl = document.getElementById('editVideoUrl').value;
+            if (videoUrl && videoUrl.trim() !== '') {
                 videoSource = 'url';
-                const videoUrl = document.getElementById('editVideoUrl').value;
-                if (!videoUrl && !document.getElementById('currentVideoPreview').innerHTML.includes('URL')) {
-                    showAlert('danger', 'Veuillez entrer l\'URL de la vidéo');
-                    return;
-                }
-            } else if (editVideoSourceUpload && editVideoSourceUpload.checked) {
-                videoSource = 'upload';
             }
+        } else if (editVideoSourceUpload && editVideoSourceUpload.checked) {
+            // Vérifier si un fichier a été sélectionné
+            if (editVideoFileInput && editVideoFileInput.files.length > 0) {
+                videoSource = 'upload';
+                hasNewVideoFile = true;
+            }
+            // Si pas de nouveau fichier, NE PAS envoyer edit_video_source
         }
-        
-        submitBtn.classList.add('btn-processing');
-        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm text-light me-2"></div>Enregistrement...';
-        submitBtn.disabled = true;
-        
-        const formData = new FormData(form);
-        formData.append('_method', 'PUT');
-        if (type === 'video' && videoSource) {
-            formData.append('edit_video_source', videoSource);
-            if (videoSource === 'url' && editVideoPlatform) {
+    }
+    
+    submitBtn.classList.add('btn-processing');
+    submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm text-light me-2"></div>Enregistrement...';
+    submitBtn.disabled = true;
+    
+    const formData = new FormData(form);
+    formData.append('_method', 'PUT');
+    
+    // 🔥 IMPORTANT: Gérer correctement les champs vidéo
+    if (type === 'video') {
+        if (videoSource === 'url') {
+            formData.append('edit_video_source', 'url');
+            if (editVideoPlatform) {
                 formData.append('edit_video_platform', editVideoPlatform.value);
             }
+            // Supprimer le fichier vidéo s'il existe
+            formData.delete('edit_video_file');
+            formData.delete('video_file');
+        } else if (videoSource === 'upload' && hasNewVideoFile) {
+            formData.append('edit_video_source', 'upload');
+            // Le fichier est déjà dans formData via le champ edit_video_file
+            // Ne pas ajouter d'autres champs
+        } else {
+            // PAS de changement vidéo - supprimer tous les champs vidéo du formulaire
+            formData.delete('edit_video_source');
+            formData.delete('edit_video_platform');
+            formData.delete('video_url');
+            formData.delete('edit_video_file');
+            formData.delete('video_file');
         }
-        
-        $.ajax({
-            url: `/sliders/${sliderId}`,
-            type: 'POST',
-            data: formData,
-            contentType: false,
-            processData: false,
-            success: function(response) {
-                submitBtn.classList.remove('btn-processing');
-                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
-                submitBtn.disabled = false;
-                
-                if (response.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('editSliderModal')).hide();
-                    loadSliders(currentPage, currentFilters);
-                    showAlert('success', 'Slider mis à jour avec succès !');
-                } else {
-                    showAlert('danger', response.message || 'Erreur lors de la mise à jour');
-                }
-            },
-            error: function(xhr) {
-                submitBtn.classList.remove('btn-processing');
-                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
-                submitBtn.disabled = false;
-                if (xhr.status === 422) {
-                    let msg = 'Veuillez corriger les erreurs:<br>';
-                    for (let field in xhr.responseJSON.errors) msg += `- ${xhr.responseJSON.errors[field].join('<br>')}<br>`;
-                    showAlert('danger', msg);
-                } else {
-                    showAlert('danger', 'Erreur lors de la mise à jour');
-                }
+    } else {
+        // Pour les images, supprimer les champs vidéo
+        formData.delete('edit_video_source');
+        formData.delete('edit_video_platform');
+        formData.delete('video_url');
+        formData.delete('edit_video_file');
+        formData.delete('video_file');
+    }
+    
+    // Debug: Afficher ce qui est envoyé
+    console.log('=== UPDATE SLIDER DEBUG ===');
+    for (let pair of formData.entries()) {
+        if (pair[0] !== 'image' && pair[0] !== 'edit_video_file' && pair[0] !== 'video_file') {
+            console.log(pair[0] + ': ' + pair[1]);
+        } else if (pair[0] === 'edit_video_file' && pair[1] instanceof File) {
+            console.log(pair[0] + ': [FILE] ' + pair[1].name + ' (' + pair[1].size + ' bytes)');
+        }
+    }
+    
+    $.ajax({
+        url: `/sliders/${sliderId}`,
+        type: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            submitBtn.classList.remove('btn-processing');
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
+            submitBtn.disabled = false;
+            
+            if (response.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editSliderModal'));
+                modal.hide();
+                loadSliders(currentPage, currentFilters);
+                loadStatistics();
+                showAlert('success', response.message || 'Slider mis à jour avec succès !');
+            } else {
+                showAlert('danger', response.message || 'Erreur lors de la mise à jour');
             }
-        });
-    };
+        },
+        error: function(xhr) {
+            submitBtn.classList.remove('btn-processing');
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
+            submitBtn.disabled = false;
+            
+            console.error('Update error:', xhr);
+            if (xhr.status === 422) {
+                const errors = xhr.responseJSON.errors;
+                let errorMessage = 'Erreur de validation:<br>';
+                for (let field in errors) {
+                    errorMessage += `- ${field}: ${errors[field].join('<br>')}<br>`;
+                }
+                showAlert('danger', errorMessage);
+            } else if (xhr.status === 500) {
+                showAlert('danger', 'Erreur serveur. Vérifiez les logs.');
+            } else {
+                showAlert('danger', 'Erreur lors de la mise à jour: ' + xhr.status);
+            }
+        }
+    });
+};
 
     const setupImagePreview = () => {
         const createImageInput = document.getElementById('sliderImage');

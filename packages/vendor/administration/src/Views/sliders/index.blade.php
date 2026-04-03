@@ -782,7 +782,7 @@
                                             <i class="fas fa-info-circle"></i>
                                         </div>
                                     </div>
-                                    <input type="file" class="form-control-modern" id="editVideoFile" name="video_file" accept="video/*">
+                                    <input type="file" class="form-control-modern" id="editVideoFile" name="edit_video_file" accept="video/*">
                                     <div class="form-text-modern">Format: MP4, AVI, MOV, WMV - Max: 100MB</div>
                                     <div class="video-file-preview mt-2" id="editVideoFilePreview" style="display: none;">
                                         <div class="alert alert-info">
