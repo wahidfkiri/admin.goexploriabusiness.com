@@ -24,7 +24,7 @@ class SliderController extends Controller
     {
         $this->cdnService = $cdnService;
         
-        Log::channel('slider')->info('SliderController initialized', [
+        Log::info('SliderController initialized', [
             'cdn_enabled' => env('CDN_ENABLED', false),
             'cdn_url' => env('CDN_URL')
         ]);
@@ -38,7 +38,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Slider index request', [
+        Log::info('Slider index request', [
             'request_id' => $requestId,
             'params' => $request->all(),
             'user_id' => auth()->id(),
@@ -96,7 +96,7 @@ class SliderController extends Controller
                 return $slider;
             });
             
-            Log::channel('slider')->info('Slider index completed (AJAX)', [
+            Log::info('Slider index completed (AJAX)', [
                 'request_id' => $requestId,
                 'total' => $sliders->total(),
                 'per_page' => $perPage,
@@ -118,7 +118,7 @@ class SliderController extends Controller
         // Pour vue non-AJAX
         $sliders = $query->paginate($perPage);
         
-        Log::channel('slider')->info('Slider index completed (View)', [
+        Log::info('Slider index completed (View)', [
             'request_id' => $requestId,
             'total' => $sliders->total(),
             'duration_ms' => $duration
@@ -135,7 +135,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Slider store started', [
+        Log::info('Slider store started', [
             'request_id' => $requestId,
             'user_id' => auth()->id(),
             'request_data' => $request->except(['image', 'video_file']),
@@ -167,7 +167,7 @@ class SliderController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::channel('slider')->warning('Slider store validation failed', [
+            Log::warning('Slider store validation failed', [
                 'request_id' => $requestId,
                 'errors' => $validator->errors()->toArray()
             ]);
@@ -216,12 +216,12 @@ class SliderController extends Controller
         if ($request->hasFile('image')) {
             try {
                 $imagePath = $this->uploadFile($request->file('image'), 'sliders', $requestId);
-                Log::channel('slider')->debug('Image uploaded', [
+                Log::debug('Image uploaded', [
                     'request_id' => $requestId,
                     'path' => $imagePath
                 ]);
             } catch (\Exception $e) {
-                Log::channel('slider')->error('Image upload failed', [
+                Log::error('Image upload failed', [
                     'request_id' => $requestId,
                     'error' => $e->getMessage()
                 ]);
@@ -252,7 +252,7 @@ class SliderController extends Controller
                     $videoType = 'other';
                 }
                 
-                Log::channel('slider')->debug('Video URL provided', [
+                Log::debug('Video URL provided', [
                     'request_id' => $requestId,
                     'url' => $videoUrl,
                     'platform' => $videoPlatform,
@@ -265,12 +265,12 @@ class SliderController extends Controller
                     $videoPath = $this->uploadFile($request->file('video_file'), 'sliders/videos', $requestId);
                     $videoType = 'upload';
                     
-                    Log::channel('slider')->debug('Video file uploaded', [
+                    Log::debug('Video file uploaded', [
                         'request_id' => $requestId,
                         'path' => $videoPath
                     ]);
                 } catch (\Exception $e) {
-                    Log::channel('slider')->error('Video upload failed', [
+                    Log::error('Video upload failed', [
                         'request_id' => $requestId,
                         'error' => $e->getMessage()
                     ]);
@@ -312,7 +312,7 @@ class SliderController extends Controller
         
         $duration = round((microtime(true) - $startTime) * 1000, 2);
         
-        Log::channel('slider')->info('Slider created successfully', [
+        Log::info('Slider created successfully', [
             'request_id' => $requestId,
             'slider_id' => $slider->id,
             'slider_name' => $slider->name,
@@ -345,7 +345,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Slider show request', [
+        Log::info('Slider show request', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'user_id' => auth()->id()
@@ -375,7 +375,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Slider update started', [
+        Log::info('Slider update started', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'user_id' => auth()->id(),
@@ -409,7 +409,7 @@ class SliderController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::channel('slider')->warning('Slider update validation failed', [
+            Log::warning('Slider update validation failed', [
                 'request_id' => $requestId,
                 'slider_id' => $id,
                 'errors' => $validator->errors()->toArray()
@@ -464,13 +464,13 @@ class SliderController extends Controller
                     $slider->thumbnail_path = $imagePath;
                 }
                 
-                Log::channel('slider')->debug('Image updated', [
+                Log::debug('Image updated', [
                     'request_id' => $requestId,
                     'slider_id' => $id,
                     'new_path' => $imagePath
                 ]);
             } catch (\Exception $e) {
-                Log::channel('slider')->error('Image update failed', [
+                Log::error('Image update failed', [
                     'request_id' => $requestId,
                     'slider_id' => $id,
                     'error' => $e->getMessage()
@@ -507,7 +507,7 @@ class SliderController extends Controller
                     $slider->video_type = 'other';
                 }
                 
-                Log::channel('slider')->debug('Video URL updated', [
+                Log::debug('Video URL updated', [
                     'request_id' => $requestId,
                     'url' => $request->video_url,
                     'platform' => $videoPlatform,
@@ -522,12 +522,12 @@ class SliderController extends Controller
                     $slider->video_type = 'upload';
                     $slider->video_url = null;
                     
-                    Log::channel('slider')->debug('Video file updated', [
+                    Log::debug('Video file updated', [
                         'request_id' => $requestId,
                         'new_path' => $videoPath
                     ]);
                 } catch (\Exception $e) {
-                    Log::channel('slider')->error('Video update failed', [
+                    Log::error('Video update failed', [
                         'request_id' => $requestId,
                         'slider_id' => $id,
                         'error' => $e->getMessage()
@@ -541,7 +541,7 @@ class SliderController extends Controller
             } elseif ($videoSource === 'upload' && !$request->hasFile('video_file')) {
                 // Garder la vidéo existante si elle est déjà uploadée
                 if ($slider->video_path && $slider->video_type === 'upload') {
-                    Log::channel('slider')->debug('Keeping existing uploaded video', [
+                    Log::debug('Keeping existing uploaded video', [
                         'request_id' => $requestId,
                         'path' => $slider->video_path
                     ]);
@@ -573,7 +573,7 @@ class SliderController extends Controller
         
         $duration = round((microtime(true) - $startTime) * 1000, 2);
         
-        Log::channel('slider')->info('Slider updated successfully', [
+        Log::info('Slider updated successfully', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'slider_name' => $slider->name,
@@ -605,7 +605,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Slider delete started', [
+        Log::info('Slider delete started', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'user_id' => auth()->id()
@@ -622,7 +622,7 @@ class SliderController extends Controller
         
         $duration = round((microtime(true) - $startTime) * 1000, 2);
         
-        Log::channel('slider')->info('Slider deleted successfully', [
+        Log::info('Slider deleted successfully', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'slider_name' => $slider->name,
@@ -643,7 +643,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Slider restore started', [
+        Log::info('Slider restore started', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'user_id' => auth()->id()
@@ -654,7 +654,7 @@ class SliderController extends Controller
         
         $duration = round((microtime(true) - $startTime) * 1000, 2);
         
-        Log::channel('slider')->info('Slider restored successfully', [
+        Log::info('Slider restored successfully', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'slider_name' => $slider->name,
@@ -675,7 +675,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Slider force delete started', [
+        Log::info('Slider force delete started', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'user_id' => auth()->id()
@@ -692,7 +692,7 @@ class SliderController extends Controller
         
         $duration = round((microtime(true) - $startTime) * 1000, 2);
         
-        Log::channel('slider')->info('Slider force deleted successfully', [
+        Log::info('Slider force deleted successfully', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'slider_name' => $slider->name,
@@ -713,7 +713,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Slider toggle status', [
+        Log::info('Slider toggle status', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'user_id' => auth()->id()
@@ -725,7 +725,7 @@ class SliderController extends Controller
         
         $duration = round((microtime(true) - $startTime) * 1000, 2);
         
-        Log::channel('slider')->info('Slider status toggled', [
+        Log::info('Slider status toggled', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'new_status' => $slider->is_active,
@@ -747,7 +747,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Update order started', [
+        Log::info('Update order started', [
             'request_id' => $requestId,
             'sliders_count' => count($request->sliders ?? []),
             'user_id' => auth()->id()
@@ -760,7 +760,7 @@ class SliderController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::channel('slider')->warning('Update order validation failed', [
+            Log::warning('Update order validation failed', [
                 'request_id' => $requestId,
                 'errors' => $validator->errors()->toArray()
             ]);
@@ -783,7 +783,7 @@ class SliderController extends Controller
             
             $duration = round((microtime(true) - $startTime) * 1000, 2);
             
-            Log::channel('slider')->info('Order updated successfully', [
+            Log::info('Order updated successfully', [
                 'request_id' => $requestId,
                 'duration_ms' => $duration
             ]);
@@ -795,7 +795,7 @@ class SliderController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             
-            Log::channel('slider')->error('Order update failed', [
+            Log::error('Order update failed', [
                 'request_id' => $requestId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -816,7 +816,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Statistics requested', [
+        Log::info('Statistics requested', [
             'request_id' => $requestId,
             'user_id' => auth()->id()
         ]);
@@ -834,7 +834,7 @@ class SliderController extends Controller
         
         $duration = round((microtime(true) - $startTime) * 1000, 2);
         
-        Log::channel('slider')->info('Statistics retrieved', [
+        Log::info('Statistics retrieved', [
             'request_id' => $requestId,
             'total' => $total,
             'duration_ms' => $duration
@@ -862,7 +862,7 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider')->info('Preview requested', [
+        Log::info('Preview requested', [
             'request_id' => $requestId,
             'slider_id' => $id,
             'user_id' => auth()->id()
@@ -925,7 +925,7 @@ class SliderController extends Controller
         $filename = Str::random(40) . '.' . $extension;
         $fullPath = trim($path . '/' . $filename, '/');
         
-        Log::channel('slider')->debug('Uploading to CDN', [
+        Log::debug('Uploading to CDN', [
             'request_id' => $requestId,
             'file_name' => $file->getClientOriginalName(),
             'original_extension' => $extension,
@@ -939,7 +939,7 @@ class SliderController extends Controller
         
         if (isset($result['success']) && $result['success']) {
             $cdnUrl = $result['url'];
-            Log::channel('slider')->debug('CDN upload successful', [
+            Log::debug('CDN upload successful', [
                 'request_id' => $requestId,
                 'cdn_url' => $cdnUrl,
                 'cdn_path' => $result['path'],
@@ -950,7 +950,7 @@ class SliderController extends Controller
         }
         
         // Fallback local
-        Log::channel('slider')->warning('CDN upload failed, falling back to local storage', [
+        Log::warning('CDN upload failed, falling back to local storage', [
             'request_id' => $requestId,
             'error' => $result
         ]);
@@ -958,7 +958,7 @@ class SliderController extends Controller
         $storedPath = $file->store($path, 'public');
         $localUrl = Storage::disk('public')->url($storedPath);
         
-        Log::channel('slider')->debug('Local upload successful (fallback)', [
+        Log::debug('Local upload successful (fallback)', [
             'request_id' => $requestId,
             'path' => $storedPath,
             'url' => $localUrl
@@ -979,7 +979,7 @@ class SliderController extends Controller
         try {
             if ($this->isCdnUrl($filePath)) {
                 $path = $this->extractPathFromCdnUrl($filePath);
-                Log::channel('slider')->debug('Deleting from CDN', [
+                Log::debug('Deleting from CDN', [
                     'request_id' => $requestId,
                     'url' => $filePath,
                     'path' => $path
@@ -988,21 +988,21 @@ class SliderController extends Controller
                 $result = $this->cdnService->delete($path);
                 
                 if (isset($result['success']) && $result['success']) {
-                    Log::channel('slider')->debug('CDN deletion successful', [
+                    Log::debug('CDN deletion successful', [
                         'request_id' => $requestId,
                         'path' => $path
                     ]);
                     return true;
                 }
             } else {
-                Log::channel('slider')->debug('Deleting from local storage', [
+                Log::debug('Deleting from local storage', [
                     'request_id' => $requestId,
                     'path' => $filePath
                 ]);
                 
                 if (Storage::disk('public')->exists($filePath)) {
                     $deleted = Storage::disk('public')->delete($filePath);
-                    Log::channel('slider')->debug('Local deletion ' . ($deleted ? 'successful' : 'failed'), [
+                    Log::debug('Local deletion ' . ($deleted ? 'successful' : 'failed'), [
                         'request_id' => $requestId,
                         'path' => $filePath
                     ]);
@@ -1010,7 +1010,7 @@ class SliderController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            Log::channel('slider')->error('File deletion failed', [
+            Log::error('File deletion failed', [
                 'request_id' => $requestId,
                 'file_path' => $filePath,
                 'error' => $e->getMessage()
