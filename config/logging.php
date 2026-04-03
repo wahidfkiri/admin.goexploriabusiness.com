@@ -58,6 +58,13 @@ return [
             'ignore_exceptions' => false,
         ],
 
+        'slider_debug' => [
+        'driver' => 'single',
+        'path' => storage_path('logs/slider_debug.log'),
+        'level' => 'debug',
+        'permission' => 0664,
+    ],
+
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
