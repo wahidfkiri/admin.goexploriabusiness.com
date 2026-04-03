@@ -320,7 +320,7 @@ class CountryController extends Controller
                 'new_code' => $validated['code'],
             ]);
 
-            $currentFlag = $country->flag;
+            $currentFlag = $country->image;
             $newImagePath = $currentFlag;
             $imageUploaded = false;
             $cdnEnabled = env('CDN_ENABLED', false);
