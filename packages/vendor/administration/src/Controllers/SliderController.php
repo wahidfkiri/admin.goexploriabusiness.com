@@ -410,6 +410,7 @@ class SliderController extends Controller
             Log::channel('slider_debug')->warning('Slider update validation failed', [
                 'request_id' => $requestId,
                 'slider_id' => $id,
+                'requests' => $request->all(),
                 'errors' => $validator->errors()->toArray()
             ]);
             
