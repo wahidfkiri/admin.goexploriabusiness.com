@@ -375,16 +375,14 @@ class SliderController extends Controller
         $startTime = microtime(true);
         $requestId = (string) Str::uuid();
         
-        Log::channel('slider_debug')->info('Slider update started', [
-            'request_id' => $requestId,
-            'slider_id' => $id,
-            'user_id' => auth()->id(),
-            'request_data' => $request->except(['image', 'video_file']),
-            'has_image' => $request->hasFile('image'),
-            'has_video' => $request->hasFile('video_file'),
-            'video_source' => $request->edit_video_source,
-            'video_platform' => $request->edit_video_platform
-        ]);
+        Log::info('UPDATE REQUEST DETAILS', [
+        'all_input' => $request->all(),
+        'has_video_file' => $request->hasFile('video_file'),
+        'video_file_name' => $request->hasFile('video_file') ? $request->file('video_file')->getClientOriginalName() : null,
+        'edit_video_source' => $request->edit_video_source,
+        'content_type' => $request->header('Content-Type'),
+        'content_length' => $request->header('Content-Length'),
+    ]);
         
         $slider = Slider::withTrashed()->findOrFail($id);
 
