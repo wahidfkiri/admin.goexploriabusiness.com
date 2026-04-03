@@ -916,54 +916,109 @@ class SliderController extends Controller
     /**
      * Upload a file to CDN (always use CDN)
      */
-    private function uploadFile($file, $path, $requestId)
-    {
-        // Générer un nom de fichier unique
-        $extension = $file->getClientOriginalExtension();
-        $filename = Str::random(40) . '.' . $extension;
-        $fullPath = trim($path . '/' . $filename, '/');
-        
-        Log::channel('slider_debug')->debug('Uploading to CDN', [
-            'request_id' => $requestId,
-            'file_name' => $file->getClientOriginalName(),
-            'original_extension' => $extension,
-            'file_size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
-            'target_path' => $fullPath
-        ]);
-        
-        // Upload vers le CDN via le service
-        $result = $this->cdnService->upload($file, $path, 'public');
-        
-        if (isset($result['success']) && $result['success']) {
-            $cdnUrl = $result['url'];
-            Log::channel('slider_debug')->debug('CDN upload successful', [
+   /**
+ * Upload a file to CDN (always use CDN)
+ */
+private function uploadFile($file, $path, $requestId)
+{
+    // Générer un nom de fichier unique
+    $extension = $file->getClientOriginalExtension();
+    $filename = Str::random(40) . '.' . $extension;
+    $fullPath = trim($path . '/' . $filename, '/');
+    
+    Log::channel('slider_debug')->debug('Uploading to CDN', [
+        'request_id' => $requestId,
+        'file_name' => $file->getClientOriginalName(),
+        'original_extension' => $extension,
+        'file_size' => $file->getSize(),
+        'mime_type' => $file->getMimeType(),
+        'target_path' => $fullPath,
+        'cdn_enabled' => env('CDN_ENABLED', false),
+        'cdn_configured' => $this->cdnService->isConfigured()
+    ]);
+    
+    // Vérifier si CDN est configuré
+    $cdnEnabled = env('CDN_ENABLED', false);
+    
+    if ($cdnEnabled && $this->cdnService->isConfigured()) {
+        try {
+            // Upload vers le CDN
+            $result = $this->cdnService->upload($file, $path, 'public');
+            
+            Log::channel('slider_debug')->debug('CDN upload result', [
                 'request_id' => $requestId,
-                'cdn_url' => $cdnUrl,
-                'cdn_path' => $result['path'],
-                'full_url' => $cdnUrl
+                'result' => $result,
+                'success' => $result['success'] ?? false
             ]);
             
-            return $cdnUrl;
+            if (isset($result['success']) && $result['success'] === true) {
+                $cdnUrl = $result['url'];
+                Log::channel('slider_debug')->info('CDN upload successful', [
+                    'request_id' => $requestId,
+                    'cdn_url' => $cdnUrl,
+                    'cdn_path' => $result['path'] ?? null
+                ]);
+                return $cdnUrl;
+            } else {
+                // CDN upload failed but we have error details
+                $errorMsg = $result['error'] ?? 'Unknown CDN error';
+                Log::channel('slider_debug')->warning('CDN upload failed', [
+                    'request_id' => $requestId,
+                    'error' => $errorMsg,
+                    'full_result' => $result
+                ]);
+                // Continue to fallback
+            }
+        } catch (\Exception $e) {
+            Log::channel('slider_debug')->error('CDN upload exception', [
+                'request_id' => $requestId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Continue to fallback
         }
-        
-        // Fallback local
-        Log::channel('slider_debug')->warning('CDN upload failed, falling back to local storage', [
+    } else {
+        Log::channel('slider_debug')->info('CDN not enabled or not configured, using local storage', [
             'request_id' => $requestId,
-            'error' => $result
+            'cdn_enabled' => $cdnEnabled,
+            'is_configured' => $this->cdnService->isConfigured()
+        ]);
+    }
+    
+    // Fallback to local storage
+    try {
+        Log::channel('slider_debug')->debug('Falling back to local storage', [
+            'request_id' => $requestId,
+            'path' => $path,
+            'filename' => $filename
         ]);
         
-        $storedPath = $file->store($path, 'public');
+        $storedPath = $file->storeAs($path, $filename, 'public');
+        
+        if (!$storedPath) {
+            throw new \Exception('Failed to store file locally');
+        }
+        
         $localUrl = Storage::disk('public')->url($storedPath);
         
-        Log::channel('slider_debug')->debug('Local upload successful (fallback)', [
+        Log::channel('slider_debug')->info('Local upload successful (fallback)', [
             'request_id' => $requestId,
             'path' => $storedPath,
             'url' => $localUrl
         ]);
         
         return $localUrl;
+        
+    } catch (\Exception $e) {
+        Log::channel('slider_debug')->error('Local upload also failed', [
+            'request_id' => $requestId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        throw new \Exception('Failed to upload file: ' . $e->getMessage());
     }
+}
     
     /**
      * Delete a file from storage (CDN or local)
