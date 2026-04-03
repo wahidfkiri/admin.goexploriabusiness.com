@@ -392,7 +392,7 @@ class SliderController extends Controller
             'description' => 'nullable|string',
             'type' => 'required|in:image,video',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'video_file' => 'nullable|mimes:mp4,avi,mov,wmv|max:102400',
+            'edit_video_file' => 'nullable|mimes:mp4,avi,mov,wmv|max:102400',
             'edit_video_source' => 'required_if:type,video|in:url,upload',
             'edit_video_platform' => 'required_if:edit_video_source,url|in:youtube,vimeo,other',
             'video_url' => 'required_if:edit_video_source,url|nullable|url',
@@ -512,10 +512,10 @@ class SliderController extends Controller
                     'type' => $slider->video_type
                 ]);
                 
-            } elseif ($videoSource === 'upload' && $request->hasFile('video_file')) {
+            } elseif ($videoSource === 'upload' && $request->hasFile('edit_video_file')) {
                 // Mode Upload
                 try {
-                    $videoPath = $this->uploadFile($request->file('video_file'), 'sliders/videos', $requestId);
+                    $videoPath = $this->uploadFile($request->file('edit_video_file'), 'sliders/videos', $requestId);
                     $slider->video_path = $videoPath;
                     $slider->video_type = 'upload';
                     $slider->video_url = null;
@@ -536,7 +536,7 @@ class SliderController extends Controller
                         'error' => $e->getMessage()
                     ], 500);
                 }
-            } elseif ($videoSource === 'upload' && !$request->hasFile('video_file')) {
+            } elseif ($videoSource === 'upload' && !$request->hasFile('edit_video_file')) {
                 // Garder la vidéo existante si elle est déjà uploadée
                 if ($slider->video_path && $slider->video_type === 'upload') {
                     Log::channel('slider_debug')->debug('Keeping existing uploaded video', [
