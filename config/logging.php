@@ -65,6 +65,14 @@ return [
         'permission' => 0664,
     ],
 
+    
+        'cdn' => [
+        'driver' => 'single',
+        'path' => storage_path('logs/cdn.log'),
+        'level' => 'debug',
+        'permission' => 0664,
+    ],
+
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
