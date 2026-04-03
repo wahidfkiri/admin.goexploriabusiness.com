@@ -154,12 +154,12 @@ class SliderController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'video_file' => 'nullable|mimes:mp4,avi,mov,wmv|max:102400',
             'video_source' => 'nullable|in:url,upload',
-            'video_platform' => 'nullable|in:youtube,vimeo,other',  // Changé: nullable
-            'video_url' => 'nullable|url',  // Changé: nullable
+            'video_platform' => 'nullable|in:youtube,vimeo,other',
+            'video_url' => 'nullable|url',
             'order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'button_text' => 'nullable|string|max:50',
-            'button_url' => 'nullable',
+            'button_url' => 'nullable|url',
             'country_id' => 'nullable|exists:countries,id',
             'province_id' => 'nullable|exists:provinces,id',
             'region_id' => 'nullable|exists:regions,id',
@@ -240,10 +240,9 @@ class SliderController extends Controller
             if ($videoSource === 'url') {
                 // Mode URL (YouTube, Vimeo ou Autre)
                 $videoUrl = $request->video_url;
-                $videoPath = $request->video_url; // Stocker l'URL dans video_path pour faciliter l'accès   
+                $videoPath = $request->video_url;
                 $videoPlatform = $request->video_platform;
                 
-                // Définir le type selon la plateforme sélectionnée
                 if ($videoPlatform === 'youtube') {
                     $videoType = 'youtube';
                 } elseif ($videoPlatform === 'vimeo') {
@@ -376,13 +375,14 @@ class SliderController extends Controller
         $requestId = (string) Str::uuid();
         
         Log::info('UPDATE REQUEST DETAILS', [
-        'all_input' => $request->all(),
-        'has_video_file' => $request->hasFile('video_file'),
-        'video_file_name' => $request->hasFile('video_file') ? $request->file('video_file')->getClientOriginalName() : null,
-        'edit_video_source' => $request->edit_video_source,
-        'content_type' => $request->header('Content-Type'),
-        'content_length' => $request->header('Content-Length'),
-    ]);
+            'request_id' => $requestId,
+            'slider_id' => $id,
+            'all_input_keys' => array_keys($request->all()),
+            'all_files_keys' => array_keys($request->allFiles()),
+            'has_edit_video_file' => $request->hasFile('edit_video_file'),
+            'edit_video_source' => $request->input('edit_video_source'),
+            'type' => $request->input('type'),
+        ]);
         
         $slider = Slider::withTrashed()->findOrFail($id);
 
@@ -393,13 +393,13 @@ class SliderController extends Controller
             'type' => 'required|in:image,video',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'edit_video_file' => 'nullable|mimes:mp4,avi,mov,wmv|max:102400',
-            'edit_video_source' => 'required_if:type,video|in:url,upload',
-            'edit_video_platform' => 'required_if:edit_video_source,url|in:youtube,vimeo,other',
-            'video_url' => 'required_if:edit_video_source,url|nullable|url',
+            'edit_video_source' => 'nullable|in:url,upload',
+            'edit_video_platform' => 'nullable|in:youtube,vimeo,other',
+            'video_url' => 'nullable|url',
             'order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'button_text' => 'nullable|string|max:50',
-            'button_url' => 'nullable',
+            'button_url' => 'nullable|url',
             'country_id' => 'nullable|exists:countries,id',
             'province_id' => 'nullable|exists:provinces,id',
             'region_id' => 'nullable|exists:regions,id',
@@ -410,7 +410,6 @@ class SliderController extends Controller
             Log::channel('slider_debug')->warning('Slider update validation failed', [
                 'request_id' => $requestId,
                 'slider_id' => $id,
-                'requests' => $request->all(),
                 'errors' => $validator->errors()->toArray()
             ]);
             
@@ -463,7 +462,7 @@ class SliderController extends Controller
                     $slider->thumbnail_path = $imagePath;
                 }
                 
-                Log::channel('slider_debug')->debug('Image updated', [
+                Log::channel('slider_debug')->info('Image updated', [
                     'request_id' => $requestId,
                     'slider_id' => $id,
                     'new_path' => $imagePath
@@ -471,7 +470,6 @@ class SliderController extends Controller
             } catch (\Exception $e) {
                 Log::channel('slider_debug')->error('Image update failed', [
                     'request_id' => $requestId,
-                    'slider_id' => $id,
                     'error' => $e->getMessage()
                 ]);
                 return response()->json([
@@ -484,51 +482,66 @@ class SliderController extends Controller
 
         // Traitement de la vidéo selon la source
         if ($request->type === 'video') {
-            $videoSource = $request->edit_video_source;
+            $videoSource = $request->input('edit_video_source');
             
-            // Supprimer l'ancienne vidéo
-            if ($slider->video_path) {
-                $this->deleteFile($slider->video_path, $requestId);
-                $slider->video_path = null;
-            }
+            Log::channel('slider_debug')->info('Video processing', [
+                'request_id' => $requestId,
+                'video_source' => $videoSource,
+                'has_file' => $request->hasFile('edit_video_file'),
+                'has_url' => $request->filled('video_url'),
+            ]);
             
             if ($videoSource === 'url') {
-                // Mode URL
-                $slider->video_url = $request->video_url;
-                $slider->video_path = $request->video_url; // Stocker l'URL dans video_path pour faciliter l'accès
-                $videoPlatform = $request->edit_video_platform;
-                
-                if ($videoPlatform === 'youtube') {
-                    $slider->video_type = 'youtube';
-                } elseif ($videoPlatform === 'vimeo') {
-                    $slider->video_type = 'vimeo';
-                } else {
-                    $slider->video_type = 'other';
+                // Mode URL - remplacer par nouvelle URL
+                if ($request->filled('video_url')) {
+                    // Supprimer l'ancienne vidéo si c'était un upload
+                    if ($slider->video_path && $slider->video_type === 'upload') {
+                        $this->deleteFile($slider->video_path, $requestId);
+                    }
+                    
+                    $slider->video_url = $request->video_url;
+                    $slider->video_path = $request->video_url;
+                    $videoPlatform = $request->input('edit_video_platform', 'other');
+                    
+                    if ($videoPlatform === 'youtube') {
+                        $slider->video_type = 'youtube';
+                    } elseif ($videoPlatform === 'vimeo') {
+                        $slider->video_type = 'vimeo';
+                    } else {
+                        $slider->video_type = 'other';
+                    }
+                    
+                    Log::channel('slider_debug')->info('Video URL updated', [
+                        'request_id' => $requestId,
+                        'url' => $request->video_url,
+                        'platform' => $videoPlatform,
+                    ]);
                 }
-                
-                Log::channel('slider_debug')->debug('Video URL updated', [
-                    'request_id' => $requestId,
-                    'url' => $request->video_url,
-                    'platform' => $videoPlatform,
-                    'type' => $slider->video_type
-                ]);
-                
-            } elseif ($videoSource === 'upload' && $request->hasFile('edit_video_file')) {
-                // Mode Upload
+            } 
+            elseif ($videoSource === 'upload' && $request->hasFile('edit_video_file')) {
+                // Mode Upload avec nouveau fichier
                 try {
-                    $videoPath = $this->uploadFile($request->file('edit_video_file'), 'sliders/videos', $requestId);
+                    // Supprimer l'ancienne vidéo
+                    if ($slider->video_path) {
+                        $this->deleteFile($slider->video_path, $requestId);
+                    }
+                    
+                    $videoFile = $request->file('edit_video_file');
+                    $videoPath = $this->uploadFile($videoFile, 'sliders/videos', $requestId);
+                    
                     $slider->video_path = $videoPath;
                     $slider->video_type = 'upload';
                     $slider->video_url = null;
                     
-                    Log::channel('slider_debug')->debug('Video file updated', [
+                    Log::channel('slider_debug')->info('Video file uploaded', [
                         'request_id' => $requestId,
-                        'new_path' => $videoPath
+                        'new_path' => $videoPath,
+                        'file_name' => $videoFile->getClientOriginalName(),
+                        'file_size' => $videoFile->getSize(),
                     ]);
                 } catch (\Exception $e) {
-                    Log::channel('slider_debug')->error('Video update failed', [
+                    Log::channel('slider_debug')->error('Video upload failed', [
                         'request_id' => $requestId,
-                        'slider_id' => $id,
                         'error' => $e->getMessage()
                     ]);
                     return response()->json([
@@ -537,24 +550,37 @@ class SliderController extends Controller
                         'error' => $e->getMessage()
                     ], 500);
                 }
-            } elseif ($videoSource === 'upload' && !$request->hasFile('edit_video_file')) {
-                // Garder la vidéo existante si elle est déjà uploadée
-                if ($slider->video_path && $slider->video_type === 'upload') {
-                    Log::channel('slider_debug')->debug('Keeping existing uploaded video', [
-                        'request_id' => $requestId,
-                        'path' => $slider->video_path
-                    ]);
-                }
+            }
+            // Si aucun video_source n'est envoyé, on garde la vidéo existante
+            else {
+                Log::channel('slider_debug')->info('Keeping existing video', [
+                    'request_id' => $requestId,
+                    'current_video_path' => $slider->video_path,
+                    'current_video_type' => $slider->video_type,
+                ]);
+            }
+        } else {
+            // Si le type n'est pas vidéo, supprimer les données vidéo
+            if ($slider->video_path) {
+                $this->deleteFile($slider->video_path, $requestId);
+                $slider->video_path = null;
+                $slider->video_type = null;
+                $slider->video_url = null;
             }
         }
 
-        // Mise à jour des données
+        // Mise à jour des données de base
         $slider->name = $request->name;
         $slider->description = $request->description;
         $slider->type = $request->type;
         $slider->is_active = $request->boolean('is_active', true);
         $slider->button_text = $request->button_text;
         $slider->button_url = $request->button_url;
+        
+        // Mise à jour de l'ordre si fourni
+        if ($request->has('order')) {
+            $slider->order = $request->order;
+        }
         
         // Mise à jour de la localisation
         $slider->country_id = $request->country_id;
@@ -578,14 +604,7 @@ class SliderController extends Controller
             'slider_name' => $slider->name,
             'image_path' => $slider->image_path,
             'video_path' => $slider->video_path,
-            'video_url' => $slider->video_url,
             'video_type' => $slider->video_type,
-            'location' => [
-                'country_id' => $slider->country_id,
-                'province_id' => $slider->province_id,
-                'region_id' => $slider->region_id,
-                'ville_id' => $slider->ville_id,
-            ],
             'duration_ms' => $duration
         ]);
 
@@ -915,78 +934,72 @@ class SliderController extends Controller
     }
     
     /**
-     * Upload a file to CDN (always use CDN)
+     * Upload a file to CDN or local storage (like CountryController)
      */
-   /**
- * Upload a file to CDN (always use CDN)
- */
-/**
- * Upload a file to CDN or local storage (like CountryController)
- */
-private function uploadFile($file, $path, $requestId)
-{
-    // Générer un nom de fichier unique
-    $extension = $file->getClientOriginalExtension();
-    $filename = Str::random(40) . '.' . $extension;
-    
-    $cdnEnabled = env('CDN_ENABLED', false);
-    
-    Log::channel('slider_debug')->debug('Uploading file', [
-        'request_id' => $requestId,
-        'file_name' => $file->getClientOriginalName(),
-        'file_size' => $file->getSize(),
-        'mime_type' => $file->getMimeType(),
-        'cdn_enabled' => $cdnEnabled,
-    ]);
-    
-    if ($cdnEnabled) {
-        // Upload to CDN (exactly like CountryController)
-        try {
-            $uploadResult = $this->cdnService->upload($file, $path, 'public');
-            
-            if (isset($uploadResult['success']) && $uploadResult['success']) {
-                $filePath = $uploadResult['url']; // Full CDN URL
-                Log::channel('slider_debug')->info('File uploaded to CDN successfully', [
+    private function uploadFile($file, $path, $requestId)
+    {
+        // Générer un nom de fichier unique
+        $extension = $file->getClientOriginalExtension();
+        $filename = Str::random(40) . '.' . $extension;
+        
+        $cdnEnabled = env('CDN_ENABLED', false);
+        
+        Log::channel('slider_debug')->info('Uploading file', [
+            'request_id' => $requestId,
+            'file_name' => $file->getClientOriginalName(),
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
+            'cdn_enabled' => $cdnEnabled,
+        ]);
+        
+        if ($cdnEnabled) {
+            // Upload to CDN (exactly like CountryController)
+            try {
+                $uploadResult = $this->cdnService->upload($file, $path, 'public');
+                
+                if (isset($uploadResult['success']) && $uploadResult['success']) {
+                    $filePath = $uploadResult['url']; // Full CDN URL
+                    Log::channel('slider_debug')->info('File uploaded to CDN successfully', [
+                        'request_id' => $requestId,
+                        'cdn_url' => $filePath,
+                    ]);
+                    return $filePath;
+                } else {
+                    throw new \Exception('CDN upload failed: ' . json_encode($uploadResult));
+                }
+            } catch (\Exception $e) {
+                Log::channel('slider_debug')->error('CDN upload failed, falling back to local', [
                     'request_id' => $requestId,
-                    'cdn_url' => $filePath,
+                    'error' => $e->getMessage()
                 ]);
-                return $filePath;
-            } else {
-                throw new \Exception('CDN upload failed: ' . json_encode($uploadResult));
+                
+                // Fallback to local storage
+                $storedPath = $file->storeAs($path, $filename, 'public');
+                if (!$storedPath) {
+                    throw new \Exception('Failed to store file locally');
+                }
+                
+                Log::channel('slider_debug')->info('Stored locally as fallback', [
+                    'request_id' => $requestId,
+                    'path' => $storedPath
+                ]);
+                return $storedPath;
             }
-        } catch (\Exception $e) {
-            Log::channel('slider_debug')->error('CDN upload failed, falling back to local', [
-                'request_id' => $requestId,
-                'error' => $e->getMessage()
-            ]);
-            
-            // Fallback to local storage
+        } else {
+            // Store locally (CDN disabled)
             $storedPath = $file->storeAs($path, $filename, 'public');
+            
             if (!$storedPath) {
                 throw new \Exception('Failed to store file locally');
             }
             
-            Log::channel('slider_debug')->info('Stored locally as fallback', [
+            Log::channel('slider_debug')->info('File stored locally', [
                 'request_id' => $requestId,
-                'path' => $storedPath
+                'stored_path' => $storedPath,
             ]);
             return $storedPath;
         }
-    } else {
-        // Store locally (CDN disabled)
-        $storedPath = $file->storeAs($path, $filename, 'public');
-        
-        if (!$storedPath) {
-            throw new \Exception('Failed to store file locally');
-        }
-        
-        Log::channel('slider_debug')->info('File stored locally', [
-            'request_id' => $requestId,
-            'stored_path' => $storedPath,
-        ]);
-        return $storedPath;
     }
-}
     
     /**
      * Delete a file from storage (CDN or local)
@@ -1000,7 +1013,7 @@ private function uploadFile($file, $path, $requestId)
         try {
             if ($this->isCdnUrl($filePath)) {
                 $path = $this->extractPathFromCdnUrl($filePath);
-                Log::channel('slider_debug')->debug('Deleting from CDN', [
+                Log::channel('slider_debug')->info('Deleting from CDN', [
                     'request_id' => $requestId,
                     'url' => $filePath,
                     'path' => $path
@@ -1009,26 +1022,34 @@ private function uploadFile($file, $path, $requestId)
                 $result = $this->cdnService->delete($path);
                 
                 if (isset($result['success']) && $result['success']) {
-                    Log::channel('slider_debug')->debug('CDN deletion successful', [
+                    Log::channel('slider_debug')->info('CDN deletion successful', [
                         'request_id' => $requestId,
                         'path' => $path
                     ]);
                     return true;
+                } else {
+                    Log::channel('slider_debug')->warning('CDN deletion failed', [
+                        'request_id' => $requestId,
+                        'result' => $result
+                    ]);
+                    return false;
                 }
             } else {
-                Log::channel('slider_debug')->debug('Deleting from local storage', [
+                Log::channel('slider_debug')->info('Deleting from local storage', [
                     'request_id' => $requestId,
                     'path' => $filePath
                 ]);
                 
                 if (Storage::disk('public')->exists($filePath)) {
                     $deleted = Storage::disk('public')->delete($filePath);
-                    Log::channel('slider_debug')->debug('Local deletion ' . ($deleted ? 'successful' : 'failed'), [
+                    Log::channel('slider_debug')->info('Local deletion ' . ($deleted ? 'successful' : 'failed'), [
                         'request_id' => $requestId,
                         'path' => $filePath
                     ]);
                     return $deleted;
                 }
+                
+                return false;
             }
         } catch (\Exception $e) {
             Log::channel('slider_debug')->error('File deletion failed', [
@@ -1036,9 +1057,8 @@ private function uploadFile($file, $path, $requestId)
                 'file_path' => $filePath,
                 'error' => $e->getMessage()
             ]);
+            return false;
         }
-        
-        return false;
     }
     
     /**

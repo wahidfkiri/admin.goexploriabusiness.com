@@ -1063,26 +1063,7 @@
     const editVideoSourceUpload = document.getElementById('editVideoSourceUpload');
     const editVideoPlatform = document.getElementById('editVideoPlatform');
     const editVideoFileInput = document.getElementById('editVideoFile');
-    
-    let videoSource = null;
-    let hasNewVideoFile = false;
-    
-    // 🔥 CRUCIAL: Vérifier si un NOUVEAU fichier vidéo a été sélectionné
-    if (type === 'video') {
-        if (editVideoSourceUrl && editVideoSourceUrl.checked) {
-            const videoUrl = document.getElementById('editVideoUrl').value;
-            if (videoUrl && videoUrl.trim() !== '') {
-                videoSource = 'url';
-            }
-        } else if (editVideoSourceUpload && editVideoSourceUpload.checked) {
-            // Vérifier si un fichier a été sélectionné
-            if (editVideoFileInput && editVideoFileInput.files.length > 0) {
-                videoSource = 'upload';
-                hasNewVideoFile = true;
-            }
-            // Si pas de nouveau fichier, NE PAS envoyer edit_video_source
-        }
-    }
+    const editVideoUrlInput = document.getElementById('editVideoUrl');
     
     submitBtn.classList.add('btn-processing');
     submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm text-light me-2"></div>Enregistrement...';
@@ -1091,30 +1072,46 @@
     const formData = new FormData(form);
     formData.append('_method', 'PUT');
     
-    // 🔥 IMPORTANT: Gérer correctement les champs vidéo
+    // 🔥 CRUCIAL: Gérer correctement les champs vidéo pour l'édition
     if (type === 'video') {
-        if (videoSource === 'url') {
-            formData.append('edit_video_source', 'url');
-            if (editVideoPlatform) {
-                formData.append('edit_video_platform', editVideoPlatform.value);
+        // Déterminer la source sélectionnée
+        if (editVideoSourceUrl && editVideoSourceUrl.checked) {
+            // Mode URL
+            const videoUrl = editVideoUrlInput ? editVideoUrlInput.value : '';
+            
+            if (videoUrl && videoUrl.trim() !== '') {
+                // Nouvelle URL fournie
+                formData.append('edit_video_source', 'url');
+                if (editVideoPlatform) {
+                    formData.append('edit_video_platform', editVideoPlatform.value);
+                }
+                // Supprimer le fichier vidéo s'il existe
+                formData.delete('edit_video_file');
+            } else {
+                // Pas de nouvelle URL - ne rien envoyer pour garder l'existant
+                formData.delete('edit_video_source');
+                formData.delete('edit_video_platform');
+                formData.delete('video_url');
+                formData.delete('edit_video_file');
             }
-            // Supprimer le fichier vidéo s'il existe
-            formData.delete('edit_video_file');
-            formData.delete('video_file');
-        } else if (videoSource === 'upload' && hasNewVideoFile) {
-            formData.append('edit_video_source', 'upload');
-            // Le fichier est déjà dans formData via le champ edit_video_file
-            // Ne pas ajouter d'autres champs
-        } else {
-            // PAS de changement vidéo - supprimer tous les champs vidéo du formulaire
-            formData.delete('edit_video_source');
-            formData.delete('edit_video_platform');
-            formData.delete('video_url');
-            formData.delete('edit_video_file');
-            formData.delete('video_file');
+        } 
+        else if (editVideoSourceUpload && editVideoSourceUpload.checked) {
+            // Mode Upload
+            if (editVideoFileInput && editVideoFileInput.files.length > 0) {
+                // Nouveau fichier sélectionné
+                formData.append('edit_video_source', 'upload');
+                // Le fichier est déjà dans formData via le champ edit_video_file
+                console.log('Nouveau fichier vidéo:', editVideoFileInput.files[0].name);
+            } else {
+                // Pas de nouveau fichier - ne rien envoyer pour garder l'existant
+                formData.delete('edit_video_source');
+                formData.delete('edit_video_platform');
+                formData.delete('video_url');
+                formData.delete('edit_video_file');
+            }
         }
     } else {
-        // Pour les images, supprimer les champs vidéo
+        // Pour les images, supprimer tous les champs vidéo
         formData.delete('edit_video_source');
         formData.delete('edit_video_platform');
         formData.delete('video_url');
@@ -1126,9 +1123,9 @@
     console.log('=== UPDATE SLIDER DEBUG ===');
     for (let pair of formData.entries()) {
         if (pair[0] !== 'image' && pair[0] !== 'edit_video_file' && pair[0] !== 'video_file') {
-            console.log(pair[0] + ': ' + pair[1]);
+            console.log(pair[0] + ':', pair[1]);
         } else if (pair[0] === 'edit_video_file' && pair[1] instanceof File) {
-            console.log(pair[0] + ': [FILE] ' + pair[1].name + ' (' + pair[1].size + ' bytes)');
+            console.log(pair[0] + ':', '[FILE]', pair[1].name, '(' + pair[1].size + ' bytes)');
         }
     }
     
@@ -1177,7 +1174,6 @@
         }
     });
 };
-
     const setupImagePreview = () => {
         const createImageInput = document.getElementById('sliderImage');
         if (createImageInput) {
