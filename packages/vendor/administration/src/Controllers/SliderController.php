@@ -153,9 +153,9 @@ class SliderController extends Controller
             'type' => 'required|in:image,video',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'video_file' => 'nullable|mimes:mp4,avi,mov,wmv|max:102400',
-            'video_source' => 'required_if:type,video|in:url,upload',
-            'video_platform' => 'required_if:video_source,url|in:youtube,vimeo,other',
-            'video_url' => 'required_if:video_source,url|nullable|url',
+            'video_source' => 'nullable|in:url,upload',
+            'video_platform' => 'nullable|in:youtube,vimeo,other',  // Changé: nullable
+            'video_url' => 'nullable|url',  // Changé: nullable
             'order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'button_text' => 'nullable|string|max:50',
