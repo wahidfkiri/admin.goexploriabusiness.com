@@ -8,7 +8,6 @@ use App\Models\Country;
 use App\Models\Province;
 use App\Models\Region;
 use App\Models\Ville;
-use App\Services\CDNService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -18,15 +17,16 @@ use Illuminate\Support\Str;
 
 class SliderController extends Controller
 {
-    protected $cdnService;
+    protected $storageUrl;
     
-    public function __construct(CDNService $cdnService)
+    public function __construct()
     {
-        $this->cdnService = $cdnService;
+        // Récupérer l'URL de base depuis le fichier .env
+        $this->storageUrl = rtrim(env('APP_URL', 'https://admin.goexploriabusiness.com'), '/') . '/storage/';
         
         Log::channel('slider_debug')->info('SliderController initialized', [
-            'cdn_enabled' => env('CDN_ENABLED', false),
-            'cdn_url' => env('CDN_URL')
+            'storage_url' => $this->storageUrl,
+            'app_url' => env('APP_URL')
         ]);
     }
     
@@ -143,7 +143,7 @@ class SliderController extends Controller
             'has_video' => $request->hasFile('video_file'),
             'type' => $request->type,
             'video_source' => $request->video_source,
-            'cdn_enabled' => env('CDN_ENABLED', false)
+            'storage_url' => $this->storageUrl
         ]);
         
         // Validation
@@ -616,42 +616,128 @@ class SliderController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
-    {
-        $startTime = microtime(true);
-        $requestId = (string) Str::uuid();
-        
-        Log::channel('slider_debug')->info('Slider delete started', [
-            'request_id' => $requestId,
-            'slider_id' => $id,
-            'user_id' => auth()->id()
-        ]);
-        
-        $slider = Slider::findOrFail($id);
-        
-        // Supprimer les fichiers
-        $this->deleteFile($slider->image_path, $requestId);
-        $this->deleteFile($slider->video_path, $requestId);
-        $this->deleteFile($slider->thumbnail_path, $requestId);
-        
-        $slider->delete();
-        
-        $duration = round((microtime(true) - $startTime) * 1000, 2);
-        
-        Log::channel('slider_debug')->info('Slider deleted successfully', [
-            'request_id' => $requestId,
-            'slider_id' => $id,
-            'slider_name' => $slider->name,
-            'duration_ms' => $duration
-        ]);
+ * Remove the specified resource from storage (soft delete with immediate file deletion)
+ */
+public function destroy($id)
+{
+    $startTime = microtime(true);
+    $requestId = (string) Str::uuid();
+    
+    Log::channel('slider_debug')->info('Slider delete started', [
+        'request_id' => $requestId,
+        'slider_id' => $id,
+        'user_id' => auth()->id()
+    ]);
+    
+    $slider = Slider::findOrFail($id);
+    
+    // Supprimer les fichiers immédiatement
+    $this->deleteFile($slider->image_path, $requestId);
+    $this->deleteFile($slider->video_path, $requestId);
+    $this->deleteFile($slider->thumbnail_path, $requestId);
+    
+    // Soft delete l'enregistrement
+    $slider->delete();
+    
+    $duration = round((microtime(true) - $startTime) * 1000, 2);
+    
+    Log::channel('slider_debug')->info('Slider soft deleted with files removed', [
+        'request_id' => $requestId,
+        'slider_id' => $id,
+        'slider_name' => $slider->name,
+        'duration_ms' => $duration
+    ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Slider supprimé avec succès !'
-        ]);
+    return response()->json([
+        'success' => true,
+        'message' => 'Slider supprimé avec succès !'
+    ]);
+}
+
+/**
+ * Force delete slider with immediate file deletion
+ */
+public function forceDelete($id)
+{
+    $startTime = microtime(true);
+    $requestId = (string) Str::uuid();
+    
+    Log::channel('slider_debug')->info('Slider force delete started', [
+        'request_id' => $requestId,
+        'slider_id' => $id,
+        'user_id' => auth()->id()
+    ]);
+    
+    $slider = Slider::withTrashed()->findOrFail($id);
+    
+    // Supprimer les fichiers immédiatement
+    $this->deleteFile($slider->image_path, $requestId);
+    $this->deleteFile($slider->video_path, $requestId);
+    $this->deleteFile($slider->thumbnail_path, $requestId);
+    
+    // Force delete l'enregistrement
+    $slider->forceDelete();
+    
+    $duration = round((microtime(true) - $startTime) * 1000, 2);
+    
+    Log::channel('slider_debug')->info('Slider force deleted with files removed', [
+        'request_id' => $requestId,
+        'slider_id' => $id,
+        'slider_name' => $slider->name,
+        'duration_ms' => $duration
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Slider définitivement supprimé avec ses fichiers !'
+    ]);
+}
+
+/**
+ * Delete a file from local storage immediately
+ */
+private function deleteFile($filePath, $requestId)
+{
+    if (!$filePath) {
+        return false;
     }
+    
+    try {
+        // Si c'est une URL complète, extraire le chemin relatif
+        $relativePath = $this->extractRelativePath($filePath);
+        
+        Log::channel('slider_debug')->info('Deleting file immediately from local storage', [
+            'request_id' => $requestId,
+            'full_url' => $filePath,
+            'relative_path' => $relativePath
+        ]);
+        
+        if ($relativePath && Storage::disk('public')->exists($relativePath)) {
+            $deleted = Storage::disk('public')->delete($relativePath);
+            Log::channel('slider_debug')->info('File deleted ' . ($deleted ? 'successfully' : 'failed'), [
+                'request_id' => $requestId,
+                'relative_path' => $relativePath,
+                'deleted' => $deleted
+            ]);
+            return $deleted;
+        }
+        
+        Log::channel('slider_debug')->warning('File not found for immediate deletion', [
+            'request_id' => $requestId,
+            'relative_path' => $relativePath,
+            'full_url' => $filePath
+        ]);
+        
+        return false;
+    } catch (\Exception $e) {
+        Log::channel('slider_debug')->error('Immediate file deletion failed', [
+            'request_id' => $requestId,
+            'file_path' => $filePath,
+            'error' => $e->getMessage()
+        ]);
+        return false;
+    }
+}
 
     /**
      * Restore soft deleted slider
@@ -685,43 +771,6 @@ class SliderController extends Controller
         ]);
     }
 
-    /**
-     * Force delete slider
-     */
-    public function forceDelete($id)
-    {
-        $startTime = microtime(true);
-        $requestId = (string) Str::uuid();
-        
-        Log::channel('slider_debug')->info('Slider force delete started', [
-            'request_id' => $requestId,
-            'slider_id' => $id,
-            'user_id' => auth()->id()
-        ]);
-        
-        $slider = Slider::onlyTrashed()->findOrFail($id);
-        
-        // Supprimer les fichiers
-        $this->deleteFile($slider->image_path, $requestId);
-        $this->deleteFile($slider->video_path, $requestId);
-        $this->deleteFile($slider->thumbnail_path, $requestId);
-        
-        $slider->forceDelete();
-        
-        $duration = round((microtime(true) - $startTime) * 1000, 2);
-        
-        Log::channel('slider_debug')->info('Slider force deleted successfully', [
-            'request_id' => $requestId,
-            'slider_id' => $id,
-            'slider_name' => $slider->name,
-            'duration_ms' => $duration
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Slider définitivement supprimé !'
-        ]);
-    }
 
     /**
      * Toggle active status
@@ -934,7 +983,7 @@ class SliderController extends Controller
     }
     
     /**
-     * Upload a file to CDN or local storage (like CountryController)
+     * Upload a file to local storage and return full URL
      */
     private function uploadFile($file, $path, $requestId)
     {
@@ -942,146 +991,62 @@ class SliderController extends Controller
         $extension = $file->getClientOriginalExtension();
         $filename = Str::random(40) . '.' . $extension;
         
-        $cdnEnabled = false;
-        //env('CDN_ENABLED', false);
+        // Chemin relatif pour le stockage
+        $relativePath = $path . '/' . $filename;
         
-        Log::channel('slider_debug')->info('Uploading file', [
+        Log::channel('slider_debug')->info('Uploading file to local storage', [
             'request_id' => $requestId,
             'file_name' => $file->getClientOriginalName(),
             'file_size' => $file->getSize(),
             'mime_type' => $file->getMimeType(),
-            'cdn_enabled' => $cdnEnabled,
+            'relative_path' => $relativePath,
         ]);
         
-        if ($cdnEnabled) {
-            // Upload to CDN (exactly like CountryController)
-            try {
-                $uploadResult = $this->cdnService->upload($file, $path, 'public');
-                
-                if (isset($uploadResult['success']) && $uploadResult['success']) {
-                    $filePath = $uploadResult['url']; // Full CDN URL
-                    Log::channel('slider_debug')->info('File uploaded to CDN successfully', [
-                        'request_id' => $requestId,
-                        'cdn_url' => $filePath,
-                    ]);
-                    return $filePath;
-                } else {
-                    throw new \Exception('CDN upload failed: ' . json_encode($uploadResult));
-                }
-            } catch (\Exception $e) {
-                Log::channel('slider_debug')->error('CDN upload failed, falling back to local', [
-                    'request_id' => $requestId,
-                    'error' => $e->getMessage()
-                ]);
-                
-                // Fallback to local storage
-                $storedPath = $file->storeAs($path, $filename, 'public');
-                if (!$storedPath) {
-                    throw new \Exception('Failed to store file locally');
-                }
-                
-                Log::channel('slider_debug')->info('Stored locally as fallback', [
-                    'request_id' => $requestId,
-                    'path' => $storedPath
-                ]);
-                return $storedPath;
-            }
-        } else {
-            // Store locally (CDN disabled)
-            $storedPath = $file->storeAs($path, $filename, 'public');
-            
-            if (!$storedPath) {
-                throw new \Exception('Failed to store file locally');
-            }
-            
-            Log::channel('slider_debug')->info('File stored locally', [
-                'request_id' => $requestId,
-                'stored_path' => $storedPath,
-            ]);
-            return $storedPath;
-        }
-    }
-    
-    /**
-     * Delete a file from storage (CDN or local)
-     */
-    private function deleteFile($filePath, $requestId)
-    {
-        if (!$filePath) {
-            return false;
+        // Stocker le fichier dans le disque public
+        $stored = $file->storeAs($path, $filename, 'public');
+        
+        if (!$stored) {
+            throw new \Exception('Failed to store file locally');
         }
         
-        try {
-            if ($this->isCdnUrl($filePath)) {
-                $path = $this->extractPathFromCdnUrl($filePath);
-                Log::channel('slider_debug')->info('Deleting from CDN', [
-                    'request_id' => $requestId,
-                    'url' => $filePath,
-                    'path' => $path
-                ]);
-                
-                $result = $this->cdnService->delete($path);
-                
-                if (isset($result['success']) && $result['success']) {
-                    Log::channel('slider_debug')->info('CDN deletion successful', [
-                        'request_id' => $requestId,
-                        'path' => $path
-                    ]);
-                    return true;
-                } else {
-                    Log::channel('slider_debug')->warning('CDN deletion failed', [
-                        'request_id' => $requestId,
-                        'result' => $result
-                    ]);
-                    return false;
-                }
-            } else {
-                Log::channel('slider_debug')->info('Deleting from local storage', [
-                    'request_id' => $requestId,
-                    'path' => $filePath
-                ]);
-                
-                if (Storage::disk('public')->exists($filePath)) {
-                    $deleted = Storage::disk('public')->delete($filePath);
-                    Log::channel('slider_debug')->info('Local deletion ' . ($deleted ? 'successful' : 'failed'), [
-                        'request_id' => $requestId,
-                        'path' => $filePath
-                    ]);
-                    return $deleted;
-                }
-                
-                return false;
-            }
-        } catch (\Exception $e) {
-            Log::channel('slider_debug')->error('File deletion failed', [
-                'request_id' => $requestId,
-                'file_path' => $filePath,
-                'error' => $e->getMessage()
-            ]);
-            return false;
-        }
+        // Construire l'URL complète
+        $fullUrl = $this->storageUrl . $relativePath;
+        
+        Log::channel('slider_debug')->info('File stored successfully', [
+            'request_id' => $requestId,
+            'relative_path' => $stored,
+            'full_url' => $fullUrl,
+        ]);
+        
+        // Retourner l'URL complète (pas le chemin relatif)
+        return $fullUrl;
     }
     
     /**
-     * Check if a URL is from our CDN
+     * Extract relative path from full URL
      */
-    private function isCdnUrl($url)
+    private function extractRelativePath($url)
     {
-        if (!$url) {
-            return false;
+        // Si c'est déjà un chemin relatif (pas d'URL complète)
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return $url;
         }
         
-        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
-        return Str::startsWith($url, $cdnUrl);
-    }
-    
-    /**
-     * Extract the storage path from a CDN URL
-     */
-    private function extractPathFromCdnUrl($url)
-    {
-        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
-        $path = str_replace($cdnUrl . '/storage/', '', $url);
-        return $path;
+        // Extraire le chemin après /storage/
+        $pattern = '#/storage/(.*)$#';
+        if (preg_match($pattern, $url, $matches)) {
+            return $matches[1];
+        }
+        
+        // Si on ne trouve pas le pattern, essayer de supprimer l'URL de base
+        $baseUrl = rtrim(env('APP_URL', 'http://localhost:8000'), '/');
+        if (strpos($url, $baseUrl) === 0) {
+            $relative = substr($url, strlen($baseUrl));
+            // Enlever le /storage/ au début
+            $relative = preg_replace('#^/storage/#', '', $relative);
+            return $relative;
+        }
+        
+        return null;
     }
 }
