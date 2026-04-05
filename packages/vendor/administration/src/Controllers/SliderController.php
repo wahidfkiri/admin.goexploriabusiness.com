@@ -152,7 +152,7 @@ class SliderController extends Controller
             'description' => 'nullable|string',
             'type' => 'required|in:image,video',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'video_file' => 'nullable|mimes:mp4,avi,mov,wmv|max:102400',
+           // 'video_file' => 'nullable|mimes:mp4,avi,mov,wmv|max:102400',
             'video_source' => 'nullable|in:url,upload',
             'video_platform' => 'nullable|in:youtube,vimeo,other',
             'video_url' => 'nullable|url',
