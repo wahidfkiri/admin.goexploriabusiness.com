@@ -592,7 +592,7 @@
                                 </select>
                             </div>
                             
-                            <div class="col-md-6 mb-4">
+                            <div class="col-md-6 mb-4 d-none">
                                 <div class="label-with-info">
                                     <label for="editSliderOrder" class="form-label-modern">Ordre d'affichage</label>
                                     <div class="info-bull" data-tooltip="Position dans le carousel. Plus le chiffre est petit, plus le slider apparaît en premier.">
