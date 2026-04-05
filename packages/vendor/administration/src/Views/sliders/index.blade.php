@@ -243,7 +243,7 @@
                         <div class="row">
                             <div class="col-md-12 mb-4">
                                 <div class="label-with-info">
-                                    <label for="sliderName" class="form-label-modern">Nom du slider *</label>
+                                    <label for="sliderName" class="form-label-modern">Nom du vidéo slider *</label>
                                     <div class="info-bull" data-tooltip="Le nom interne du slider pour l'identifier dans l'administration. Ce nom n'est pas visible par les visiteurs.">
                                         <i class="fas fa-info-circle"></i>
                                     </div>
@@ -269,7 +269,7 @@
                         
                         <!-- TYPE + ORDRE -->
                         <div class="row">
-                            <div class="col-md-6 mb-4">
+                            <div class="col-md-12 mb-4">
                                 <div class="label-with-info">
                                     <label for="sliderType" class="form-label-modern">Type de contenu *</label>
                                     <div class="info-bull" data-tooltip="Choisissez 'Image' pour une bannière statique ou 'Vidéo' pour un contenu animé (YouTube, Vimeo ou upload local).">
@@ -282,7 +282,7 @@
                                 </select>
                             </div>
                             
-                            <div class="col-md-6 mb-4">
+                            <div class="col-md-6 mb-4 d-none">
                                 <div class="label-with-info">
                                     <label for="sliderOrder" class="form-label-modern">Ordre d'affichage</label>
                                     <div class="info-bull" data-tooltip="Position dans le carousel. Plus le chiffre est petit, plus le slider apparaît en premier. L'ordre 1 = premier élément affiché.">
@@ -399,7 +399,7 @@
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="video_source" id="videoSourceUpload" value="upload">
                                             <label class="form-check-label" for="videoSourceUpload">
-                                                <i class="fas fa-upload me-1"></i> Upload local
+                                                <i class="fas fa-upload me-1"></i> Upload Vidéo local
                                             </label>
                                         </div>
                                     </div>
@@ -555,7 +555,7 @@
                         <div class="row">
                             <div class="col-md-12 mb-4">
                                 <div class="label-with-info">
-                                    <label for="editSliderName" class="form-label-modern">Nom du slider *</label>
+                                    <label for="editSliderName" class="form-label-modern">Nom du vidéo slider *</label>
                                     <div class="info-bull" data-tooltip="Le nom interne du slider pour l'identifier dans l'administration. Ce nom n'est pas visible par les visiteurs.">
                                         <i class="fas fa-info-circle"></i>
                                     </div>
@@ -720,7 +720,7 @@
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="edit_video_source" id="editVideoSourceUpload" value="upload">
                                             <label class="form-check-label" for="editVideoSourceUpload">
-                                                <i class="fas fa-upload me-1"></i> Upload local
+                                                <i class="fas fa-upload me-1"></i> Upload Vidéo local
                                             </label>
                                         </div>
                                     </div>
