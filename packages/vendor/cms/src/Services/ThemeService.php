@@ -211,7 +211,7 @@ class ThemeService
                 'file_size' => $file->getSize()
             ]);
             
-            $uploadResult = $this->cdnService->upload($file->getPathname(), dirname($cdnFilePath), 'public');
+            $uploadResult = $this->themeCdnService->upload($file->getPathname(), dirname($cdnFilePath), 'public');
             
             if (!isset($uploadResult['success']) || !$uploadResult['success']) {
                 throw new \Exception('Failed to upload file to CDN: ' . ($uploadResult['error'] ?? 'Unknown error'));
@@ -249,7 +249,7 @@ class ThemeService
                             file_put_contents($tempFile, $imageContent);
                             
                             $previewImageName = "preview.{$extension}";
-                            $uploadResult = $this->cdnService->upload($tempFile, $themePath, 'public');
+                            $uploadResult = $this->themeCdnService->upload($tempFile, $themePath, 'public');
                             
                             unlink($tempFile);
                             
@@ -276,7 +276,7 @@ class ThemeService
                             $tempFile = tempnam(sys_get_temp_dir(), 'theme_preview');
                             file_put_contents($tempFile, $imageContent);
                             
-                            $uploadResult = $this->cdnService->upload($tempFile, $themePath, 'public');
+                            $uploadResult = $this->themeCdnService->upload($tempFile, $themePath, 'public');
                             
                             unlink($tempFile);
                             
@@ -597,7 +597,7 @@ class ThemeService
             
             if ($theme->preview_image && $this->isCdnUrl($theme->preview_image)) {
                 $path = $this->extractPathFromCdnUrl($theme->preview_image);
-                $this->cdnService->delete($path);
+                $this->themeCdnService->delete($path);
             }
         } else {
             // Delete from local storage
@@ -695,7 +695,7 @@ class ThemeService
     {
         if ($theme->storage_type === 'cdn' && $this->cdnEnabled) {
             // For CDN, we need to download the config file
-            $configContent = $this->cdnService->getFile($theme->path . '/config.json');
+            $configContent = $this->themeCdnService->getFile($theme->path . '/config.json');
             if ($configContent) {
                 $config = json_decode($configContent, true);
                 return is_array($config) ? $config : [];
@@ -723,7 +723,7 @@ class ThemeService
             $tempFile = tempnam(sys_get_temp_dir(), 'theme_config');
             file_put_contents($tempFile, json_encode($config, JSON_PRETTY_PRINT));
             
-            $this->cdnService->upload($tempFile, $theme->path, 'public');
+            $this->themeCdnService->upload($tempFile, $theme->path, 'public');
             
             unlink($tempFile);
         } else {
