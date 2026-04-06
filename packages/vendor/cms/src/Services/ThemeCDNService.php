@@ -88,7 +88,7 @@ class ThemeCDNService
             Log::channel('theme_cdn')->debug('Theme CDN Upload Request Details', [
                 'request_id' => $requestId,
                 'file_content_length' => strlen($fileContent),
-                'api_endpoint' => $this->baseUrl . '/upload',
+                'api_endpoint' => $this->baseUrl . '/api/upload',
                 'original_filename' => $fileName
             ]);
             
@@ -100,7 +100,7 @@ class ThemeCDNService
                     'X-API-Secret' => $this->apiSecret,
                 ])
                 ->attach('file', $fileContent, $fileName) // Original filename preserved
-                ->post($this->baseUrl . '/upload', [
+                ->post($this->baseUrl . '/api/upload', [
                     'path' => $path,
                     'visibility' => $visibility,
                     'type' => 'theme',
