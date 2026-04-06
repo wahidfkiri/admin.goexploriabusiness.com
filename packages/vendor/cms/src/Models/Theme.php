@@ -192,7 +192,7 @@ class Theme extends Model
         
         if ($this->isCdnStorage()) {
             // Get base URL from environment
-            $cdnUrl = rtrim(env('CDN_URL', 'https://upload.goexploriabusiness.com'), '/');
+            $cdnUrl = rtrim(env('THEME_CDN_URL', 'https://goexploriabusiness.com'), '/');
             $themePath = $this->getFullPath();
             return "{$cdnUrl}/storage/{$themePath}/assets/{$assetPath}";
         }
@@ -401,7 +401,7 @@ class Theme extends Model
             return false;
         }
         
-        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
+        $cdnUrl = env('THEME_CDN_URL', 'https://goexploriabusiness.com');
         return Str::startsWith($url, $cdnUrl);
     }
 
@@ -410,7 +410,7 @@ class Theme extends Model
      */
     protected function extractPathFromCdnUrl($url): string
     {
-        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
+        $cdnUrl = env('THEME_CDN_URL', 'https://goexploriabusiness.com');
         $path = str_replace($cdnUrl . '/storage/', '', $url);
         return $path;
     }
