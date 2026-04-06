@@ -20,7 +20,7 @@ class ThemeCDNService
         $this->baseUrl = rtrim(env('THEME_CDN_URL', 'https://goexploriabusiness.com'), '/');
         $this->apiKey = env('THEME_CDN_API_KEY');
         $this->apiSecret = env('THEME_CDN_API_SECRET');
-        $this->timeout = env('THEME_CDN_TIMEOUT', 60); // Longer timeout for theme files
+        $this->timeout = env('THEME_CDN_TIMEOUT', 60);
         $this->retryTimes = env('THEME_CDN_RETRY_TIMES', 3);
         
         Log::channel('theme_cdn')->info('Theme CDN Service initialized', [
@@ -33,7 +33,7 @@ class ThemeCDNService
     }
     
     /**
-     * Upload a theme file to CDN
+     * Upload a theme file to CDN - preserves original file names
      */
     public function upload($file, $path = '', $visibility = 'public')
     {
@@ -70,6 +70,7 @@ class ThemeCDNService
             }
             
             $fileContent = $this->getFileContent($file);
+            // Use original filename without any modification
             $fileName = $fileInfo['name'];
             
             if ($fileContent === false) {
@@ -87,20 +88,23 @@ class ThemeCDNService
             Log::channel('theme_cdn')->debug('Theme CDN Upload Request Details', [
                 'request_id' => $requestId,
                 'file_content_length' => strlen($fileContent),
-                'api_endpoint' => $this->baseUrl . '/api/upload'
+                'api_endpoint' => $this->baseUrl . '/upload',
+                'original_filename' => $fileName
             ]);
             
+            // Send with original filename - NO renaming
             $response = Http::timeout($this->timeout)
                 ->retry($this->retryTimes, 100)
                 ->withHeaders([
                     'X-API-Key' => $this->apiKey,
                     'X-API-Secret' => $this->apiSecret,
                 ])
-                ->attach('file', $fileContent, $fileName)
-                ->post($this->baseUrl . '/api/upload', [
+                ->attach('file', $fileContent, $fileName) // Original filename preserved
+                ->post($this->baseUrl . '/upload', [
                     'path' => $path,
                     'visibility' => $visibility,
-                    'type' => 'theme'
+                    'type' => 'theme',
+                    'preserve_filename' => true // Signal to keep original name
                 ]);
             
             $duration = round((microtime(true) - $startTime) * 1000, 2);
@@ -111,6 +115,7 @@ class ThemeCDNService
                 Log::channel('theme_cdn')->info('Theme CDN Upload Successful', [
                     'request_id' => $requestId,
                     'file_name' => $fileName,
+                    'original_name' => $fileInfo['name'],
                     'file_size' => $fileInfo['size'],
                     'duration_ms' => $duration,
                     'cdn_url' => $result['url'] ?? null,
@@ -120,7 +125,8 @@ class ThemeCDNService
                 return array_merge($result, [
                     'success' => true,
                     'request_id' => $requestId,
-                    'duration_ms' => $duration
+                    'duration_ms' => $duration,
+                    'original_name' => $fileName
                 ]);
             }
             
@@ -157,7 +163,7 @@ class ThemeCDNService
     }
     
     /**
-     * Upload an entire directory to CDN
+     * Upload an entire directory to CDN - preserves original folder structure and file names
      */
     public function uploadDirectory($sourceDir, $targetPath, $callback = null)
     {
@@ -174,16 +180,29 @@ class ThemeCDNService
                 continue;
             }
             
+            // Preserve the original relative path and filename
             $relativePath = str_replace($sourceDir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+            // Keep the original folder structure
             $cdnFilePath = $targetPath . '/' . str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
+            
+            Log::channel('theme_cdn')->info('Uploading theme file with original name', [
+                'local_path' => $file->getPathname(),
+                'cdn_path' => $cdnFilePath,
+                'original_filename' => $file->getFilename()
+            ]);
             
             $result = $this->upload($file->getPathname(), dirname($cdnFilePath), 'public');
             
             if ($result['success'] ?? false) {
-                $uploaded[] = $cdnFilePath;
+                $uploaded[] = [
+                    'local_path' => $relativePath,
+                    'cdn_path' => $cdnFilePath,
+                    'filename' => $file->getFilename()
+                ];
             } else {
                 $failed[] = [
                     'path' => $cdnFilePath,
+                    'filename' => $file->getFilename(),
                     'error' => $result['error'] ?? 'Unknown error'
                 ];
             }
@@ -235,7 +254,7 @@ class ThemeCDNService
                     'X-API-Key' => $this->apiKey,
                     'X-API-Secret' => $this->apiSecret,
                 ])
-                ->delete($this->baseUrl . '/api/file/' . urlencode($path));
+                ->delete($this->baseUrl . '/file/' . urlencode($path));
             
             $duration = round((microtime(true) - $startTime) * 1000, 2);
             
@@ -300,7 +319,7 @@ class ThemeCDNService
         ]);
         
         try {
-            $url = $this->baseUrl . '/storage/theme/' . $path;
+            $url = $this->baseUrl . '/storage/' . $path;
             
             $response = Http::timeout($this->timeout)
                 ->get($url);
@@ -355,7 +374,7 @@ class ThemeCDNService
         
         try {
             $startTime = microtime(true);
-            $response = Http::timeout(10)->get($this->baseUrl . '/api/health');
+            $response = Http::timeout(10)->get($this->baseUrl);
             $duration = round((microtime(true) - $startTime) * 1000, 2);
             
             $result = [
@@ -405,13 +424,13 @@ class ThemeCDNService
     }
     
     /**
-     * Get file information
+     * Get file information - preserves original filename
      */
     protected function getFileInfo($file): array
     {
         if ($file instanceof UploadedFile) {
             return [
-                'name' => $file->getClientOriginalName(),
+                'name' => $file->getClientOriginalName(), // Keep original name
                 'size' => $file->getSize(),
                 'mime' => $file->getMimeType(),
                 'type' => 'uploaded_file'
@@ -420,7 +439,7 @@ class ThemeCDNService
         
         if (is_string($file) && file_exists($file)) {
             return [
-                'name' => basename($file),
+                'name' => basename($file), // Keep original filename
                 'size' => filesize($file),
                 'mime' => mime_content_type($file),
                 'type' => 'file_path'
