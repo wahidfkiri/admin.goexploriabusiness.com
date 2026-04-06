@@ -87,7 +87,7 @@ class ThemeCDNService
             Log::channel('theme_cdn')->debug('Theme CDN Upload Request Details', [
                 'request_id' => $requestId,
                 'file_content_length' => strlen($fileContent),
-                'api_endpoint' => $this->baseUrl . '/api/theme/upload'
+                'api_endpoint' => $this->baseUrl . '/api/upload'
             ]);
             
             $response = Http::timeout($this->timeout)
@@ -97,7 +97,7 @@ class ThemeCDNService
                     'X-API-Secret' => $this->apiSecret,
                 ])
                 ->attach('file', $fileContent, $fileName)
-                ->post($this->baseUrl . '/api/theme/upload', [
+                ->post($this->baseUrl . '/api/upload', [
                     'path' => $path,
                     'visibility' => $visibility,
                     'type' => 'theme'
@@ -235,7 +235,7 @@ class ThemeCDNService
                     'X-API-Key' => $this->apiKey,
                     'X-API-Secret' => $this->apiSecret,
                 ])
-                ->delete($this->baseUrl . '/api/theme/file/' . urlencode($path));
+                ->delete($this->baseUrl . '/api/file/' . urlencode($path));
             
             $duration = round((microtime(true) - $startTime) * 1000, 2);
             
@@ -355,7 +355,7 @@ class ThemeCDNService
         
         try {
             $startTime = microtime(true);
-            $response = Http::timeout(10)->get($this->baseUrl . '/api/theme/health');
+            $response = Http::timeout(10)->get($this->baseUrl . '/api/health');
             $duration = round((microtime(true) - $startTime) * 1000, 2);
             
             $result = [
