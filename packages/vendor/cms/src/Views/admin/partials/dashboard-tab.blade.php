@@ -28,8 +28,8 @@
                     <h5>URL du site</h5>
                 </div>
                 <div class="info-card-body">
-                    <p><a href="{{ route('cms.company.home', ['etablissementId' => $stats['etablissement']->id]) }}" target="_blank">
-                        {{ route('cms.company.home', ['etablissementId' => $stats['etablissement']->id]) }}
+                    <p><a href="{{ env('THEME_CDN_URL', 'https://goexploriabusiness.com') . '/company/' . $stats['etablissement']->id }}" target="_blank">
+                        {{ env('THEME_CDN_URL', 'https://goexploriabusiness.com') . '/company/' . $stats['etablissement']->id }}
                     </a></p>
                     <p class="text-muted small">Voir le site en direct</p>
                     <hr>
