@@ -8,20 +8,132 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use ZipArchive;
+use Vendor\Cms\Services\ThemeCDNService;
 
 class ThemeService
 {
+    protected $themeCdnService;
+    protected $cdnEnabled;
+    
+    public function __construct(ThemeCDNService $themeCdnService)
+    {
+        $this->themeCdnService = $themeCdnService;
+        $this->cdnEnabled = env('THEME_CDN_ENABLED', false);
+    }
+    
     /**
      * Upload and extract a theme.
      */
     public function uploadTheme($file, $name, $etablissementId): Theme
     {
         $slug = Str::slug($name);
-        $themePath = "app/public/cms/themes/{$etablissementId}/{$slug}";
+        $themePath = "cms/themes/{$etablissementId}/{$slug}";
+        
+        if ($this->cdnEnabled) {
+            // Upload to CDN
+            return $this->uploadThemeToCDN($file, $name, $slug, $etablissementId, $themePath);
+        } else {
+            // Local upload (original logic)
+            return $this->uploadThemeToLocal($file, $name, $slug, $etablissementId, $themePath);
+        }
+    }
+    
+    /**
+     * Upload theme to CDN
+     */
+    protected function uploadThemeToCDN($file, $name, $slug, $etablissementId, $themePath): Theme
+    {
+        Log::info('Starting theme upload to CDN', [
+            'theme_name' => $name,
+            'slug' => $slug,
+            'etablissement_id' => $etablissementId,
+            'theme_path' => $themePath
+        ]);
+        
+        // Extract zip temporarily
+        $tempDir = storage_path("app/temp/theme_{$etablissementId}_{$slug}_" . time());
+        
+        if (!file_exists($tempDir)) {
+            if (!mkdir($tempDir, 0755, true)) {
+                throw new \Exception('Impossible de créer le dossier temporaire');
+            }
+        }
+        
+        // Extract zip
+        $zip = new ZipArchive();
+        $zipPath = $file->getPathname();
+        
+        if ($zip->open($zipPath) === true) {
+            if (!$zip->extractTo($tempDir)) {
+                throw new \Exception('Erreur lors de l\'extraction du fichier ZIP');
+            }
+            $zip->close();
+        } else {
+            throw new \Exception('Impossible d\'ouvrir le fichier ZIP');
+        }
+        
+        try {
+            // Validate theme structure
+            $this->validateThemeStructure($tempDir);
+            
+            // Upload all files to CDN
+            $this->uploadDirectoryToCDN($tempDir, $themePath);
+            
+            // Extract preview image from zip root
+            $previewImage = $this->extractPreviewImageFromCDN($zipPath, $themePath, $slug, $etablissementId);
+            
+            // Extract home page content
+            $homeContent = $this->extractHomePageContent($tempDir);
+            
+            // Check if theme already exists globally
+            $existingTheme = Theme::where('slug', $slug)->first();
+                
+            if ($existingTheme) {
+                throw new \Exception('Un thème avec ce nom existe déjà');
+            }
+            
+            // Create theme record
+            $theme = Theme::create([
+                'name' => $name,
+                'slug' => $slug,
+                'path' => $themePath,
+                'preview_image' => $previewImage,
+                'version' => $this->getThemeVersion($tempDir),
+                'description' => $this->getThemeDescription($tempDir),
+                'is_default' => Theme::count() === 0,
+                'storage_type' => 'cdn', // Add this column to your themes table
+            ]);
+            
+            // Create default home page with extracted content
+            $this->createDefaultHomePage($etablissementId, $theme, $homeContent);
+            
+            // Clean up temp directory
+            $this->deleteDirectory($tempDir);
+            
+            Log::info('Theme uploaded to CDN successfully', [
+                'theme_id' => $theme->id,
+                'theme_name' => $theme->name,
+                'cdn_path' => $themePath
+            ]);
+            
+            return $theme;
+            
+        } catch (\Exception $e) {
+            // Clean up temp directory on error
+            $this->deleteDirectory($tempDir);
+            throw $e;
+        }
+    }
+    
+    /**
+     * Upload theme to local storage (original logic)
+     */
+    protected function uploadThemeToLocal($file, $name, $slug, $etablissementId, $themePath): Theme
+    {
+        $localPath = "app/public/{$themePath}";
+        $fullPath = storage_path($localPath);
         
         // Create directory
-        $fullPath = storage_path($themePath);
-        
         if (!file_exists($fullPath)) {
             if (!mkdir($fullPath, 0755, true)) {
                 throw new \Exception('Impossible de créer le dossier du thème');
@@ -45,7 +157,7 @@ class ThemeService
         $this->validateThemeStructure($fullPath);
         
         // Extract preview image from zip root
-        $previewImage = $this->extractPreviewImage($zipPath, $fullPath, $slug, $etablissementId);
+        $previewImage = $this->extractPreviewImageLocal($zipPath, $fullPath, $slug, $etablissementId);
         
         // Extract home page content
         $homeContent = $this->extractHomePageContent($fullPath);
@@ -66,12 +178,185 @@ class ThemeService
             'version' => $this->getThemeVersion($fullPath),
             'description' => $this->getThemeDescription($fullPath),
             'is_default' => Theme::count() === 0,
+            'storage_type' => 'local', // Add this column to your themes table
         ]);
         
         // Create default home page with extracted content
         $this->createDefaultHomePage($etablissementId, $theme, $homeContent);
         
         return $theme;
+    }
+    
+    /**
+     * Upload a directory recursively to CDN
+     */
+    protected function uploadDirectoryToCDN($sourceDir, $targetPath)
+    {
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($sourceDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+        
+        foreach ($files as $file) {
+            if ($file->isDir()) {
+                continue;
+            }
+            
+            $relativePath = str_replace($sourceDir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+            $cdnFilePath = $targetPath . '/' . str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
+            
+            Log::info('Uploading theme file to CDN', [
+                'local_path' => $file->getPathname(),
+                'cdn_path' => $cdnFilePath,
+                'file_size' => $file->getSize()
+            ]);
+            
+            $uploadResult = $this->cdnService->upload($file->getPathname(), dirname($cdnFilePath), 'public');
+            
+            if (!isset($uploadResult['success']) || !$uploadResult['success']) {
+                throw new \Exception('Failed to upload file to CDN: ' . ($uploadResult['error'] ?? 'Unknown error'));
+            }
+        }
+    }
+    
+    /**
+     * Extract preview image from zip for CDN
+     */
+    protected function extractPreviewImageFromCDN($zipPath, $themePath, $slug, $etablissementId): ?string
+    {
+        $zip = new ZipArchive();
+        $previewImagePath = null;
+        
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+        
+        if ($zip->open($zipPath) === true) {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $filename = $zip->getNameIndex($i);
+                $isRootFile = !str_contains($filename, '/') || substr_count($filename, '/') === 1;
+                
+                if ($isRootFile) {
+                    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                    $basename = strtolower(pathinfo($filename, PATHINFO_FILENAME));
+                    
+                    if (in_array($extension, $imageExtensions)) {
+                        $previewNames = ['screenshot', 'preview', 'thumbnail', 'cover', 'theme-preview', 'theme'];
+                        
+                        if (in_array($basename, $previewNames)) {
+                            $imageContent = $zip->getFromName($filename);
+                            
+                            // Create temp file to upload
+                            $tempFile = tempnam(sys_get_temp_dir(), 'theme_preview');
+                            file_put_contents($tempFile, $imageContent);
+                            
+                            $previewImageName = "preview.{$extension}";
+                            $uploadResult = $this->cdnService->upload($tempFile, $themePath, 'public');
+                            
+                            unlink($tempFile);
+                            
+                            if (isset($uploadResult['success']) && $uploadResult['success']) {
+                                $previewImagePath = $uploadResult['url'];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (!$previewImagePath) {
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $filename = $zip->getNameIndex($i);
+                    $isRootFile = !str_contains($filename, '/') || substr_count($filename, '/') === 1;
+                    
+                    if ($isRootFile) {
+                        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                        
+                        if (in_array($extension, $imageExtensions)) {
+                            $imageContent = $zip->getFromName($filename);
+                            
+                            $tempFile = tempnam(sys_get_temp_dir(), 'theme_preview');
+                            file_put_contents($tempFile, $imageContent);
+                            
+                            $uploadResult = $this->cdnService->upload($tempFile, $themePath, 'public');
+                            
+                            unlink($tempFile);
+                            
+                            if (isset($uploadResult['success']) && $uploadResult['success']) {
+                                $previewImagePath = $uploadResult['url'];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            $zip->close();
+        }
+        
+        return $previewImagePath;
+    }
+    
+    /**
+     * Extract preview image locally (original logic)
+     */
+    protected function extractPreviewImageLocal($zipPath, $extractPath, $slug, $etablissementId): ?string
+    {
+        $zip = new ZipArchive();
+        $previewImagePath = null;
+        
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+        
+        if ($zip->open($zipPath) === true) {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $filename = $zip->getNameIndex($i);
+                $isRootFile = !str_contains($filename, '/') || substr_count($filename, '/') === 1;
+                
+                if ($isRootFile) {
+                    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                    $basename = strtolower(pathinfo($filename, PATHINFO_FILENAME));
+                    
+                    if (in_array($extension, $imageExtensions)) {
+                        $previewNames = ['screenshot', 'preview', 'thumbnail', 'cover', 'theme-preview', 'theme'];
+                        
+                        if (in_array($basename, $previewNames)) {
+                            $imageContent = $zip->getFromName($filename);
+                            $previewImageName = "themes/{$etablissementId}/{$slug}/preview.{$extension}";
+                            $storagePath = Storage::disk('public')->put($previewImageName, $imageContent);
+                            
+                            if ($storagePath) {
+                                $previewImagePath = $previewImageName;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (!$previewImagePath) {
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $filename = $zip->getNameIndex($i);
+                    $isRootFile = !str_contains($filename, '/') || substr_count($filename, '/') === 1;
+                    
+                    if ($isRootFile) {
+                        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                        
+                        if (in_array($extension, $imageExtensions)) {
+                            $imageContent = $zip->getFromName($filename);
+                            $previewImageName = "themes/{$etablissementId}/{$slug}/preview.{$extension}";
+                            $storagePath = Storage::disk('public')->put($previewImageName, $imageContent);
+                            
+                            if ($storagePath) {
+                                $previewImagePath = $previewImageName;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            $zip->close();
+        }
+        
+        return $previewImagePath;
     }
     
     /**
@@ -96,25 +381,6 @@ class ThemeService
                 return $this->cleanHtmlContent($content);
             }
         }
-        
-        // Chercher dans le dossier pages
-        // $pagesDir = $themePath . '/pages';
-        // if (file_exists($pagesDir)) {
-        //     $pageFiles = ['home.html', 'index.html', 'home.blade.php'];
-        //     foreach ($pageFiles as $file) {
-        //         $filePath = $pagesDir . '/' . $file;
-        //         if (file_exists($filePath)) {
-        //             $content = file_get_contents($filePath);
-        //             Log::info('Home page content found in pages/' . $file);
-                    
-        //             if (str_ends_with($file, '.blade.php')) {
-        //                 $content = $this->extractBladeContent($content);
-        //             }
-                    
-        //             return $this->cleanHtmlContent($content);
-        //         }
-        //     }
-        // }
         
         Log::info('No home page content found in theme, using default');
         return null;
@@ -166,16 +432,6 @@ class ThemeService
      */
     protected function createDefaultHomePage($etablissementId, $theme, $homeContent = null)
     {
-        // Vérifier si une page d'accueil existe déjà
-        $existingHome = Page::where('etablissement_id', $etablissementId)
-            ->where('is_home', true)
-            ->first();
-        
-        // if ($existingHome) {
-        //     Log::info('Home page already exists for etablissement ' . $etablissementId . ', skipping creation');
-        //     return;
-        // }
-        
         // Si un contenu a été extrait, l'utiliser
         if ($homeContent && !empty(trim($homeContent))) {
             $content = $homeContent;
@@ -236,70 +492,6 @@ class ThemeService
                 </div>
             </div>
         </section>';
-    }
-    
-    /**
-     * Extract preview image from zip root.
-     */
-    protected function extractPreviewImage($zipPath, $extractPath, $slug, $etablissementId): ?string
-    {
-        $zip = new ZipArchive();
-        $previewImagePath = null;
-        
-        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
-        
-        if ($zip->open($zipPath) === true) {
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $filename = $zip->getNameIndex($i);
-                $isRootFile = !str_contains($filename, '/') || substr_count($filename, '/') === 1;
-                
-                if ($isRootFile) {
-                    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-                    $basename = strtolower(pathinfo($filename, PATHINFO_FILENAME));
-                    
-                    if (in_array($extension, $imageExtensions)) {
-                        $previewNames = ['screenshot', 'preview', 'thumbnail', 'cover', 'theme-preview', 'theme'];
-                        
-                        if (in_array($basename, $previewNames)) {
-                            $imageContent = $zip->getFromName($filename);
-                            $previewImageName = "themes/{$etablissementId}/{$slug}/preview.{$extension}";
-                            $storagePath = Storage::disk('public')->put($previewImageName, $imageContent);
-                            
-                            if ($storagePath) {
-                                $previewImagePath = $previewImageName;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            if (!$previewImagePath) {
-                for ($i = 0; $i < $zip->numFiles; $i++) {
-                    $filename = $zip->getNameIndex($i);
-                    $isRootFile = !str_contains($filename, '/') || substr_count($filename, '/') === 1;
-                    
-                    if ($isRootFile) {
-                        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-                        
-                        if (in_array($extension, $imageExtensions)) {
-                            $imageContent = $zip->getFromName($filename);
-                            $previewImageName = "themes/{$etablissementId}/{$slug}/preview.{$extension}";
-                            $storagePath = Storage::disk('public')->put($previewImageName, $imageContent);
-                            
-                            if ($storagePath) {
-                                $previewImagePath = $previewImageName;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            $zip->close();
-        }
-        
-        return $previewImagePath;
     }
     
     /**
@@ -397,15 +589,44 @@ class ThemeService
     public function deleteThemeFiles(Theme $theme, $etablissementId = null): void
     {
         $etablissementId = $etablissementId ?: $theme->etablissement_id;
-        $fullPath = storage_path("app/public/cms/themes/{$etablissementId}/{$theme->slug}");
         
-        if (file_exists($fullPath)) {
-            $this->deleteDirectory($fullPath);
+        if ($theme->storage_type === 'cdn' && $this->cdnEnabled) {
+            // Delete from CDN
+            $cdnPath = "cms/themes/{$etablissementId}/{$theme->slug}";
+            $this->deleteDirectoryFromCDN($cdnPath);
+            
+            if ($theme->preview_image && $this->isCdnUrl($theme->preview_image)) {
+                $path = $this->extractPathFromCdnUrl($theme->preview_image);
+                $this->cdnService->delete($path);
+            }
+        } else {
+            // Delete from local storage
+            $fullPath = storage_path("app/public/cms/themes/{$etablissementId}/{$theme->slug}");
+            
+            if (file_exists($fullPath)) {
+                $this->deleteDirectory($fullPath);
+            }
+            
+            if ($theme->preview_image && Storage::disk('public')->exists($theme->preview_image)) {
+                Storage::disk('public')->delete($theme->preview_image);
+            }
         }
+    }
+    
+    /**
+     * Delete a directory recursively from CDN
+     */
+    protected function deleteDirectoryFromCDN($cdnPath)
+    {
+        // Note: CDN might not support directory deletion
+        // You may need to implement listing and deleting files individually
+        // or use a CDN API endpoint that supports directory deletion
+        Log::warning('Directory deletion from CDN may not be fully supported', [
+            'path' => $cdnPath
+        ]);
         
-        if ($theme->preview_image && Storage::disk('public')->exists($theme->preview_image)) {
-            Storage::disk('public')->delete($theme->preview_image);
-        }
+        // You can implement a list and delete approach if your CDN supports listing
+        // For now, we'll log that we need to delete files individually
     }
     
     /**
@@ -472,14 +693,24 @@ class ThemeService
      */
     public function getThemeConfig(Theme $theme): array
     {
-        $configFile = storage_path($theme->path . '/config.json');
-        
-        if (file_exists($configFile)) {
-            $config = json_decode(file_get_contents($configFile), true);
-            return is_array($config) ? $config : [];
+        if ($theme->storage_type === 'cdn' && $this->cdnEnabled) {
+            // For CDN, we need to download the config file
+            $configContent = $this->cdnService->getFile($theme->path . '/config.json');
+            if ($configContent) {
+                $config = json_decode($configContent, true);
+                return is_array($config) ? $config : [];
+            }
+            return [];
+        } else {
+            $configFile = storage_path($theme->path . '/config.json');
+            
+            if (file_exists($configFile)) {
+                $config = json_decode(file_get_contents($configFile), true);
+                return is_array($config) ? $config : [];
+            }
+            
+            return [];
         }
-        
-        return [];
     }
     
     /**
@@ -487,8 +718,19 @@ class ThemeService
      */
     public function saveThemeConfig(Theme $theme, array $config): void
     {
-        $configFile = storage_path($theme->path . '/config.json');
-        file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT));
+        if ($theme->storage_type === 'cdn' && $this->cdnEnabled) {
+            // For CDN, we need to upload the config file
+            $tempFile = tempnam(sys_get_temp_dir(), 'theme_config');
+            file_put_contents($tempFile, json_encode($config, JSON_PRETTY_PRINT));
+            
+            $this->cdnService->upload($tempFile, $theme->path, 'public');
+            
+            unlink($tempFile);
+        } else {
+            $configFile = storage_path($theme->path . '/config.json');
+            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT));
+        }
+        
         $theme->config = $config;
         $theme->save();
     }
@@ -499,14 +741,20 @@ class ThemeService
     public function duplicateTheme(Theme $theme, string $newName, $etablissementId): Theme
     {
         $newSlug = Str::slug($newName);
-        $newPath = "app/public/cms/themes/{$etablissementId}/{$newSlug}";
+        $newPath = "cms/themes/{$etablissementId}/{$newSlug}";
         
-        $sourcePath = storage_path("app/public/cms/themes/{$etablissementId}/{$theme->slug}");
-        $destPath = storage_path($newPath);
-        
-        if (!file_exists($destPath)) {
-            mkdir($destPath, 0755, true);
-            $this->copyDirectory($sourcePath, $destPath);
+        if ($theme->storage_type === 'cdn' && $this->cdnEnabled) {
+            // For CDN, we need to copy files from source to destination
+            // This requires listing source files and uploading them to new location
+            throw new \Exception('Theme duplication from CDN is not yet implemented');
+        } else {
+            $sourcePath = storage_path("app/public/cms/themes/{$etablissementId}/{$theme->slug}");
+            $destPath = storage_path("app/public/{$newPath}");
+            
+            if (!file_exists($destPath)) {
+                mkdir($destPath, 0755, true);
+                $this->copyDirectory($sourcePath, $destPath);
+            }
         }
         
         $newTheme = Theme::create([
@@ -517,6 +765,7 @@ class ThemeService
             'description' => $theme->description,
             'config' => $theme->config,
             'is_default' => false,
+            'storage_type' => $theme->storage_type,
         ]);
         
         return $newTheme;
@@ -593,5 +842,28 @@ class ThemeService
         $etablissement = \App\Models\Etablissement::findOrFail($etablissementId);
         $etablissement->themes()->detach($themeId);
         $this->clearThemeCache($etablissementId);
+    }
+    
+    /**
+     * Check if a URL is from our CDN
+     */
+    protected function isCdnUrl($url)
+    {
+        if (!$url) {
+            return false;
+        }
+        
+        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
+        return Str::startsWith($url, $cdnUrl);
+    }
+    
+    /**
+     * Extract the storage path from a CDN URL
+     */
+    protected function extractPathFromCdnUrl($url)
+    {
+        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
+        $path = str_replace($cdnUrl . '/storage/', '', $url);
+        return $path;
     }
 }

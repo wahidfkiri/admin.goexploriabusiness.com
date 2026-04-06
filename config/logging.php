@@ -142,6 +142,14 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'theme_cdn' => [
+        'driver' => 'daily',
+        'path' => storage_path('logs/theme-cdn.log'),
+        'level' => env('LOG_LEVEL', 'debug'),
+        'days' => 14,
+    ],
+
+
     ],
 
 ];

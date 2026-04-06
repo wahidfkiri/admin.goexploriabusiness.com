@@ -116,10 +116,16 @@ if (!function_exists('getThemeStoragePath')) {
     {
         $etablissementId = $etablissementId ?: getCurrentEtablissementId();
         
-        // Nouveau chemin: storage/app/public/cms/themes/{etablissementId}/{slug}/
+        if ($theme->isCdnStorage()) {
+            // For CDN, return the virtual path
+            return "cms/themes/{$etablissementId}/{$theme->slug}";
+        }
+        
+        // Local storage path
         return storage_path("app/public/cms/themes/{$etablissementId}/{$theme->slug}");
     }
 }
+
 if (!function_exists('theme_asset')) {
     /**
      * Get the URL for a theme asset.
@@ -136,7 +142,13 @@ if (!function_exists('theme_asset')) {
             return asset($path);
         }
         
-        // Nouvelle URL: /storage/cms/themes/{etablissementId}/{slug}/assets/{path}
+        // Check if theme uses CDN storage
+         if ($theme->isCdnStorage()) {
+            $cdnUrl = rtrim(env('THEME_CDN_URL', 'https://goexploriabusiness.com'), '/');
+            return "{$cdnUrl}/storage/theme/cms/themes/{$etablissement->id}/{$theme->slug}/assets/" . ltrim($path, '/');
+        }
+        
+        // Local storage URL
         return url("/storage/cms/themes/{$etablissement->id}/{$theme->slug}/assets/" . ltrim($path, '/'));
     }
 }
@@ -157,7 +169,12 @@ if (!function_exists('theme_path')) {
             return storage_path('app/public/cms/themes/default/' . ltrim($path, '/'));
         }
         
-        // Nouveau chemin: storage/app/public/cms/themes/{etablissementId}/{slug}/
+        if ($theme->isCdnStorage()) {
+            // For CDN, return the virtual path (no physical file)
+            return "cms/themes/{$etablissement->id}/{$theme->slug}/" . ltrim($path, '/');
+        }
+        
+        // Local storage path
         return storage_path("app/public/cms/themes/{$etablissement->id}/{$theme->slug}/" . ltrim($path, '/'));
     }
 }
@@ -179,9 +196,48 @@ if (!function_exists('render_theme_view')) {
             return view($view, $data);
         }
         
-        $themePath = storage_path("app/public/cms/themes/{$etablissement->id}/{$theme->slug}");
+        $themePath = $theme->isCdnStorage() 
+            ? "cms/themes/{$etablissement->id}/{$theme->slug}"
+            : storage_path("app/public/cms/themes/{$etablissement->id}/{$theme->slug}");
+        
         $viewPath = str_replace('.', '/', $view);
         
+        // For CDN, we need to check if view exists via API
+        if ($theme->isCdnStorage()) {
+            $cdnService = app(\App\Services\CDNService::class);
+            $viewFile = $themePath . '/' . $viewPath . '.blade.php';
+            $content = $cdnService->getFile($viewFile);
+            
+            if (!$content) {
+                return view($view, $data);
+            }
+            
+            // For CDN, we need to load the view content dynamically
+            // This is a simplified approach - you might want to implement a proper view loader
+            $namespace = 'theme_' . $theme->slug;
+            
+            // Create a temporary view file for CDN content
+            $tempViewPath = storage_path("app/temp/views/{$namespace}_{$view}.blade.php");
+            if (!file_exists(dirname($tempViewPath))) {
+                mkdir(dirname($tempViewPath), 0755, true);
+            }
+            file_put_contents($tempViewPath, $content);
+            
+            \Illuminate\Support\Facades\View::addNamespace($namespace, dirname($tempViewPath));
+            
+            $data['activeTheme'] = $theme;
+            $data['etablissement'] = $etablissement;
+            
+            $result = view($namespace . '::' . basename($tempViewPath, '.blade.php'), $data);
+            
+            // Clean up temp file after rendering
+            // Note: You might want to cache these instead of recreating every time
+            // unlink($tempViewPath);
+            
+            return $result;
+        }
+        
+        // Local storage - original logic
         if (!file_exists($themePath . '/' . $viewPath . '.blade.php')) {
             return view($view, $data);
         }
@@ -374,6 +430,8 @@ if (!function_exists('debug_current_theme')) {
             'theme_name' => $theme ? $theme->name : null,
             'theme_slug' => $theme ? $theme->slug : null,
             'theme_path' => $theme ? $theme->path : null,
+            'storage_type' => $theme ? $theme->storage_type : null,
+            'is_cdn' => $theme ? $theme->isCdnStorage() : false,
             'is_default' => $theme ? $theme->is_default : false,
             'preview_mode' => is_preview_mode(),
             'session_preview' => session('theme_preview_mode', false),
@@ -440,8 +498,9 @@ if (!function_exists('get_theme_by_slug')) {
     {
         return \Vendor\Cms\Models\Theme::where('slug', $slug)->first();
     }
+}
 
-    if (!function_exists('theme_view')) {
+if (!function_exists('theme_view')) {
     /**
      * Get the full view name for a theme view.
      *
@@ -459,4 +518,34 @@ if (!function_exists('get_theme_by_slug')) {
         return 'theme_' . $theme->slug . '::' . $view;
     }
 }
+
+if (!function_exists('get_theme_file_content')) {
+    /**
+     * Get theme file content (works for both local and CDN).
+     *
+     * @param string $relativePath
+     * @return string|null
+     */
+    function get_theme_file_content($relativePath)
+    {
+        $etablissement = getCurrentEtablissement();
+        $theme = getCurrentTheme();
+        
+        if (!$etablissement || !$theme) {
+            return null;
+        }
+        
+        if ($theme->isCdnStorage()) {
+            $cdnService = app(\App\Services\CDNService::class);
+            $fullPath = "cms/themes/{$etablissement->id}/{$theme->slug}/" . ltrim($relativePath, '/');
+            return $cdnService->getFile($fullPath);
+        }
+        
+        $fullPath = storage_path("app/public/cms/themes/{$etablissement->id}/{$theme->slug}/" . ltrim($relativePath, '/'));
+        if (file_exists($fullPath)) {
+            return file_get_contents($fullPath);
+        }
+        
+        return null;
+    }
 }
