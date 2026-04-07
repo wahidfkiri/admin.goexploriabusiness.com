@@ -31,7 +31,7 @@
     <div class="config-item">
         <label>Logo du site</label>
         <input type="file" name="site_logo" accept="image/*">
-        @if($logo = $etablissement->getSetting('site_logo'))
+        @if($logo = $stats['etablissement']->getSetting('site_logo'))
             <img src="{{ Storage::url($logo) }}" width="150">
         @endif
     </div>

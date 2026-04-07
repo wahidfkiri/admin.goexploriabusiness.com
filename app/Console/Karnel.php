@@ -5,6 +5,8 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use App\Models\Etablissement;
+use Illuminate\Support\Facades\Cache;
 
 class Kernel extends ConsoleKernel
 {
@@ -30,6 +32,16 @@ class Kernel extends ConsoleKernel
     
     // Vérifier les campagnes en échec
     $schedule->command('mail:check-logs --errors-only')->daily();
+
+     $schedule->call(function () {
+        // Mettre à jour les stats SEO quotidiennement
+        $etablissements = Etablissement::all();
+        foreach ($etablissements as $etab) {
+            Cache::forget("seo_indexed_pages_{$etab->id}");
+            Cache::forget("seo_top_keywords_{$etab->id}");
+            // etc...
+        }
+    })->daily();
     }
 
     /**
