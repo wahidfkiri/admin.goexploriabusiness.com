@@ -18,9 +18,25 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Auth;
+use App\Services\CDNService;
 
 class SettingController extends Controller
 {
+
+     protected $cdnService;
+    protected $cdnEnabled;
+    
+    public function __construct(CDNService $cdnService)
+    {
+        $this->cdnService = $cdnService;
+        $this->cdnEnabled = env('CDN_ENABLED', false);
+        
+        Log::channel('cms_debug')->info('SettingController initialized', [
+            'cdn_enabled' => $this->cdnEnabled,
+            'cdn_url' => env('CDN_URL'),
+            'app_url' => env('APP_URL')
+        ]);
+    }
     /**
      * Display a listing of settings.
      */
@@ -560,15 +576,6 @@ class SettingController extends Controller
     }
 
     /**
-     * Clear settings cache.
-     */
-    protected function clearSettingsCache($etablissementId): void
-    {
-        Cache::forget("settings_{$etablissementId}");
-        Cache::forget("settings_group_{$etablissementId}_*");
-    }
-
-    /**
      * Check if user has access to etablissement.
      */
     protected function userHasAccess($user, $etablissement): bool
@@ -777,8 +784,8 @@ protected function truncateText($text, $length): string
     return substr($text, 0, $length - 3) . '...';
 }
 
- /**
-     * Upload a file (logo, favicon, etc.)
+    /**
+     * Upload a file (logo, favicon, etc.) with CDN support
      */
     public function uploadFile(Request $request, $etablissementId): JsonResponse
     {
@@ -802,6 +809,15 @@ protected function truncateText($text, $length): string
             $file = $request->file('file');
             $field = $request->input('field');
             
+            Log::info('Starting file upload for settings', [
+                'etablissement_id' => $etablissementId,
+                'field' => $field,
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'cdn_enabled' => $this->cdnEnabled,
+            ]);
+            
             // Valider le type de fichier selon le champ
             $allowedTypes = $this->getAllowedFileTypes($field);
             if (!in_array($file->getMimeType(), $allowedTypes)) {
@@ -813,34 +829,26 @@ protected function truncateText($text, $length): string
             
             // Valider les dimensions pour le favicon
             if ($field === 'site_favicon') {
-                $this->validateFaviconDimensions($file);
+                try {
+                    $this->validateFaviconDimensions($file);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $e->getMessage()
+                    ], 422);
+                }
             }
-            
-            // Générer un nom unique
-            $extension = $file->getClientOriginalExtension();
-            $filename = $field . '_' . $etablissementId . '_' . time() . '_' . Str::random(10) . '.' . $extension;
-            
-            // Chemin de stockage
-            $path = "settings/{$etablissementId}/{$filename}";
             
             // Supprimer l'ancien fichier s'il existe
             $oldFile = $etablissement->getSetting($field, null, 'general');
-            if ($oldFile && Storage::disk('public')->exists($oldFile)) {
-                Storage::disk('public')->delete($oldFile);
+            if ($oldFile) {
+                $this->deleteFile($oldFile);
             }
             
-            // Stocker le nouveau fichier
-            $storedPath = Storage::disk('public')->putFileAs(
-                "settings/{$etablissementId}",
-                $file,
-                $filename
-            );
+            // Upload du nouveau fichier via CDN ou local
+            $fileUrl = $this->uploadFileToStorage($file, $field, $etablissementId);
             
-            if (!$storedPath) {
-                throw new \Exception('Erreur lors du stockage du fichier');
-            }
-            
-            // Sauvegarder le chemin dans les settings
+            // Sauvegarder l'URL complète dans les settings
             Setting::updateOrCreate(
                 [
                     'etablissement_id' => $etablissement->id,
@@ -848,7 +856,7 @@ protected function truncateText($text, $length): string
                     'key' => $field
                 ],
                 [
-                    'value' => $storedPath,
+                    'value' => $fileUrl, // Stocker l'URL complète
                     'type' => 'string'
                 ]
             );
@@ -856,14 +864,19 @@ protected function truncateText($text, $length): string
             // Vider le cache
             $this->clearSettingsCache($etablissement->id);
             
-            // Générer l'URL publique
-            $publicUrl = Storage::disk('public')->url($storedPath);
+            Log::info('File uploaded successfully for settings', [
+                'etablissement_id' => $etablissementId,
+                'field' => $field,
+                'file_url' => $fileUrl,
+                'storage_type' => $this->cdnEnabled ? 'CDN' : 'Local',
+            ]);
             
             return response()->json([
                 'success' => true,
                 'message' => 'Fichier téléchargé avec succès',
-                'path' => $publicUrl,
-                'stored_path' => $storedPath
+                'path' => $fileUrl,
+                'stored_path' => $fileUrl,
+                'storage_type' => $this->cdnEnabled ? 'cdn' : 'local',
             ]);
             
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -873,12 +886,72 @@ protected function truncateText($text, $length): string
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            Log::error('File upload error: ' . $e->getMessage());
+            Log::error('File upload error: ' . $e->getMessage(), [
+                'etablissement_id' => $etablissementId ?? null,
+                'field' => $request->input('field') ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors du téléchargement: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+     /**
+     * Upload file to storage (CDN or Local)
+     */
+    private function uploadFileToStorage($file, string $field, int $etablissementId): string
+    {
+        // Déterminer le dossier de destination
+        $folder = $field === 'site_logo' ? 'logos' : 'favicons';
+        $path = "settings/{$etablissementId}/{$folder}";
+        
+        // Générer un nom de fichier unique
+        $extension = $file->getClientOriginalExtension();
+        $filename = $field . '_' . $etablissementId . '_' . time() . '_' . Str::random(10) . '.' . $extension;
+        
+        if ($this->cdnEnabled) {
+            // Upload vers CDN
+            Log::info('Uploading to CDN', [
+                'filename' => $filename,
+                'path' => $path,
+                'field' => $field,
+            ]);
+            
+            $uploadResult = $this->cdnService->upload($file, $path, 'public');
+            
+            if (isset($uploadResult['success']) && $uploadResult['success']) {
+                $fullUrl = $uploadResult['url']; // URL CDN complète
+                
+                Log::info('File uploaded to CDN successfully', [
+                    'cdn_url' => $fullUrl,
+                    'response' => $uploadResult,
+                ]);
+                
+                return $fullUrl;
+            } else {
+                throw new \Exception('CDN upload failed: ' . json_encode($uploadResult));
+            }
+        } else {
+            // Upload local
+            $storedPath = $file->storeAs($path, $filename, 'public');
+            
+            if (!$storedPath) {
+                throw new \Exception('Failed to store file locally');
+            }
+            
+            // Construire l'URL locale
+            $baseUrl = rtrim(env('APP_URL', 'https://admin.goexploriabusiness.com'), '/');
+            $fullUrl = $baseUrl . '/storage/' . $storedPath;
+            
+            Log::info('File stored locally successfully', [
+                'stored_path' => $storedPath,
+                'full_url' => $fullUrl,
+            ]);
+            
+            return $fullUrl;
         }
     }
     
@@ -909,10 +982,15 @@ protected function truncateText($text, $length): string
             $currentFile = $etablissement->getSetting($field, null, 'general');
             
             if ($currentFile) {
+                Log::info('Removing file for settings', [
+                    'etablissement_id' => $etablissementId,
+                    'field' => $field,
+                    'file_url' => $currentFile,
+                    'cdn_enabled' => $this->cdnEnabled,
+                ]);
+                
                 // Supprimer le fichier physique
-                if (Storage::disk('public')->exists($currentFile)) {
-                    Storage::disk('public')->delete($currentFile);
-                }
+                $this->deleteFile($currentFile);
                 
                 // Supprimer l'entrée dans les settings
                 Setting::where('etablissement_id', $etablissement->id)
@@ -922,6 +1000,11 @@ protected function truncateText($text, $length): string
                 
                 // Vider le cache
                 $this->clearSettingsCache($etablissement->id);
+                
+                Log::info('File removed successfully for settings', [
+                    'etablissement_id' => $etablissementId,
+                    'field' => $field,
+                ]);
             }
             
             return response()->json([
@@ -930,13 +1013,175 @@ protected function truncateText($text, $length): string
             ]);
             
         } catch (\Exception $e) {
-            Log::error('File remove error: ' . $e->getMessage());
+            Log::error('File remove error: ' . $e->getMessage(), [
+                'etablissement_id' => $etablissementId ?? null,
+                'field' => $request->input('field') ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la suppression: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+
+    /**
+     * Delete a file from either local storage or CDN
+     */
+    private function deleteFile($fileUrl): bool
+    {
+        if (!$fileUrl) {
+            return false;
+        }
+        
+        try {
+            // Vérifier si c'est une URL CDN
+            if ($this->isCdnUrl($fileUrl)) {
+                // Extraire le chemin depuis l'URL CDN
+                $path = $this->extractPathFromCdnUrl($fileUrl);
+                
+                Log::info('Deleting file from CDN', [
+                    'url' => $fileUrl,
+                    'path' => $path,
+                ]);
+                
+                $result = $this->cdnService->delete($path);
+                
+                if (isset($result['success']) && $result['success']) {
+                    Log::info('File deleted from CDN successfully', ['path' => $path]);
+                    return true;
+                } else {
+                    Log::warning('Failed to delete from CDN', ['path' => $path, 'result' => $result]);
+                    return false;
+                }
+            } 
+            // Suppression du stockage local
+            else {
+                $relativePath = $this->extractRelativePath($fileUrl);
+                
+                Log::info('Deleting file from local storage', [
+                    'url' => $fileUrl,
+                    'relative_path' => $relativePath,
+                ]);
+                
+                if ($relativePath && Storage::disk('public')->exists($relativePath)) {
+                    $deleted = Storage::disk('public')->delete($relativePath);
+                    Log::info('Local file deletion result', [
+                        'deleted' => $deleted,
+                        'path' => $relativePath,
+                    ]);
+                    return $deleted;
+                }
+                
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Error deleting file', [
+                'file_url' => $fileUrl,
+                'error' => $e->getMessage(),
+                'cdn_enabled' => $this->cdnEnabled,
+            ]);
+            return false;
+        }
+    }
+    
+    /**
+     * Optimize uploaded image (optional)
+     */
+    protected function optimizeImage($file, string $path): void
+    {
+        try {
+            $image = \Intervention\Image\Facades\Image::make($file);
+            
+            // Optimiser la qualité
+            $image->encode(null, 85);
+            
+            // Redimensionner si trop grand
+            if ($image->width() > 1200) {
+                $image->resize(1200, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                });
+            }
+            
+            // Sauvegarder
+            $image->save(Storage::disk('public')->path($path));
+            
+        } catch (\Exception $e) {
+            Log::warning('Image optimization failed: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get file URL helper
+     */
+    public function getFileUrl($etablissementId, string $field): ?string
+    {
+        $etablissement = Etablissement::find($etablissementId);
+        if (!$etablissement) {
+            return null;
+        }
+        
+        $path = $etablissement->getSetting($field, null, 'general');
+        
+        if ($path && Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->url($path);
+        }
+        
+        return null;
+    }
+
+    
+    /**
+     * Check if a URL is from our CDN
+     */
+    private function isCdnUrl($url): bool
+    {
+        if (!$url) {
+            return false;
+        }
+        
+        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
+        return Str::startsWith($url, $cdnUrl);
+    }
+    
+    /**
+     * Extract the storage path from a CDN URL
+     */
+    private function extractPathFromCdnUrl($url): string
+    {
+        $cdnUrl = env('CDN_URL', 'https://upload.goexploriabusiness.com');
+        $path = str_replace($cdnUrl . '/storage/', '', $url);
+        return $path;
+    }
+    
+    /**
+     * Extract relative path from local URL
+     */
+    private function extractRelativePath($url): ?string
+    {
+        // Si c'est déjà un chemin relatif
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return $url;
+        }
+        
+        // Extraire le chemin après /storage/
+        $pattern = '#/storage/(.*)$#';
+        if (preg_match($pattern, $url, $matches)) {
+            return $matches[1];
+        }
+        
+        // Supprimer l'URL de base
+        $baseUrl = rtrim(env('APP_URL', 'http://localhost:8000'), '/');
+        if (strpos($url, $baseUrl) === 0) {
+            $relative = substr($url, strlen($baseUrl));
+            $relative = preg_replace('#^/storage/#', '', $relative);
+            return $relative;
+        }
+        
+        return null;
     }
     
     /**
@@ -990,48 +1235,12 @@ protected function truncateText($text, $length): string
     }
     
     /**
-     * Optimize uploaded image (optional)
+     * Clear settings cache
      */
-    protected function optimizeImage($file, string $path): void
+    protected function clearSettingsCache($etablissementId): void
     {
-        try {
-            $image = \Intervention\Image\Facades\Image::make($file);
-            
-            // Optimiser la qualité
-            $image->encode(null, 85);
-            
-            // Redimensionner si trop grand
-            if ($image->width() > 1200) {
-                $image->resize(1200, null, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                });
-            }
-            
-            // Sauvegarder
-            $image->save(Storage::disk('public')->path($path));
-            
-        } catch (\Exception $e) {
-            Log::warning('Image optimization failed: ' . $e->getMessage());
-        }
+        Cache::forget("settings_{$etablissementId}");
+        Cache::forget("settings_group_{$etablissementId}_*");
     }
     
-    /**
-     * Get file URL helper
-     */
-    public function getFileUrl($etablissementId, string $field): ?string
-    {
-        $etablissement = Etablissement::find($etablissementId);
-        if (!$etablissement) {
-            return null;
-        }
-        
-        $path = $etablissement->getSetting($field, null, 'general');
-        
-        if ($path && Storage::disk('public')->exists($path)) {
-            return Storage::disk('public')->url($path);
-        }
-        
-        return null;
-    }
 }
