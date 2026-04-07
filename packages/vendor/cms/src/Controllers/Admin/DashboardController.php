@@ -36,6 +36,17 @@ class DashboardController extends Controller
             // ============================================
             $pages = Page::where('etablissement_id', $etablissement->id);
             $allPages = Page::where('etablissement_id', $etablissement->id)->get();
+
+            // Tous les thèmes globaux disponibles (pour l'onglet Thèmes du dashboard)
+$allGlobalThemes = \Vendor\Cms\Models\Theme::orderBy('created_at', 'desc')->get();
+ 
+// IDs des thèmes déjà liés à cet établissement
+$myThemeIds = $etablissement->themes()->pluck('cms_themes.id')->toArray();
+ 
+// Thème actif pour cet établissement
+$activeTheme = $etablissement->themes()
+    ->wherePivot('is_active', true)
+    ->first();
             
             $stats = [
                 // Statistiques pages
@@ -49,15 +60,12 @@ class DashboardController extends Controller
                 // ============================================
                 // STATISTIQUES THÈMES (NOUVELLE ARCHITECTURE)
                 // ============================================
-                'total_themes' => $etablissement->themes()->count(),
-                'active_theme' => $etablissement->themes()
-                    ->wherePivot('is_active', true)
-                    ->first(),
-                'themes' => $etablissement->themes()->get(),
+                
                 'recent_themes' => $etablissement->themes()
                     ->orderBy('created_at', 'desc')
                     ->limit(5)
                     ->get(),
+
                 
                 // ============================================
                 // STATISTIQUES MÉDIATHÈQUE
@@ -112,6 +120,19 @@ class DashboardController extends Controller
                 'etablissement' => $etablissement,
                 'user' => $user,
             ];
+
+            
+                    // Dans $stats, ajouter/remplacer :
+$stats['total_themes']      = $allGlobalThemes->count();         // total global
+$stats['all_global_themes'] = $allGlobalThemes;                  // tous les thèmes globaux
+$stats['my_theme_ids']      = $myThemeIds;                       // thèmes liés à l'établissement
+$stats['active_theme']      = $activeTheme;                      // thème actif
+$stats['themes']            = $etablissement->themes()->get();   // thèmes liés (pour compat)
+$stats['homepage']          = optional(
+    \Vendor\Cms\Models\Page::where('etablissement_id', $etablissement->id)
+        ->where('is_home', true)
+        ->first()
+)->title ?? 'Non définie';
             
             return view('cms::admin.dashboard', compact('stats'));
             
