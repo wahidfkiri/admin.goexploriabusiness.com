@@ -123,22 +123,22 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Configuration des uploads
-    const uploadConfigs = {
-        logo: {
-            accept: ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'],
-            maxSize: 2 * 1024 * 1024, // 2MB
-            field: 'site_logo',
-            preview: 'logo',
-            endpoint: '{{ url("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
-        },
-        favicon: {
-            accept: ['image/x-icon', 'image/png', 'image/svg+xml'],
-            maxSize: 1 * 1024 * 1024, // 1MB
-            field: 'site_favicon',
-            preview: 'favicon',
-            endpoint: '{{ route("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
-        }
-    };
+const uploadConfigs = {
+    logo: {
+        accept: ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'],
+        maxSize: 2 * 1024 * 1024, // 2MB
+        field: 'site_logo',
+        preview: 'logo',
+        endpoint: '{{ route("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
+    },
+    favicon: {
+        accept: ['image/x-icon', 'image/png', 'image/svg+xml'],
+        maxSize: 1 * 1024 * 1024, // 1MB
+        field: 'site_favicon',
+        preview: 'favicon',
+        endpoint: '{{ route("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
+    }
+};
     
     // Initialiser les uploads
     Object.keys(uploadConfigs).forEach(type => {
