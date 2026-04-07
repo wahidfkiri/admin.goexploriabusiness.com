@@ -120,7 +120,7 @@
       </a>
     </li> -->
     <li>
-      <a href="{{route('admin.themes.index')}}" class="menu-item">
+      <a href="{{route('cms.admin.themes.index')}}" class="menu-item">
         <span class="menu-icon">
           <i class="fas fa-palette"></i>
         </span>
