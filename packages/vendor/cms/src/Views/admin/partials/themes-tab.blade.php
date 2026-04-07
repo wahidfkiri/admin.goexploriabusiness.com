@@ -112,11 +112,12 @@
                                     <i class="fas fa-play"></i> Activer
                                 </button>
                             @endif
-
-                            <a href="{{ route('cms.admin.etab.themes.preview', ['etablissementId' => $stats['etablissement']->id, 'id' => $theme->id]) }}"
-                               class="tcd-btn tcd-btn-preview" target="_blank" title="Prévisualiser">
-                                <i class="fas fa-eye"></i>
-                            </a>
+                            @if($isAttached && $isActive)
+                                <a href="{{ env('THEME_CDN_URL', 'https://goexploriabusiness.com') }}/company/{{ $stats['etablissement']->id }}"
+                                   class="tcd-btn tcd-btn-preview" target="_blank" title="Prévisualiser">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </div>

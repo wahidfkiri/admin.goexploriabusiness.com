@@ -96,10 +96,10 @@ if (!function_exists('getCurrentTheme')) {
         }
         
         // Fallback ultime: thème par défaut global
-        // if (!$activeTheme) {
-        //     $activeTheme = \Vendor\Cms\Models\Theme::where('is_default', true)->first();
-        // }
-        return null;
+        if (!$activeTheme) {
+            $activeTheme = \Vendor\Cms\Models\Theme::where('is_default', true)->first();
+        }
+        
         return $activeTheme;
     }
 }
