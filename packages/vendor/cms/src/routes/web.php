@@ -116,6 +116,10 @@ Route::prefix('/seo')->name('seo.')->group(function () {
             Route::get('/{group}', [AdminSettingController::class, 'group'])->name('group');
             Route::post('/bulk', [AdminSettingController::class, 'bulkUpdate'])->name('bulk');
             Route::post('/reset', [AdminSettingController::class, 'reset'])->name('reset');
+
+            // Nouvelles routes pour les fichiers
+            Route::post('/upload', [AdminSettingController::class, 'uploadFile'])->name('upload');
+            Route::post('/remove-file', [AdminSettingController::class, 'removeFile'])->name('remove-file');
         });
 
         // ------------------------------------------------------------------

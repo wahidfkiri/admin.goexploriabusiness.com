@@ -12,6 +12,12 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Vendor\Cms\Models\Page;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Auth;
 
 class SettingController extends Controller
 {
@@ -769,4 +775,262 @@ protected function truncateText($text, $length): string
     
     return substr($text, 0, $length - 3) . '...';
 }
+
+ /**
+     * Upload a file (logo, favicon, etc.)
+     */
+    public function uploadFile(Request $request, $etablissementId): JsonResponse
+    {
+        try {
+            $etablissement = Etablissement::findOrFail($etablissementId);
+            
+            // Vérifier l'accès
+            if (!$this->userHasAccess($request->user(), $etablissement)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Accès non autorisé'
+                ], 403);
+            }
+            
+            // Valider la requête
+            $request->validate([
+                'file' => 'required|file|max:5120', // Max 5MB
+                'field' => 'required|string|in:site_logo,site_favicon'
+            ]);
+            
+            $file = $request->file('file');
+            $field = $request->input('field');
+            
+            // Valider le type de fichier selon le champ
+            $allowedTypes = $this->getAllowedFileTypes($field);
+            if (!in_array($file->getMimeType(), $allowedTypes)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Type de fichier non autorisé. Types acceptés: ' . implode(', ', $allowedTypes)
+                ], 422);
+            }
+            
+            // Valider les dimensions pour le favicon
+            if ($field === 'site_favicon') {
+                $this->validateFaviconDimensions($file);
+            }
+            
+            // Générer un nom unique
+            $extension = $file->getClientOriginalExtension();
+            $filename = $field . '_' . $etablissementId . '_' . time() . '_' . Str::random(10) . '.' . $extension;
+            
+            // Chemin de stockage
+            $path = "settings/{$etablissementId}/{$filename}";
+            
+            // Supprimer l'ancien fichier s'il existe
+            $oldFile = $etablissement->getSetting($field, null, 'general');
+            if ($oldFile && Storage::disk('public')->exists($oldFile)) {
+                Storage::disk('public')->delete($oldFile);
+            }
+            
+            // Stocker le nouveau fichier
+            $storedPath = Storage::disk('public')->putFileAs(
+                "settings/{$etablissementId}",
+                $file,
+                $filename
+            );
+            
+            if (!$storedPath) {
+                throw new \Exception('Erreur lors du stockage du fichier');
+            }
+            
+            // Sauvegarder le chemin dans les settings
+            Setting::updateOrCreate(
+                [
+                    'etablissement_id' => $etablissement->id,
+                    'group' => 'general',
+                    'key' => $field
+                ],
+                [
+                    'value' => $storedPath,
+                    'type' => 'string'
+                ]
+            );
+            
+            // Vider le cache
+            $this->clearSettingsCache($etablissement->id);
+            
+            // Générer l'URL publique
+            $publicUrl = Storage::disk('public')->url($storedPath);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Fichier téléchargé avec succès',
+                'path' => $publicUrl,
+                'stored_path' => $storedPath
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('File upload error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du téléchargement: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Remove a file (logo, favicon, etc.)
+     */
+    public function removeFile(Request $request, $etablissementId): JsonResponse
+    {
+        try {
+            $etablissement = Etablissement::findOrFail($etablissementId);
+            
+            // Vérifier l'accès
+            if (!$this->userHasAccess($request->user(), $etablissement)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Accès non autorisé'
+                ], 403);
+            }
+            
+            // Valider la requête
+            $request->validate([
+                'field' => 'required|string|in:site_logo,site_favicon'
+            ]);
+            
+            $field = $request->input('field');
+            
+            // Récupérer le fichier actuel
+            $currentFile = $etablissement->getSetting($field, null, 'general');
+            
+            if ($currentFile) {
+                // Supprimer le fichier physique
+                if (Storage::disk('public')->exists($currentFile)) {
+                    Storage::disk('public')->delete($currentFile);
+                }
+                
+                // Supprimer l'entrée dans les settings
+                Setting::where('etablissement_id', $etablissement->id)
+                    ->where('group', 'general')
+                    ->where('key', $field)
+                    ->delete();
+                
+                // Vider le cache
+                $this->clearSettingsCache($etablissement->id);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Fichier supprimé avec succès'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('File remove error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Get allowed file types for each field
+     */
+    protected function getAllowedFileTypes(string $field): array
+    {
+        $types = [
+            'site_logo' => [
+                'image/jpeg',
+                'image/png',
+                'image/jpg',
+                'image/svg+xml',
+                'image/webp'
+            ],
+            'site_favicon' => [
+                'image/x-icon',
+                'image/vnd.microsoft.icon',
+                'image/png',
+                'image/svg+xml'
+            ]
+        ];
+        
+        return $types[$field] ?? ['image/jpeg', 'image/png'];
+    }
+    
+    /**
+     * Validate favicon dimensions
+     */
+    protected function validateFaviconDimensions($file): void
+    {
+        $imageInfo = getimagesize($file->getPathname());
+        
+        if ($imageInfo === false) {
+            throw new \Exception('Fichier image invalide');
+        }
+        
+        $width = $imageInfo[0];
+        $height = $imageInfo[1];
+        
+        // Tailles acceptées pour favicon
+        $allowedSizes = [16, 32, 48, 64, 128, 256];
+        
+        if (!in_array($width, $allowedSizes) || !in_array($height, $allowedSizes)) {
+            throw new \Exception('Le favicon doit être carré et de taille: 16x16, 32x32, 48x48, 64x64, 128x128 ou 256x256 pixels');
+        }
+        
+        if ($width !== $height) {
+            throw new \Exception('Le favicon doit être une image carrée (largeur = hauteur)');
+        }
+    }
+    
+    /**
+     * Optimize uploaded image (optional)
+     */
+    protected function optimizeImage($file, string $path): void
+    {
+        try {
+            $image = \Intervention\Image\Facades\Image::make($file);
+            
+            // Optimiser la qualité
+            $image->encode(null, 85);
+            
+            // Redimensionner si trop grand
+            if ($image->width() > 1200) {
+                $image->resize(1200, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                });
+            }
+            
+            // Sauvegarder
+            $image->save(Storage::disk('public')->path($path));
+            
+        } catch (\Exception $e) {
+            Log::warning('Image optimization failed: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get file URL helper
+     */
+    public function getFileUrl($etablissementId, string $field): ?string
+    {
+        $etablissement = Etablissement::find($etablissementId);
+        if (!$etablissement) {
+            return null;
+        }
+        
+        $path = $etablissement->getSetting($field, null, 'general');
+        
+        if ($path && Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->url($path);
+        }
+        
+        return null;
+    }
 }

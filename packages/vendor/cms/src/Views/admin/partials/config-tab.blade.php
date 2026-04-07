@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
             maxSize: 1 * 1024 * 1024, // 1MB
             field: 'site_favicon',
             preview: 'favicon',
-            endpoint: '{{ url("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
+            endpoint: '{{ route("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
         }
     };
     
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            const response = await fetch('{{ url("cms.admin.settings.remove-file", ["etablissementId" => $stats["etablissement"]->id]) }}', {
+            const response = await fetch('{{ route("cms.admin.settings.remove-file", ["etablissementId" => $stats["etablissement"]->id]) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
