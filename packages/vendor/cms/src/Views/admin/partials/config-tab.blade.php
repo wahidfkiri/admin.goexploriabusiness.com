@@ -129,14 +129,14 @@ document.addEventListener('DOMContentLoaded', function() {
             maxSize: 2 * 1024 * 1024, // 2MB
             field: 'site_logo',
             preview: 'logo',
-            endpoint: '{{ route("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
+            endpoint: '{{ url("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
         },
         favicon: {
             accept: ['image/x-icon', 'image/png', 'image/svg+xml'],
             maxSize: 1 * 1024 * 1024, // 1MB
             field: 'site_favicon',
             preview: 'favicon',
-            endpoint: '{{ route("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
+            endpoint: '{{ url("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
         }
     };
     
