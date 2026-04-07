@@ -49,7 +49,7 @@
             <div class="eg-icon"><i class="fas fa-palette"></i></div>
             <h3>Aucun thème dans la bibliothèque</h3>
             <p>Uploadez votre premier thème en cliquant sur le bouton ci-dessus.</p>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadGlobalThemeModal">
+            <button class="btn-header-primary mr-auto ml-auto" data-bs-toggle="modal" data-bs-target="#uploadGlobalThemeModal">
                 <i class="fas fa-upload me-2"></i>Uploader un thème
             </button>
         </div>
@@ -140,6 +140,13 @@
     padding: 24px;
     max-width: 1400px;
     margin: 0 auto;
+}
+
+.mr-auto {
+    margin-right: auto !important;
+}
+.ml-auto {
+    margin-left: auto !important;
 }
 
 .page-header-modern {
