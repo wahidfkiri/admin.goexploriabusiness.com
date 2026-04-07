@@ -34,7 +34,7 @@
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary" id="uploadBtn" disabled>
+                    <button type="submit" class="btn-header-primary" id="uploadBtn" disabled>
                         <i class="fas fa-upload me-2"></i>Uploader
                     </button>
                 </div>
