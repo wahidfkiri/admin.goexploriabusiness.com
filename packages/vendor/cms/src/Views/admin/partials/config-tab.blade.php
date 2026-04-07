@@ -25,6 +25,21 @@
                     <textarea class="form-control" name="site_description" rows="3">{{ $stats['etablissement']->getSetting('site_description', '') }}</textarea>
                 </div>
             </div>
+
+            <div class="config-group">
+    <h4>Identité visuelle</h4>
+    <div class="config-item">
+        <label>Logo du site</label>
+        <input type="file" name="site_logo" accept="image/*">
+        @if($logo = $etablissement->getSetting('site_logo'))
+            <img src="{{ Storage::url($logo) }}" width="150">
+        @endif
+    </div>
+    <div class="config-item mt-3">
+        <label>Favicon</label>
+        <input type="file" name="site_favicon" accept="image/x-icon,image/png">
+    </div>
+</div>
             
             <div class="config-group mt-4">
                 <h4>Email et notifications</h4>

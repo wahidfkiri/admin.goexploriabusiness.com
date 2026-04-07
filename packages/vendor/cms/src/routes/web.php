@@ -52,6 +52,11 @@ Route::middleware(['web'])->group(function () {
         }
         abort(404, 'Page non trouvée');
     });
+
+    
+// Routes publiques pour robots et sitemap
+Route::get('/company/{etablissementSlug}/robots.txt', [SettingController::class, 'robots']);
+Route::get('/company/{etablissementSlug}/sitemap.xml', [SettingController::class, 'sitemap']);
 });
 
 /*
@@ -92,6 +97,13 @@ Route::middleware(['web', 'auth'])->group(function () {
     // URL: admin/cms/{etablissementId}/*
     // ==================================================================
     Route::prefix('admin/cms/{etablissementId}')->name('cms.admin.')->group(function () {
+
+    // Routes SEO
+Route::prefix('/seo')->name('seo.')->group(function () {
+    Route::get('/', [AdminSettingController::class, 'getSeoSettings'])->name('get');
+    Route::post('/preview', [AdminSettingController::class, 'previewSeo'])->name('preview');
+});
+
 
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

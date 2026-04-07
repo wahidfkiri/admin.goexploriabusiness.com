@@ -6,7 +6,7 @@
         </h3>
     </div>
     
-    <form action="{{ route('cms.admin.settings.update', ['etablissementId' => $stats['etablissement']->id]) }}" method="POST">
+    <form id="seoForm" data-url="{{ route('cms.admin.settings.bulk', ['etablissementId' => $stats['etablissement']->id]) }}">
         @csrf
         
         <div class="seo-sections">
@@ -59,7 +59,7 @@
         </div>
         
         <div class="form-actions mt-4">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" id="saveSeoBtn">
                 <i class="fas fa-save me-2"></i>Sauvegarder
             </button>
         </div>
@@ -92,6 +92,82 @@ document.addEventListener('DOMContentLoaded', function() {
             else descCounter.style.color = '#94a3b8';
         });
         seoDesc.dispatchEvent(new Event('input'));
+    }
+
+     // AJAX Submit
+    const seoForm = document.getElementById('seoForm');
+    const saveBtn = document.getElementById('saveSeoBtn');
+    
+    seoForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Désactiver le bouton
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sauvegarde...';
+        
+        // Récupérer tous les champs du formulaire
+        const formData = new FormData(seoForm);
+        const settings = {};
+        
+        // Ajouter les données de SEO
+        const seoFields = ['seo_title', 'seo_description', 'seo_keywords', 
+                          'google_analytics_id', 'google_verification', 'bing_verification'];
+        
+        seoFields.forEach(field => {
+            const input = seoForm.querySelector(`[name="${field}"]`);
+            if (input) {
+                settings[field] = input.value;
+            }
+        });
+        
+        try {
+            const response = await fetch(seoForm.dataset.url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    settings: settings,
+                    group: 'seo'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showNotification('success', '✅ Paramètres SEO sauvegardés');
+                saveBtn.innerHTML = '<i class="fas fa-check me-2"></i>Sauvegardé !';
+                setTimeout(() => {
+                    saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Sauvegarder';
+                }, 2000);
+            } else {
+                throw new Error(result.message || 'Erreur lors de la sauvegarde');
+            }
+        } catch (error) {
+            showNotification('error', '❌ ' + error.message);
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Sauvegarder';
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+    
+    // Fonction notification
+    function showNotification(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
     }
 });
 </script>

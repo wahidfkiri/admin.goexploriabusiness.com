@@ -581,4 +581,192 @@ class SettingController extends Controller
         
         return false;
     }
+
+    /**
+ * Get all SEO settings at once.
+ */
+public function getSeoSettings($etablissementId): JsonResponse
+{
+    try {
+        $etablissement = Etablissement::findOrFail($etablissementId);
+        
+        $seoSettings = [
+            'seo_title' => $etablissement->getSetting('seo_title', '', 'seo'),
+            'seo_description' => $etablissement->getSetting('seo_description', '', 'seo'),
+            'seo_keywords' => $etablissement->getSetting('seo_keywords', '', 'seo'),
+            'google_analytics_id' => $etablissement->getSetting('google_analytics_id', '', 'seo'),
+            'google_verification' => $etablissement->getSetting('google_verification', '', 'seo'),
+            'bing_verification' => $etablissement->getSetting('bing_verification', '', 'seo'),
+        ];
+        
+        return response()->json([
+            'success' => true,
+            'data' => $seoSettings
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la récupération'
+        ], 500);
+    }
+}
+
+/**
+ * Preview SEO (simulateur de snippet Google).
+ */
+public function previewSeo(Request $request, $etablissementId): JsonResponse
+{
+    try {
+        $title = $request->input('title');
+        $description = $request->input('description');
+        
+        return response()->json([
+            'success' => true,
+            'preview' => [
+                'title' => $this->truncateText($title, 60),
+                'description' => $this->truncateText($description, 160),
+                'url' => $request->input('url', 'https://example.com'),
+                'breadcrumb' => $request->input('breadcrumb', 'example.com')
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur de prévisualisation'
+        ], 500);
+    }
+}
+
+/**
+ * Generate robots.txt dynamically.
+ */
+public function robots($etablissementSlug)
+{
+    $etablissement = Etablissement::where('slug', $etablissementSlug)->firstOrFail();
+    
+    $customRobots = $etablissement->getSetting('robots_content', '', 'seo');
+    
+    if ($customRobots) {
+        $content = $customRobots;
+    } else {
+        $content = $this->generateDefaultRobots($etablissement);
+    }
+    
+    return response($content, 200, ['Content-Type' => 'text/plain']);
+}
+
+/**
+ * Generate sitemap.xml dynamically.
+ */
+public function sitemap($etablissementSlug)
+{
+    $etablissement = Etablissement::where('slug', $etablissementSlug)->firstOrFail();
+    
+    $urls = $this->getSitemapUrls($etablissement);
+    
+    $xml = $this->generateSitemapXml($urls);
+    
+    return response($xml, 200, ['Content-Type' => 'application/xml']);
+}
+
+// ============================================
+// MÉTHODES PRIVÉES POUR SEO
+// ============================================
+
+/**
+ * Generate default robots.txt content.
+ */
+protected function generateDefaultRobots($etablissement): string
+{
+    $content = "User-agent: *\n";
+    $content .= "Allow: /\n";
+    $content .= "Disallow: /admin/\n";
+    $content .= "Disallow: /api/\n";
+    $content .= "Disallow: /login\n";
+    $content .= "Disallow: /register\n";
+    $content .= "Sitemap: " . url("/{$etablissement->slug}/sitemap.xml") . "\n";
+    
+    return $content;
+}
+
+/**
+ * Get all URLs for sitemap.
+ */
+protected function getSitemapUrls($etablissement): array
+{
+    $urls = [];
+    
+    // Page d'accueil
+    $urls[] = [
+        'loc' => url("/{$etablissement->slug}"),
+        'priority' => '1.0',
+        'changefreq' => 'daily'
+    ];
+    
+    // Récupérer les pages personnalisées
+    $pages = Page::where('etablissement_id', $etablissement->id)
+        ->where('is_published', true)
+        ->get();
+    
+    foreach ($pages as $page) {
+        $urls[] = [
+            'loc' => url("/{$etablissement->slug}/{$page->slug}"),
+            'priority' => '0.8',
+            'changefreq' => 'weekly',
+            'lastmod' => $page->updated_at->toIso8601String()
+        ];
+    }
+    
+    // Récupérer les articles de blog (si module existe)
+    // $articles = Article::where('etablissement_id', $etablissement->id)->get();
+    // ...
+    
+    return $urls;
+}
+
+/**
+ * Generate sitemap XML.
+ */
+protected function generateSitemapXml($urls): string
+{
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+    
+    foreach ($urls as $url) {
+        $xml .= '  <url>' . "\n";
+        $xml .= '    <loc>' . htmlspecialchars($url['loc']) . '</loc>' . "\n";
+        
+        if (isset($url['lastmod'])) {
+            $xml .= '    <lastmod>' . $url['lastmod'] . '</lastmod>' . "\n";
+        }
+        
+        if (isset($url['changefreq'])) {
+            $xml .= '    <changefreq>' . $url['changefreq'] . '</changefreq>' . "\n";
+        }
+        
+        if (isset($url['priority'])) {
+            $xml .= '    <priority>' . $url['priority'] . '</priority>' . "\n";
+        }
+        
+        $xml .= '  </url>' . "\n";
+    }
+    
+    $xml .= '</urlset>';
+    
+    return $xml;
+}
+
+/**
+ * Truncate text for preview.
+ */
+protected function truncateText($text, $length): string
+{
+    if (strlen($text) <= $length) {
+        return $text;
+    }
+    
+    return substr($text, 0, $length - 3) . '...';
+}
 }
