@@ -738,7 +738,6 @@ $activeTheme = $etablissement->themes()
         return null;
     }
 
-    // Ajouter ces méthodes dans DashboardController
 
 /**
  * Récupérer les statistiques SEO
@@ -757,7 +756,7 @@ protected function getSeoStats($etablissementId): array
         'google_verification' => $this->getSettingValue($etablissementId, 'google_verification', 'seo'),
         'search_console_verified' => $this->isSearchConsoleVerified($etablissementId),
         
-        // Trafic organique (à récupérer depuis GA ou autre source)
+        // Trafic organique
         'organic_traffic' => Cache::get("seo_organic_traffic_{$etablissementId}", [
             'today' => 0,
             'week' => 0,
@@ -768,6 +767,7 @@ protected function getSeoStats($etablissementId): array
         // Performance SEO
         'seo_score' => $this->calculateSeoScore($etablissementId),
         'missing_meta' => $this->getPagesMissingMeta($etablissementId),
+        'pages_with_missing_meta' => $this->getPagesWithMissingMeta($etablissementId),
         'broken_links' => $this->getBrokenLinksCount($etablissementId),
         
         // Sitemap & Robots
@@ -780,7 +780,7 @@ protected function getSeoStats($etablissementId): array
         'top_keywords' => $this->getTopKeywords($etablissementId),
         'keywords_count' => $this->getKeywordsCount($etablissementId),
         
-        // Pages
+        // Pages (basé sur la structure JSON)
         'pages_without_description' => $this->getPagesWithoutDescription($etablissementId),
         'pages_without_title' => $this->getPagesWithoutTitle($etablissementId),
         'duplicate_meta' => $this->getDuplicateMetaCount($etablissementId),
@@ -796,7 +796,7 @@ protected function getSeoStats($etablissementId): array
 }
 
 /**
- * Calculer le score SEO global
+ * Calculer le score SEO global (version corrigée)
  */
 protected function calculateSeoScore($etablissementId): array
 {
@@ -804,15 +804,15 @@ protected function calculateSeoScore($etablissementId): array
     $maxScore = 100;
     $checks = [];
     
-    // Vérification 1: Meta title présent
-    $hasTitle = $this->getSettingValue($etablissementId, 'seo_title', 'seo') != '';
-    $score += $hasTitle ? 15 : 0;
-    $checks['meta_title'] = $hasTitle;
+    // Vérification 1: Meta title global présent
+    $hasGlobalTitle = $this->getSettingValue($etablissementId, 'seo_title', 'seo') != '';
+    $score += $hasGlobalTitle ? 15 : 0;
+    $checks['global_meta_title'] = $hasGlobalTitle;
     
-    // Vérification 2: Meta description présent
-    $hasDescription = $this->getSettingValue($etablissementId, 'seo_description', 'seo') != '';
-    $score += $hasDescription ? 15 : 0;
-    $checks['meta_description'] = $hasDescription;
+    // Vérification 2: Meta description global présent
+    $hasGlobalDescription = $this->getSettingValue($etablissementId, 'seo_description', 'seo') != '';
+    $score += $hasGlobalDescription ? 15 : 0;
+    $checks['global_meta_description'] = $hasGlobalDescription;
     
     // Vérification 3: Google Analytics configuré
     $hasAnalytics = $this->getSettingValue($etablissementId, 'google_analytics_id', 'seo') != '';
@@ -829,31 +829,46 @@ protected function calculateSeoScore($etablissementId): array
     $score += $hasRobots ? 10 : 0;
     $checks['robots'] = $hasRobots;
     
-    // Vérification 6: Pages avec meta (proportion)
+    // Vérification 6: Pages avec meta title personnalisé
     $totalPages = Page::where('etablissement_id', $etablissementId)->count();
-    $pagesWithMeta = Page::where('etablissement_id', $etablissementId)
-        ->whereNotNull('meta_title')
-        ->where('meta_title', '!=', '')
-        ->count();
+    $pagesWithMeta = 0;
     
-    $metaRatio = $totalPages > 0 ? ($pagesWithMeta / $totalPages) * 20 : 0;
-    $score += $metaRatio;
-    $checks['pages_meta_ratio'] = round($metaRatio, 2);
+    if ($totalPages > 0) {
+        $pages = Page::where('etablissement_id', $etablissementId)->get();
+        foreach ($pages as $page) {
+            if (!empty($page->getMeta('seo_title'))) {
+                $pagesWithMeta++;
+            }
+        }
+        
+        $metaRatio = ($pagesWithMeta / $totalPages) * 20;
+        $score += $metaRatio;
+        $checks['pages_meta_ratio'] = round($metaRatio, 2);
+    } else {
+        $checks['pages_meta_ratio'] = 0;
+    }
     
-    // Vérification 7: Images optimisées (exemple)
+    // Vérification 7: Images optimisées
     $totalImages = Media::where('etablissement_id', $etablissementId)
         ->where('type', 'image')
         ->count();
-    $optimizedImages = Media::where('etablissement_id', $etablissementId)
-        ->where('type', 'image')
-        ->where('optimized', true)
-        ->count();
     
-    $imageRatio = $totalImages > 0 ? ($optimizedImages / $totalImages) * 10 : 10;
+    $imageRatio = 10; // Score par défaut
+    if ($totalImages > 0) {
+        // Vérifier si les images ont des alt text (si stocké dans meta)
+        $imagesWithAlt = Media::where('etablissement_id', $etablissementId)
+            ->where('type', 'image')
+            ->whereNotNull('alt')
+            ->where('alt', '!=', '')
+            ->count();
+        
+        $imageRatio = ($imagesWithAlt / $totalImages) * 10;
+    }
+    
     $score += $imageRatio;
     $checks['images_optimized'] = round($imageRatio, 2);
     
-    // Vérification 8: Mobile friendly (à vérifier avec API externe ou config)
+    // Vérification 8: Mobile friendly
     $isMobileFriendly = $this->getMobileFriendlyScore($etablissementId) > 80;
     $score += $isMobileFriendly ? 10 : 0;
     $checks['mobile_friendly'] = $isMobileFriendly;
@@ -865,6 +880,88 @@ protected function calculateSeoScore($etablissementId): array
         'grade' => $this->getSeoGrade($score),
         'checks' => $checks
     ];
+}
+
+
+
+/**
+ * Compter les pages avec meta manquantes (version corrigée)
+ */
+protected function getPagesMissingMeta($etablissementId): array
+{
+    $missing = [
+        'title' => 0,
+        'description' => 0,
+        'both' => 0
+    ];
+    
+    $pages = Page::where('etablissement_id', $etablissementId)->get();
+    
+    foreach ($pages as $page) {
+        $hasTitle = !empty($page->getMeta('seo_title'));
+        $hasDesc = !empty($page->getMeta('seo_description'));
+        
+        if (!$hasTitle && !$hasDesc) {
+            $missing['both']++;
+        } elseif (!$hasTitle) {
+            $missing['title']++;
+        } elseif (!$hasDesc) {
+            $missing['description']++;
+        }
+    }
+    
+    return $missing;
+}
+
+
+/**
+ * Récupérer les pages sans méta (pour affichage)
+ */
+protected function getPagesWithMissingMeta($etablissementId): array
+{
+    $pages = Page::where('etablissement_id', $etablissementId)->get();
+    $missingMeta = [];
+    
+    foreach ($pages as $page) {
+        $missing = [];
+        
+        if (empty($page->getMeta('seo_title'))) {
+            $missing[] = 'title';
+        }
+        
+        if (empty($page->getMeta('seo_description'))) {
+            $missing[] = 'description';
+        }
+        
+        if (!empty($missing)) {
+            $missingMeta[] = [
+                'id' => $page->id,
+                'title' => $page->title,
+                'slug' => $page->slug,
+                'missing' => $missing,
+                'edit_url' => route('cms.admin.pages.edit', ['etablissementId' => $page->etablissement_id, 'page' => $page->id])
+            ];
+        }
+    }
+    
+    return $missingMeta;
+}
+
+
+
+
+/**
+ * Compter les pages indexées (basé sur les pages publiées)
+ */
+protected function getIndexedPagesCount($etablissementId): int
+{
+    return Page::where('etablissement_id', $etablissementId)
+        ->where('status', 'published')
+        ->where(function($q) {
+            $q->whereNull('published_at')
+              ->orWhere('published_at', '<=', now());
+        })
+        ->count();
 }
 
 /**
@@ -881,44 +978,43 @@ protected function getSeoGrade($score): string
     return 'F';
 }
 
-/**
- * Compter les pages indexées (simulation ou via API Search Console)
- */
-protected function getIndexedPagesCount($etablissementId): int
-{
-    return Cache::remember("seo_indexed_pages_{$etablissementId}", 3600, function() use ($etablissementId) {
-        // À implémenter avec Google Search Console API
-        // Pour l'instant, retourner un nombre basé sur les pages publiées
-        return Page::where('etablissement_id', $etablissementId)
-            ->where('status', 'published')
-            ->count();
-    });
-}
+
 
 /**
  * Compter les pages sans meta description
  */
 protected function getPagesWithoutDescription($etablissementId): int
 {
-    return Page::where('etablissement_id', $etablissementId)
-        ->where(function($q) {
-            $q->whereNull('meta_description')
-              ->orWhere('meta_description', '');
-        })
-        ->count();
+    $pages = Page::where('etablissement_id', $etablissementId)->get();
+    
+    $count = 0;
+    foreach ($pages as $page) {
+        $description = $page->getMeta('seo_description');
+        if (empty($description)) {
+            $count++;
+        }
+    }
+    
+    return $count;
 }
+
 
 /**
  * Compter les pages sans meta title
  */
 protected function getPagesWithoutTitle($etablissementId): int
 {
-    return Page::where('etablissement_id', $etablissementId)
-        ->where(function($q) {
-            $q->whereNull('meta_title')
-              ->orWhere('meta_title', '');
-        })
-        ->count();
+    $pages = Page::where('etablissement_id', $etablissementId)->get();
+    
+    $count = 0;
+    foreach ($pages as $page) {
+        $title = $page->getMeta('seo_title');
+        if (empty($title)) {
+            $count++;
+        }
+    }
+    
+    return $count;
 }
 
 /**
@@ -926,15 +1022,23 @@ protected function getPagesWithoutTitle($etablissementId): int
  */
 protected function getDuplicateMetaCount($etablissementId): int
 {
-    $duplicates = Page::where('etablissement_id', $etablissementId)
-        ->select('meta_description', DB::raw('COUNT(*) as count'))
-        ->whereNotNull('meta_description')
-        ->where('meta_description', '!=', '')
-        ->groupBy('meta_description')
-        ->having('count', '>', 1)
-        ->get();
+    $pages = Page::where('etablissement_id', $etablissementId)->get();
     
-    return $duplicates->sum('count');
+    $descriptions = [];
+    $duplicates = 0;
+    
+    foreach ($pages as $page) {
+        $description = $page->getMeta('seo_description');
+        if (!empty($description)) {
+            if (in_array($description, $descriptions)) {
+                $duplicates++;
+            } else {
+                $descriptions[] = $description;
+            }
+        }
+    }
+    
+    return $duplicates;
 }
 
 /**
