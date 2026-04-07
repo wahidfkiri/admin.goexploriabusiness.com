@@ -939,7 +939,11 @@ protected function getPagesWithMissingMeta($etablissementId): array
                 'title' => $page->title,
                 'slug' => $page->slug,
                 'missing' => $missing,
-                'edit_url' => route('cms.admin.pages.edit', ['etablissementId' => $page->etablissement_id, 'page' => $page->id])
+                // Correction : utiliser route() avec les bons paramètres
+                'edit_url' => route('cms.admin.pages.edit', [
+                    'etablissementId' => $etablissementId, 
+                    'id' => $page->id
+                ])
             ];
         }
     }
