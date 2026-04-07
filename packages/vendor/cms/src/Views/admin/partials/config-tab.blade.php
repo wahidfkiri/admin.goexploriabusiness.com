@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            const response = await fetch('{{ route("cms.admin.settings.remove-file", ["etablissementId" => $stats["etablissement"]->id]) }}', {
+            const response = await fetch('{{ url("cms.admin.settings.remove-file", ["etablissementId" => $stats["etablissement"]->id]) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
