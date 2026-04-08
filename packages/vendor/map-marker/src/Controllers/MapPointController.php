@@ -965,3 +965,4 @@ class MapPointController extends Controller
         ];
     }
 }
+
