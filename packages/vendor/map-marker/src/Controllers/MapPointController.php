@@ -408,247 +408,262 @@ class MapPointController extends Controller
         return view('map-marker::edit', compact('mapPoint', 'etablissements', 'categories'));
     }
 
-    /**
- * Update the specified map point in storage.
- */
-public function update(Request $request, MapPoint $mapPoint)
-{
-    $validated = $request->validate([
-        'title' => 'required|string|max:191',
-        'description' => 'nullable|string',
-        'category' => 'required|string|max:100',
-        'latitude' => 'required|numeric|between:-90,90',
-        'longitude' => 'required|numeric|between:-180,180',
-        'adresse' => 'nullable|string',
-        'ville' => 'nullable|string|max:191',
-        'code_postal' => 'nullable|string|max:20',
-        'main_image' => 'nullable|image|max:2048',
-        'youtube_url' => 'nullable|url',
-        'has_details_page' => 'boolean',
-        'etablissement_id' => 'nullable|exists:etablissements,id',
-        'is_featured' => 'boolean',
-        'is_active' => 'boolean',
-        
-        // Gestion de la galerie
-        'delete_images' => 'nullable|array',
-        'delete_images.*' => 'exists:map_point_images,id',
-        'new_images.*' => 'nullable|image|max:2048',
-        'image_captions.*' => 'nullable|string|max:255',
-        
-        // Gestion des vidéos
-        'delete_videos' => 'nullable|array',
-        'delete_videos.*' => 'exists:map_point_videos,id',
-        'additional_videos.*' => 'nullable|url',
-        'video_titles.*' => 'nullable|string|max:255',
-        
-        // Détails de base
-        'details.phone' => 'nullable|string|max:50',
-        'details.email' => 'nullable|email|max:191',
-        'details.website' => 'nullable|url|max:191',
-        'details.long_description' => 'nullable|string',
-        'details.contact_person' => 'nullable|string|max:191',
-        'details.horaires' => 'nullable|json',
-        'details.services' => 'nullable|json',
-        'details.tarifs' => 'nullable|json',
-        
-        // Tous les réseaux sociaux
-        'details.facebook' => 'nullable|url|max:191',
-        'details.instagram' => 'nullable|url|max:191',
-        'details.twitter' => 'nullable|url|max:191',
-        'details.linkedin' => 'nullable|url|max:191',
-        'details.youtube' => 'nullable|url|max:191',
-        'details.tiktok' => 'nullable|url|max:191',
-        'details.pinterest' => 'nullable|url|max:191',
-        'details.snapchat' => 'nullable|string|max:191',
-        'details.whatsapp' => 'nullable|string|max:50',
-        'details.telegram' => 'nullable|string|max:191',
-        'details.discord' => 'nullable|string|max:191',
-        'details.twitch' => 'nullable|url|max:191',
-        'details.reddit' => 'nullable|url|max:191',
-        'details.github' => 'nullable|url|max:191',
-        'details.medium' => 'nullable|url|max:191',
-        'details.tumblr' => 'nullable|url|max:191',
-        'details.vimeo' => 'nullable|url|max:191',
-        'details.dribbble' => 'nullable|url|max:191',
-        'details.behance' => 'nullable|url|max:191',
-        'details.soundcloud' => 'nullable|url|max:191',
-        'details.spotify' => 'nullable|url|max:191',
-        'details.tripadvisor' => 'nullable|url|max:191',
-        'details.foursquare' => 'nullable|url|max:191',
-        'details.yelp' => 'nullable|url|max:191',
-        'details.google_maps' => 'nullable|url|max:191',
-    ]);
+/**
+     * Update the specified map point in storage.
+     */
+    public function update(Request $request, MapPoint $mapPoint)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:191',
+            'description' => 'nullable|string',
+            'category' => 'required|string|max:100',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'adresse' => 'nullable|string',
+            'ville' => 'nullable|string|max:191',
+            'code_postal' => 'nullable|string|max:20',
+            'main_image' => 'nullable|image|max:2048',
+            'youtube_url' => 'nullable|url',
+            'has_details_page' => 'boolean',
+            'etablissement_id' => 'nullable|exists:etablissements,id',
+            'is_featured' => 'boolean',
+            'is_active' => 'boolean',
+            'remove_main_image' => 'nullable|boolean',
+            
+            // Gestion de la galerie
+            'delete_images' => 'nullable|array',
+            'delete_images.*' => 'exists:map_point_images,id',
+            'new_images.*' => 'nullable|image|max:2048',
+            'new_image_captions.*' => 'nullable|string|max:255',
+            'existing_image_captions' => 'nullable|array',
+            
+            // Gestion des vidéos
+            'delete_videos' => 'nullable|array',
+            'delete_videos.*' => 'exists:map_point_videos,id',
+            'additional_videos.*' => 'nullable|url',
+            'video_titles.*' => 'nullable|string|max:255',
+            
+            // Détails
+            'details.phone' => 'nullable|string|max:50',
+            'details.email' => 'nullable|email|max:191',
+            'details.website' => 'nullable|url|max:191',
+            'details.long_description' => 'nullable|string',
+            'details.contact_person' => 'nullable|string|max:191',
+            'details.horaires' => 'nullable|json',
+            'details.services' => 'nullable|json',
+            'details.tarifs' => 'nullable|json',
+            
+            // Réseaux sociaux
+            'details.facebook' => 'nullable|url|max:191',
+            'details.instagram' => 'nullable|url|max:191',
+            'details.twitter' => 'nullable|url|max:191',
+            'details.linkedin' => 'nullable|url|max:191',
+            'details.youtube' => 'nullable|url|max:191',
+            'details.tiktok' => 'nullable|url|max:191',
+            'details.pinterest' => 'nullable|url|max:191',
+            'details.snapchat' => 'nullable|string|max:191',
+            'details.whatsapp' => 'nullable|string|max:50',
+            'details.telegram' => 'nullable|string|max:191',
+            'details.discord' => 'nullable|string|max:191',
+            'details.twitch' => 'nullable|url|max:191',
+            'details.reddit' => 'nullable|url|max:191',
+            'details.github' => 'nullable|url|max:191',
+            'details.medium' => 'nullable|url|max:191',
+            'details.tumblr' => 'nullable|url|max:191',
+            'details.vimeo' => 'nullable|url|max:191',
+            'details.dribbble' => 'nullable|url|max:191',
+            'details.behance' => 'nullable|url|max:191',
+            'details.soundcloud' => 'nullable|url|max:191',
+            'details.spotify' => 'nullable|url|max:191',
+            'details.tripadvisor' => 'nullable|url|max:191',
+            'details.foursquare' => 'nullable|url|max:191',
+            'details.yelp' => 'nullable|url|max:191',
+            'details.google_maps' => 'nullable|url|max:191',
+        ]);
 
-    DB::beginTransaction();
+        DB::beginTransaction();
 
-    try {
-        // 1. Mise à jour de l'image principale
-        if ($request->hasFile('main_image')) {
-            // Supprimer l'ancienne image du CDN ou local
-            if ($mapPoint->main_image) {
-                $this->deleteFile($mapPoint->main_image);
+        try {
+            // 1. Gestion de l'image principale
+            if ($request->has('remove_main_image') && $request->remove_main_image == '1') {
+                if ($mapPoint->main_image) {
+                    $this->deleteFile($mapPoint->main_image);
+                    $mapPoint->main_image = null;
+                }
             }
             
-            $file = $request->file('main_image');
-            $path = 'map-points/' . date('Y/m/d');
-            
-            if ($this->cdnEnabled) {
-                $uploadResult = $this->cdnService->upload($file, $path, 'public');
+            if ($request->hasFile('main_image')) {
+                if ($mapPoint->main_image) {
+                    $this->deleteFile($mapPoint->main_image);
+                }
                 
-                if ($uploadResult['success'] ?? false) {
-                    $validated['main_image'] = $uploadResult['path'];
-                } else {
-                    throw new \Exception('Failed to upload main image to CDN');
-                }
-            } else {
-                $validated['main_image'] = $file->store($path, 'public');
-            }
-        }
-
-        // 2. Mise à jour de l'ID YouTube
-        if ($request->filled('youtube_url')) {
-            $validated['youtube_id'] = $this->extractYoutubeId($request->youtube_url);
-        } else {
-            $validated['youtube_id'] = null;
-        }
-
-        // 3. Mise à jour du point principal
-        $mapPoint->update($validated);
-
-        // 4. Gestion des images de la galerie à supprimer
-        if ($request->has('delete_images')) {
-            $imagesToDelete = MapPointImage::whereIn('id', $request->delete_images)
-                ->where('map_point_id', $mapPoint->id)
-                ->get();
-            
-            foreach ($imagesToDelete as $image) {
-                // Supprimer le fichier du CDN ou local
-                $this->deleteFile($image->image);
-                if ($image->thumbnail && $image->thumbnail !== $image->image) {
-                    $this->deleteFile($image->thumbnail);
-                }
-                // Supprimer l'enregistrement
-                $image->delete();
-            }
-        }
-
-        // 5. Ajout de nouvelles images à la galerie
-        if ($request->hasFile('new_images')) {
-            $newImages = $request->file('new_images');
-            $captions = $request->input('image_captions', []);
-            
-            // Récupérer l'ordre maximum actuel
-            $maxOrder = MapPointImage::where('map_point_id', $mapPoint->id)->max('sort_order') ?? -1;
-            
-            foreach ($newImages as $index => $image) {
-                $path = 'map-points/gallery/' . date('Y/m/d');
-                $imagePath = null;
+                $file = $request->file('main_image');
+                $path = 'map-points/' . date('Y/m/d');
                 
                 if ($this->cdnEnabled) {
-                    $uploadResult = $this->cdnService->upload($image, $path, 'public');
-                    
+                    $uploadResult = $this->cdnService->upload($file, $path, 'public');
                     if ($uploadResult['success'] ?? false) {
-                        $imagePath = $uploadResult['path'];
+                        $mapPoint->main_image = $uploadResult['path'];
                     }
                 } else {
-                    $imagePath = $image->store($path, 'public');
-                }
-                
-                if ($imagePath) {
-                    MapPointImage::create([
-                        'map_point_id' => $mapPoint->id,
-                        'image' => $imagePath,
-                        'thumbnail' => $imagePath,
-                        'caption' => $captions[$index] ?? '',
-                        'sort_order' => $maxOrder + $index + 1,
-                    ]);
+                    $mapPoint->main_image = $file->store($path, 'public');
                 }
             }
-        }
 
-        // 6. Gestion des vidéos à supprimer
-        if ($request->has('delete_videos')) {
-            MapPointVideo::whereIn('id', $request->delete_videos)
-                ->where('map_point_id', $mapPoint->id)
-                ->delete();
-        }
-
-        // 7. Ajout de nouvelles vidéos
-        if ($request->filled('additional_videos')) {
-            $videos = $request->input('additional_videos');
-            $videoTitles = $request->input('video_titles', []);
-            
-            // Récupérer l'ordre maximum actuel
-            $maxOrder = MapPointVideo::where('map_point_id', $mapPoint->id)->max('sort_order') ?? -1;
-            
-            foreach ($videos as $index => $videoUrl) {
-                if (!empty($videoUrl)) {
-                    MapPointVideo::create([
-                        'map_point_id' => $mapPoint->id,
-                        'youtube_url' => $videoUrl,
-                        'youtube_id' => $this->extractYoutubeId($videoUrl),
-                        'title' => $videoTitles[$index] ?? null,
-                        'sort_order' => $maxOrder + $index + 1,
-                    ]);
-                }
-            }
-        }
-
-        // 8. Mise à jour des détails (page de détails)
-        if ($request->boolean('has_details_page')) {
-            if ($mapPoint->details) {
-                // Mettre à jour les détails existants
-                $details = $request->input('details', []);
-                
-                // Convertir les champs JSON
-                if (isset($details['horaires']) && is_string($details['horaires'])) {
-                    $details['horaires'] = json_decode($details['horaires'], true);
-                }
-                if (isset($details['services']) && is_string($details['services'])) {
-                    $details['services'] = json_decode($details['services'], true);
-                }
-                if (isset($details['tarifs']) && is_string($details['tarifs'])) {
-                    $details['tarifs'] = json_decode($details['tarifs'], true);
-                }
-                
-                $mapPoint->details->update($details);
+            // 2. Mise à jour YouTube
+            if ($request->filled('youtube_url')) {
+                $mapPoint->youtube_id = $this->extractYoutubeId($request->youtube_url);
+                $mapPoint->youtube_url = $request->youtube_url;
             } else {
-                // Créer de nouveaux détails
-                $details = $request->input('details', []);
-                $details['map_point_id'] = $mapPoint->id;
-                $details['slug'] = $request->input('details_url') ?: Str::slug($mapPoint->title) . '-' . $mapPoint->id;
+                $mapPoint->youtube_id = null;
+                $mapPoint->youtube_url = null;
+            }
+
+            // 3. Mise à jour des champs de base
+            $mapPoint->title = $request->title;
+            $mapPoint->description = $request->description;
+            $mapPoint->category = $request->category;
+            $mapPoint->latitude = $request->latitude;
+            $mapPoint->longitude = $request->longitude;
+            $mapPoint->adresse = $request->adresse;
+            $mapPoint->ville = $request->ville;
+            $mapPoint->code_postal = $request->code_postal;
+            $mapPoint->etablissement_id = $request->etablissement_id;
+            $mapPoint->is_featured = $request->has('is_featured');
+            $mapPoint->is_active = $request->has('is_active');
+            $mapPoint->has_details_page = $request->has('has_details_page');
+            $mapPoint->details_url = $request->details_url;
+            
+            $mapPoint->save();
+
+            // 4. Suppression des images de la galerie
+            if ($request->has('delete_images') && is_array($request->delete_images)) {
+                foreach ($request->delete_images as $imageId) {
+                    $image = MapPointImage::where('id', $imageId)
+                        ->where('map_point_id', $mapPoint->id)
+                        ->first();
+                    
+                    if ($image) {
+                        $this->deleteFile($image->image);
+                        if ($image->thumbnail && $image->thumbnail !== $image->image) {
+                            $this->deleteFile($image->thumbnail);
+                        }
+                        $image->delete();
+                    }
+                }
+            }
+
+            // 5. Mise à jour des légendes des images existantes
+            if ($request->has('existing_image_captions') && is_array($request->existing_image_captions)) {
+                foreach ($request->existing_image_captions as $imageId => $caption) {
+                    $image = MapPointImage::where('id', $imageId)
+                        ->where('map_point_id', $mapPoint->id)
+                        ->first();
+                    if ($image) {
+                        $image->caption = $caption;
+                        $image->save();
+                    }
+                }
+            }
+
+            // 6. Ajout de nouvelles images
+            if ($request->hasFile('new_images')) {
+                $newImages = $request->file('new_images');
+                $captions = $request->input('new_image_captions', []);
+                $maxOrder = MapPointImage::where('map_point_id', $mapPoint->id)->max('sort_order') ?? 0;
+                
+                foreach ($newImages as $index => $image) {
+                    if ($image->isValid()) {
+                        $path = 'map-points/gallery/' . date('Y/m/d');
+                        $imagePath = null;
+                        
+                        if ($this->cdnEnabled) {
+                            $uploadResult = $this->cdnService->upload($image, $path, 'public');
+                            if ($uploadResult['success'] ?? false) {
+                                $imagePath = $uploadResult['path'];
+                            }
+                        } else {
+                            $imagePath = $image->store($path, 'public');
+                        }
+                        
+                        if ($imagePath) {
+                            MapPointImage::create([
+                                'map_point_id' => $mapPoint->id,
+                                'image' => $imagePath,
+                                'thumbnail' => $imagePath,
+                                'caption' => $captions[$index] ?? '',
+                                'sort_order' => $maxOrder + $index + 1,
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // 7. Suppression des vidéos
+            if ($request->has('delete_videos') && is_array($request->delete_videos)) {
+                MapPointVideo::whereIn('id', $request->delete_videos)
+                    ->where('map_point_id', $mapPoint->id)
+                    ->delete();
+            }
+
+            // 8. Ajout de nouvelles vidéos
+            if ($request->has('additional_videos') && is_array($request->additional_videos)) {
+                $videos = $request->additional_videos;
+                $videoTitles = $request->input('video_titles', []);
+                $maxOrder = MapPointVideo::where('map_point_id', $mapPoint->id)->max('sort_order') ?? 0;
+                
+                foreach ($videos as $index => $videoUrl) {
+                    if (!empty($videoUrl)) {
+                        MapPointVideo::create([
+                            'map_point_id' => $mapPoint->id,
+                            'youtube_url' => $videoUrl,
+                            'youtube_id' => $this->extractYoutubeId($videoUrl),
+                            'title' => $videoTitles[$index] ?? null,
+                            'sort_order' => $maxOrder + $index + 1,
+                        ]);
+                    }
+                }
+            }
+
+            // 9. Gestion de la page de détails
+            if ($request->has('has_details_page')) {
+                $detailsData = $request->input('details', []);
+                $detailsData['map_point_id'] = $mapPoint->id;
+                $detailsData['slug'] = $request->input('details_url') ?: Str::slug($mapPoint->title) . '-' . $mapPoint->id;
                 
                 // Convertir les champs JSON
-                if (isset($details['horaires']) && is_string($details['horaires'])) {
-                    $details['horaires'] = json_decode($details['horaires'], true);
-                }
-                if (isset($details['services']) && is_string($details['services'])) {
-                    $details['services'] = json_decode($details['services'], true);
-                }
-                if (isset($details['tarifs']) && is_string($details['tarifs'])) {
-                    $details['tarifs'] = json_decode($details['tarifs'], true);
+                foreach (['horaires', 'services', 'tarifs'] as $jsonField) {
+                    if (isset($detailsData[$jsonField]) && is_string($detailsData[$jsonField])) {
+                        $decoded = json_decode($detailsData[$jsonField], true);
+                        $detailsData[$jsonField] = $decoded ?: $detailsData[$jsonField];
+                    }
                 }
                 
-                MapPointDetail::create($details);
-            }
-        } else {
-            // Si la page de détails est désactivée, supprimer les détails existants
-            if ($mapPoint->details) {
+                if ($mapPoint->details) {
+                    $mapPoint->details->update($detailsData);
+                } else {
+                    MapPointDetail::create($detailsData);
+                }
+            } elseif ($mapPoint->details) {
                 $mapPoint->details->delete();
             }
+
+            DB::commit();
+
+            return redirect()->route('map-points.index')
+                ->with('success', 'Point sur la carte mis à jour avec succès.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating map point: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            
+            return back()->withInput()
+                ->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
         }
-
-        DB::commit();
-
-        return redirect()->route('map-points.index')
-            ->with('success', 'Point sur la carte mis à jour avec succès.');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return back()->withInput()
-            ->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
     }
-}
 
 /**
  * Delete a gallery image via AJAX

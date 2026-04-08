@@ -319,44 +319,52 @@
                                 </div>
                             </div>
                             
-                            <h3 class="form-section-title mt-4">
-                                <i class="fas fa-images me-2" style="color: var(--primary-color);"></i>
-                                Galerie d'images (optionnel)
-                            </h3>
-                            
-                            <div class="gallery-upload">
-                                <!-- Conteneur pour les previews existantes et nouvelles -->
-                                <div class="gallery-grid" id="galleryPreview">
-                                    @if($mapPoint->images->count() > 0)
-                                        @foreach($mapPoint->images as $index => $image)
-                                        <div class="gallery-preview-item existing" data-id="{{ $image->id }}">
-                                            <img src="{{ asset('storage/'.$image->image) }}" alt="Gallery Image">
-                                            <button type="button" class="btn-remove-gallery-existing" data-id="{{ $image->id }}">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                            <input type="hidden" name="existing_images[]" value="{{ $image->id }}">
-                                        </div>
-                                        @endforeach
-                                    @endif
-                                </div>
-                                
-                                <!-- Zone d'upload pour nouvelles images -->
-                                <div class="upload-area-small" id="galleryUploadArea">
-                                    <i class="fas fa-plus"></i>
-                                    <span>Ajouter</span>
-                                    <input type="file" 
-                                           class="file-input" 
-                                           id="additional_images" 
-                                           name="additional_images[]" 
-                                           accept="image/png, image/jpg, image/jpeg"
-                                           multiple
-                                           style="display: none;">
-                                </div>
-                            </div>
-                            <small class="form-text-modern">Vous pouvez sélectionner plusieurs images (Ctrl+clic)</small>
-                            
-                            <!-- Conteneur pour les IDs d'images à supprimer -->
-                            <div id="imagesToDelete"></div>
+                            <!-- Galerie d'images (optionnel) -->
+<h3 class="form-section-title mt-4">
+    <i class="fas fa-images me-2" style="color: var(--primary-color);"></i>
+    Galerie d'images (optionnel)
+</h3>
+
+<div class="gallery-upload">
+    <!-- Conteneur pour les previews existantes et nouvelles -->
+    <div class="gallery-grid" id="galleryPreview">
+        @if($mapPoint->images->count() > 0)
+            @foreach($mapPoint->images as $index => $image)
+            <div class="gallery-preview-item existing" data-id="{{ $image->id }}">
+                <img src="{{ $image->image ? (Str::startsWith($image->image, 'http') ? $image->image : asset('storage/'.$image->image)) : '' }}" alt="Gallery Image">
+                <button type="button" class="btn-remove-gallery-existing" data-id="{{ $image->id }}" data-image="{{ $image->image }}">
+                    <i class="fas fa-times"></i>
+                </button>
+                <input type="hidden" name="existing_images[]" value="{{ $image->id }}">
+                <div class="image-caption-input">
+                    <input type="text" 
+                           class="form-control-sm" 
+                           name="existing_image_captions[{{ $image->id }}]" 
+                           value="{{ $image->caption }}"
+                           placeholder="Légende">
+                </div>
+            </div>
+            @endforeach
+        @endif
+    </div>
+    
+    <!-- Zone d'upload pour nouvelles images -->
+    <div class="upload-area-small" id="galleryUploadArea">
+        <i class="fas fa-plus"></i>
+        <span>Ajouter</span>
+        <input type="file" 
+               class="file-input" 
+               id="additional_images" 
+               name="new_images[]" 
+               accept="image/png, image/jpg, image/jpeg, image/webp"
+               multiple
+               style="display: none;">
+    </div>
+</div>
+<small class="form-text-modern">Vous pouvez sélectionner plusieurs images (Ctrl+clic)</small>
+
+<!-- Conteneur pour les IDs d'images à supprimer -->
+<div id="deletedImagesContainer"></div>
                         </div>
                     </div>
                     
@@ -937,72 +945,301 @@
             }
 
             // ==================== GALERIE D'IMAGES ====================
-            const galleryInput = document.getElementById('additional_images');
-            const galleryPreview = document.getElementById('galleryPreview');
-            const galleryUploadArea = document.getElementById('galleryUploadArea');
-            const imagesToDelete = document.getElementById('imagesToDelete');
+const galleryInput = document.getElementById('additional_images');
+const galleryPreview = document.getElementById('galleryPreview');
+const galleryUploadArea = document.getElementById('galleryUploadArea');
+const deletedContainer = document.getElementById('deletedImagesContainer');
+let deletedImages = [];
+
+// Initialiser le conteneur des images supprimées s'il n'existe pas
+if (!deletedContainer) {
+    const container = document.createElement('div');
+    container.id = 'deletedImagesContainer';
+    document.querySelector('.gallery-upload').appendChild(container);
+}
+
+// Fonction pour ajouter une image à supprimer
+function addImageToDelete(imageId, element) {
+    if (!deletedImages.includes(imageId)) {
+        deletedImages.push(imageId);
+        
+        // Ajouter input caché
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'delete_images[]';
+        input.value = imageId;
+        document.getElementById('deletedImagesContainer').appendChild(input);
+        
+        // Marquer visuellement
+        element.classList.add('deleted');
+        element.style.opacity = '0.5';
+        element.style.filter = 'grayscale(1)';
+        
+        // Ajouter badge
+        let badge = element.querySelector('.deleted-badge');
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'deleted-badge';
+            badge.innerHTML = '<i class="fas fa-trash"></i> À supprimer';
+            element.appendChild(badge);
+        }
+        
+        // Ajouter bouton restaurer
+        let restoreBtn = element.querySelector('.btn-restore');
+        if (!restoreBtn) {
+            restoreBtn = document.createElement('button');
+            restoreBtn.type = 'button';
+            restoreBtn.className = 'btn-restore';
+            restoreBtn.innerHTML = '<i class="fas fa-undo-alt"></i>';
+            restoreBtn.title = 'Annuler la suppression';
+            restoreBtn.style.position = 'absolute';
+            restoreBtn.style.bottom = '5px';
+            restoreBtn.style.right = '5px';
+            restoreBtn.style.width = '24px';
+            restoreBtn.style.height = '24px';
+            restoreBtn.style.borderRadius = '50%';
+            restoreBtn.style.backgroundColor = '#28a745';
+            restoreBtn.style.color = 'white';
+            restoreBtn.style.border = 'none';
+            restoreBtn.style.cursor = 'pointer';
+            restoreBtn.style.fontSize = '10px';
+            restoreBtn.style.zIndex = '10';
             
-            if (galleryInput && galleryPreview && galleryUploadArea) {
-                galleryUploadArea.addEventListener('click', () => galleryInput.click());
-                
-                galleryInput.addEventListener('change', function(e) {
-                    const files = Array.from(e.target.files);
-                    if (files.length === 0) return;
-                    
-                    files.forEach((file, index) => {
-                        if (file.type.startsWith('image/')) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                const previewItem = document.createElement('div');
-                                previewItem.className = 'gallery-preview-item';
-                                previewItem.innerHTML = `
-                                    <img src="${e.target.result}" alt="Preview ${index + 1}">
-                                    <button type="button" class="btn-remove-gallery" data-index="${index}">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                `;
-                                galleryPreview.appendChild(previewItem);
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    });
-                    
-                    galleryUploadArea.style.display = 'none';
-                });
-                
-                // Supprimer une nouvelle image
-                galleryPreview.addEventListener('click', function(e) {
-                    const btn = e.target.closest('.btn-remove-gallery');
-                    if (btn) {
-                        btn.closest('.gallery-preview-item').remove();
-                        if (galleryPreview.children.length === 0) {
-                            galleryUploadArea.style.display = 'flex';
-                            galleryInput.value = '';
-                        }
-                    }
-                });
-                
-                // Supprimer une image existante
-                galleryPreview.addEventListener('click', function(e) {
-                    const btn = e.target.closest('.btn-remove-gallery-existing');
-                    if (btn) {
-                        const imageId = btn.dataset.id;
-                        if (confirm('Supprimer cette image ?')) {
-                            btn.closest('.gallery-preview-item').remove();
-                            // Ajouter l'ID à la liste des images à supprimer
-                            const input = document.createElement('input');
-                            input.type = 'hidden';
-                            input.name = 'delete_images[]';
-                            input.value = imageId;
-                            imagesToDelete.appendChild(input);
-                            
-                            if (galleryPreview.children.length === 0) {
-                                galleryUploadArea.style.display = 'flex';
-                            }
-                        }
-                    }
-                });
+            restoreBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                restoreImage(imageId, element);
+            });
+            
+            element.appendChild(restoreBtn);
+        }
+    }
+}
+
+// Fonction pour restaurer une image
+function restoreImage(imageId, element) {
+    const index = deletedImages.indexOf(imageId);
+    if (index > -1) {
+        deletedImages.splice(index, 1);
+        
+        // Supprimer input caché
+        const inputs = document.querySelectorAll('#deletedImagesContainer input');
+        inputs.forEach(input => {
+            if (input.value == imageId) input.remove();
+        });
+        
+        // Restaurer visuellement
+        element.classList.remove('deleted');
+        element.style.opacity = '';
+        element.style.filter = '';
+        
+        // Supprimer badge
+        const badge = element.querySelector('.deleted-badge');
+        if (badge) badge.remove();
+        
+        // Supprimer bouton restaurer
+        const restoreBtn = element.querySelector('.btn-restore');
+        if (restoreBtn) restoreBtn.remove();
+    }
+}
+
+// Écouter les clics sur les boutons de suppression (images existantes)
+if (galleryPreview) {
+    galleryPreview.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-remove-gallery-existing');
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const imageId = btn.dataset.id;
+            const galleryItem = btn.closest('.gallery-preview-item');
+            
+            if (galleryItem.classList.contains('deleted')) {
+                restoreImage(imageId, galleryItem);
+            } else {
+                if (confirm('Supprimer cette image définitivement ?')) {
+                    addImageToDelete(imageId, galleryItem);
+                }
             }
+        }
+    });
+}
+
+// ==================== AJOUT DE NOUVELLES IMAGES ====================
+const newImagesPreview = document.getElementById('newImagesPreview') || (() => {
+    const div = document.createElement('div');
+    div.id = 'newImagesPreview';
+    div.className = 'gallery-grid mt-3';
+    document.querySelector('.gallery-upload').appendChild(div);
+    return div;
+})();
+
+if (galleryUploadArea && galleryInput) {
+    galleryUploadArea.addEventListener('click', () => galleryInput.click());
+    
+    // Drag & drop
+    galleryUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        galleryUploadArea.classList.add('dragover');
+    });
+    
+    galleryUploadArea.addEventListener('dragleave', () => {
+        galleryUploadArea.classList.remove('dragover');
+    });
+    
+    galleryUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        galleryUploadArea.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+            handleNewImages(files);
+        }
+    });
+    
+    galleryInput.addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        handleNewImages(files);
+    });
+    
+    // Fonction pour gérer les nouvelles images
+    function handleNewImages(files) {
+        files.forEach((file, index) => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                const uniqueId = 'new_' + Date.now() + '_' + index + '_' + Math.random().toString(36).substr(2, 9);
+                
+                reader.onload = (ev) => {
+                    const div = document.createElement('div');
+                    div.className = 'gallery-preview-item new';
+                    div.setAttribute('data-temp-id', uniqueId);
+                    div.innerHTML = `
+                        <img src="${ev.target.result}" alt="Nouvelle image">
+                        <button type="button" class="btn-remove-gallery-new" data-temp-id="${uniqueId}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <div class="image-caption-input">
+                            <input type="text" 
+                                   class="form-control-sm" 
+                                   name="new_image_captions[${uniqueId}]" 
+                                   placeholder="Légende">
+                        </div>
+                    `;
+                    newImagesPreview.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        galleryUploadArea.style.display = 'none';
+        galleryInput.value = '';
+    }
+    
+    // Supprimer une nouvelle image (pas encore uploadée)
+    newImagesPreview.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-remove-gallery-new');
+        if (btn) {
+            const tempId = btn.dataset.tempId;
+            const item = document.querySelector(`.gallery-preview-item.new[data-temp-id="${tempId}"]`);
+            if (item) {
+                item.remove();
+            }
+            
+            // Ré-indexer les légendes restantes
+            document.querySelectorAll('#newImagesPreview .gallery-preview-item.new').forEach((item, idx) => {
+                const captionInput = item.querySelector('input[name^="new_image_captions"]');
+                if (captionInput) {
+                    const newName = `new_image_captions[${idx}]`;
+                    captionInput.name = newName;
+                }
+            });
+            
+            // Vérifier si plus d'images
+            if (newImagesPreview.children.length === 0) {
+                galleryUploadArea.style.display = 'flex';
+            }
+        }
+    });
+}
+
+// ==================== RESTAURER LES IMAGES DÉJÀ SUPPRIMÉES (après erreur de validation) ====================
+// Vérifier s'il y a déjà des images marquées pour suppression dans les anciennes données
+const existingDeleteInputs = document.querySelectorAll('input[name="delete_images[]"]');
+existingDeleteInputs.forEach(input => {
+    const imageId = input.value;
+    const galleryItem = document.querySelector(`.gallery-preview-item.existing[data-id="${imageId}"]`);
+    if (galleryItem && !galleryItem.classList.contains('deleted')) {
+        deletedImages.push(imageId);
+        galleryItem.classList.add('deleted');
+        galleryItem.style.opacity = '0.5';
+        galleryItem.style.filter = 'grayscale(1)';
+        
+        // Ajouter badge
+        let badge = galleryItem.querySelector('.deleted-badge');
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'deleted-badge';
+            badge.innerHTML = '<i class="fas fa-trash"></i> À supprimer';
+            galleryItem.appendChild(badge);
+        }
+        
+        // Ajouter bouton restaurer
+        let restoreBtn = galleryItem.querySelector('.btn-restore');
+        if (!restoreBtn) {
+            restoreBtn = document.createElement('button');
+            restoreBtn.type = 'button';
+            restoreBtn.className = 'btn-restore';
+            restoreBtn.innerHTML = '<i class="fas fa-undo-alt"></i>';
+            restoreBtn.style.position = 'absolute';
+            restoreBtn.style.bottom = '5px';
+            restoreBtn.style.right = '5px';
+            restoreBtn.style.width = '24px';
+            restoreBtn.style.height = '24px';
+            restoreBtn.style.borderRadius = '50%';
+            restoreBtn.style.backgroundColor = '#28a745';
+            restoreBtn.style.color = 'white';
+            restoreBtn.style.border = 'none';
+            restoreBtn.style.cursor = 'pointer';
+            restoreBtn.style.fontSize = '10px';
+            restoreBtn.style.zIndex = '10';
+            
+            restoreBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                restoreImage(imageId, galleryItem);
+            });
+            
+            galleryItem.appendChild(restoreBtn);
+        }
+    }
+});
+
+// Afficher la zone d'upload si la galerie est vide
+function checkGalleryEmpty() {
+    const existingItems = document.querySelectorAll('.gallery-preview-item.existing:not(.deleted)');
+    const newItems = document.querySelectorAll('.gallery-preview-item.new');
+    
+    if (existingItems.length === 0 && newItems.length === 0 && galleryUploadArea) {
+        galleryUploadArea.style.display = 'flex';
+    }
+}
+
+// Observer les changements dans la galerie
+const galleryObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.type === 'childList') {
+            checkGalleryEmpty();
+        }
+    });
+});
+
+if (galleryPreview) {
+    galleryObserver.observe(galleryPreview, { childList: true, subtree: true });
+}
+if (newImagesPreview) {
+    galleryObserver.observe(newImagesPreview, { childList: true, subtree: true });
+}
+
+checkGalleryEmpty();
 
             // ==================== PAGE DÉTAILS TOGGLE ====================
             const hasDetailsCheckbox = document.getElementById('has_details_page');
@@ -1454,5 +1691,157 @@
         .ms-auto {
             margin-left: auto;
         }
+        /* Styles pour la galerie - À ajouter dans la balise style */
+.gallery-preview-item {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #eef4f9;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.gallery-preview-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.gallery-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-preview-item.deleted {
+    opacity: 0.5;
+    filter: grayscale(1);
+}
+
+.deleted-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #ef476f;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 5;
+}
+
+.image-caption-input {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.7);
+    padding: 4px;
+}
+
+.image-caption-input input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 10px;
+    text-align: center;
+}
+
+.image-caption-input input::placeholder {
+    color: rgba(255,255,255,0.6);
+}
+
+.btn-remove-gallery-existing,
+.btn-remove-gallery-new {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #ef476f;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.btn-remove-gallery-existing:hover,
+.btn-remove-gallery-new:hover {
+    transform: scale(1.1);
+    background: #d63e62;
+}
+
+.btn-restore {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.btn-restore:hover {
+    transform: scale(1.1);
+    background: #218838;
+}
+
+.upload-area-small {
+    width: 120px;
+    height: 120px;
+    border: 2px dashed #e0e9f0;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    color: #6c757d;
+    transition: all 0.3s ease;
+    background: #f8fbfe;
+}
+
+.upload-area-small:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(27, 79, 107, 0.05);
+}
+
+.upload-area-small.dragover {
+    border-color: var(--primary-color);
+    background: rgba(27, 79, 107, 0.1);
+}
+
+.upload-area-small i {
+    font-size: 1.5rem;
+}
+
+.gallery-grid {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
     </style>
 @endsection
