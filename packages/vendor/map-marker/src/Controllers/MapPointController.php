@@ -8,6 +8,7 @@ use App\Models\MapPointImage;
 use App\Models\MapPointVideo;
 use App\Models\MapPointDetail;
 use App\Models\Etablissement;
+use App\Services\CDNService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -15,6 +16,15 @@ use Illuminate\Support\Facades\DB;
 
 class MapPointController extends Controller
 {
+    protected $cdnService;
+    protected $cdnEnabled;
+    
+    public function __construct(CDNService $cdnService)
+    {
+        $this->cdnService = $cdnService;
+        $this->cdnEnabled = env('CDN_ENABLED', false);
+    }
+    
     /**
      * Display a listing of the map points with AJAX support.
      */
@@ -91,7 +101,7 @@ class MapPointController extends Controller
                     'category_label' => $this->getCategoryLabel($point->category),
                     'category_color' => $this->getCategoryColor($point->category),
                     'category_icon' => $this->getCategoryIcon($point->category),
-                    'main_image' => $point->main_image ? asset('storage/' . $point->main_image) : null,
+                    'main_image' => $this->getFileUrl($point->main_image),
                     'youtube_id' => $point->youtube_id,
                     'has_video' => !is_null($point->youtube_id),
                     'latitude' => $point->latitude,
@@ -267,10 +277,22 @@ class MapPointController extends Controller
         DB::beginTransaction();
 
         try {
-            // Traitement de l'image principale
+            // Traitement de l'image principale via CDN
             if ($request->hasFile('main_image')) {
-                $path = $request->file('main_image')->store('map-points', 'public');
-                $validated['main_image'] = $path;
+                $file = $request->file('main_image');
+                $path = 'map-points/' . date('Y/m/d');
+                
+                if ($this->cdnEnabled) {
+                    $uploadResult = $this->cdnService->upload($file, $path, 'public');
+                    
+                    if ($uploadResult['success'] ?? false) {
+                        $validated['main_image'] = $uploadResult['path']; // Store CDN path
+                    } else {
+                        throw new \Exception('Failed to upload main image to CDN: ' . ($uploadResult['error'] ?? 'Unknown error'));
+                    }
+                } else {
+                    $validated['main_image'] = $file->store($path, 'public');
+                }
             }
 
             // Extraction de l'ID YouTube
@@ -283,20 +305,33 @@ class MapPointController extends Controller
 
             $mapPoint = MapPoint::create($validated);
 
-            // Traitement des images supplémentaires
+            // Traitement des images supplémentaires via CDN
             if ($request->hasFile('additional_images')) {
                 $images = $request->file('additional_images');
                 
                 foreach ($images as $index => $image) {
-                    $path = $image->store('map-points/gallery', 'public');
+                    $path = 'map-points/gallery/' . date('Y/m/d');
+                    $imagePath = null;
                     
-                    MapPointImage::create([
-                        'map_point_id' => $mapPoint->id,
-                        'image' => $path,
-                        'thumbnail' => $path,
-                        'caption' => $request->input('image_captions.' . $index, ''),
-                        'sort_order' => $index,
-                    ]);
+                    if ($this->cdnEnabled) {
+                        $uploadResult = $this->cdnService->upload($image, $path, 'public');
+                        
+                        if ($uploadResult['success'] ?? false) {
+                            $imagePath = $uploadResult['path'];
+                        }
+                    } else {
+                        $imagePath = $image->store($path, 'public');
+                    }
+                    
+                    if ($imagePath) {
+                        MapPointImage::create([
+                            'map_point_id' => $mapPoint->id,
+                            'image' => $imagePath,
+                            'thumbnail' => $imagePath,
+                            'caption' => $request->input('image_captions.' . $index, ''),
+                            'sort_order' => $index,
+                        ]);
+                    }
                 }
             }
 
@@ -346,11 +381,6 @@ class MapPointController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             
-            // Supprimer les images en cas d'erreur
-            if (isset($path)) {
-                Storage::disk('public')->delete($path);
-            }
-            
             return back()->withInput()
                 ->with('error', 'Erreur lors de la création : ' . $e->getMessage());
         }
@@ -363,11 +393,6 @@ class MapPointController extends Controller
     {
         $mapPoint->load(['images', 'videos', 'details', 'etablissement', 'user']);
         $mapPoint->incrementViews();
-
-        // Récupérer les réseaux sociaux via l'accesseur du modèle
-        if ($mapPoint->details) {
-            $socialNetworks = $mapPoint->details->social_networks;
-        }
 
         return view('map-marker::show', compact('mapPoint'));
     }
@@ -409,13 +434,25 @@ class MapPointController extends Controller
 
         try {
             if ($request->hasFile('main_image')) {
-                // Supprimer l'ancienne image
+                // Supprimer l'ancienne image du CDN ou local
                 if ($mapPoint->main_image) {
-                    Storage::disk('public')->delete($mapPoint->main_image);
+                    $this->deleteFile($mapPoint->main_image);
                 }
                 
-                $path = $request->file('main_image')->store('map-points', 'public');
-                $validated['main_image'] = $path;
+                $file = $request->file('main_image');
+                $path = 'map-points/' . date('Y/m/d');
+                
+                if ($this->cdnEnabled) {
+                    $uploadResult = $this->cdnService->upload($file, $path, 'public');
+                    
+                    if ($uploadResult['success'] ?? false) {
+                        $validated['main_image'] = $uploadResult['path'];
+                    } else {
+                        throw new \Exception('Failed to upload main image to CDN');
+                    }
+                } else {
+                    $validated['main_image'] = $file->store($path, 'public');
+                }
             }
 
             if ($request->filled('youtube_url')) {
@@ -446,11 +483,11 @@ class MapPointController extends Controller
         DB::beginTransaction();
 
         try {
-            // Supprimer les images associées
+            // Supprimer les images associées du CDN
             foreach ($mapPoint->images as $image) {
-                Storage::disk('public')->delete($image->image);
-                if ($image->thumbnail) {
-                    Storage::disk('public')->delete($image->thumbnail);
+                $this->deleteFile($image->image);
+                if ($image->thumbnail && $image->thumbnail !== $image->image) {
+                    $this->deleteFile($image->thumbnail);
                 }
                 $image->delete();
             }
@@ -467,7 +504,7 @@ class MapPointController extends Controller
 
             // Supprimer l'image principale
             if ($mapPoint->main_image) {
-                Storage::disk('public')->delete($mapPoint->main_image);
+                $this->deleteFile($mapPoint->main_image);
             }
 
             $mapPoint->delete();
@@ -495,6 +532,57 @@ class MapPointController extends Controller
             }
 
             return back()->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get file URL (CDN or local)
+     */
+    protected function getFileUrl($path)
+    {
+        if (!$path) {
+            return null;
+        }
+        
+        if ($this->cdnEnabled && $this->isCdnPath($path)) {
+            $cdnUrl = rtrim(env('CDN_URL', 'https://upload.goexploriabusiness.com'), '/');
+            return $cdnUrl . '/storage/' . $path;
+        }
+        
+        return asset('storage/' . $path);
+    }
+    
+    /**
+     * Check if path is from CDN
+     */
+    protected function isCdnPath($path)
+    {
+        // If path contains http/https, it's already a URL
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Delete file from CDN or local storage
+     */
+    protected function deleteFile($path)
+    {
+        if (!$path) {
+            return false;
+        }
+        
+        // If it's a full URL, extract the path
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            $cdnUrl = rtrim(env('CDN_URL', 'https://upload.goexploriabusiness.com'), '/');
+            $path = str_replace($cdnUrl . '/storage/', '', $path);
+        }
+        
+        if ($this->cdnEnabled) {
+            return $this->cdnService->delete($path);
+        } else {
+            return Storage::disk('public')->delete($path);
         }
     }
 
@@ -544,13 +632,13 @@ class MapPointController extends Controller
                 'category_icon' => $this->getCategoryIcon($point->category),
                 'lat' => $point->latitude,
                 'lng' => $point->longitude,
-                'image' => $point->main_image ? asset('storage/' . $point->main_image) : null,
+                'image' => $this->getFileUrl($point->main_image),
                 'youtube_id' => $point->youtube_id,
                 'has_details' => $point->has_details_page,
                 'details_url' => $point->details_url,
                 'thumbnail' => $point->youtube_id 
                     ? "https://img.youtube.com/vi/{$point->youtube_id}/hqdefault.jpg"
-                    : ($point->main_image ? asset('storage/' . $point->main_image) : null),
+                    : $this->getFileUrl($point->main_image),
                 'views' => $point->views,
             ];
 
@@ -659,13 +747,13 @@ class MapPointController extends Controller
                 'full_address' => $point->details ? $point->details->full_address : null,
             ],
             'media' => [
-                'main_image' => $point->main_image ? asset('storage/' . $point->main_image) : null,
+                'main_image' => $this->getFileUrl($point->main_image),
                 'youtube_id' => $point->youtube_id,
                 'images' => $point->images->map(function($image) {
                     return [
                         'id' => $image->id,
-                        'url' => asset('storage/' . $image->image),
-                        'thumbnail' => asset('storage/' . ($image->thumbnail ?: $image->image)),
+                        'url' => $this->getFileUrl($image->image),
+                        'thumbnail' => $this->getFileUrl($image->thumbnail ?: $image->image),
                         'caption' => $image->caption,
                     ];
                 }),
@@ -713,7 +801,7 @@ class MapPointController extends Controller
             $data['etablissement'] = [
                 'id' => $point->etablissement->id,
                 'name' => $point->etablissement->name,
-                'logo' => $point->etablissement->logo ? asset('storage/' . $point->etablissement->logo) : null,
+                'logo' => $point->etablissement->logo ? $this->getFileUrl($point->etablissement->logo) : null,
             ];
         }
 
@@ -965,4 +1053,3 @@ class MapPointController extends Controller
         ];
     }
 }
-
