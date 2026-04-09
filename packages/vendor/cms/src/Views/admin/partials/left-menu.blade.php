@@ -3,13 +3,21 @@
         <!-- Profile Header -->
         <div class="profile-header-modern">
             <div class="profile-avatar-modern">
-                <div class="avatar-gradient">
                     @if(has_logo())
-                        <img src="{{ get_logo_url() }}" alt="Logo de l'établissement" class="avatar-image">
-                    @else
+                    <img src="{{ get_logo_url() }}" alt="Logo de l'établissement" class="avatar-image">
+                    <style>
+                        .avatar-image {
+                            width: 60px;
+                            height: 60px;
+                            object-fit: cover;
+                            border-radius: 50%;
+                        }
+                    </style>
+                    @else 
+                <div class="avatar-gradient">
                     <i class="fas fa-building"></i>
-                    @endif
                 </div>
+                    @endif
                 <div class="avatar-status {{ ($stats['etablissement']->is_active ?? false) ? 'active' : 'inactive' }}"></div>
             </div>
             <div class="profile-info-modern">
