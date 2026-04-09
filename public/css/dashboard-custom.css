@@ -1,0 +1,404 @@
+/* ============================================
+   PRELOADER STYLES (UNIQUEMENT)
+   Aucune duplication avec dashboard.css
+============================================ */
+
+.preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at 30% 40%, #eeeff2 0%, #eaeaed 100%);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    opacity: 0.97;
+    justify-content: center;
+    flex-direction: column;
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s ease;
+}
+
+.preloader.hide {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.loader-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+/* Logo avec animation flottante */
+.logo-png-wrapper {
+    animation: floatToggle 2.8s infinite ease-in-out;
+    filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.4));
+}
+
+.logo-png {
+    width: 240px;
+    height: auto;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+@keyframes floatToggle {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-14px) rotate(2deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+
+/* 5 points - petits, fond blanc, transition orange → bleu foncé */
+.dots-container {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    background: transparent;
+    padding: 5px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+    background-color: #ffffff;
+    box-shadow: 0 0 6px rgba(255, 140, 66, 0.4);
+    border: 1px solid rgba(255, 140, 66, 0.3);
+    animation: pulseDot 1.5s infinite alternate;
+}
+
+@keyframes pulseDot {
+    0% { transform: scale(0.8); opacity: 0.7; }
+    100% { transform: scale(1.2); opacity: 1; }
+}
+
+.dot:nth-child(1) { animation-delay: 0s; }
+.dot:nth-child(2) { animation-delay: 0.12s; }
+.dot:nth-child(3) { animation-delay: 0.24s; }
+.dot:nth-child(4) { animation-delay: 0.36s; }
+.dot:nth-child(5) { animation-delay: 0.48s; }
+
+/* Responsive preloader */
+@media (max-width: 600px) {
+    .logo-png { width: 100px; }
+    .dot { width: 8px; height: 8px; }
+    .dots-container { gap: 10px; }
+    .loader-content { gap: 0.2rem; }
+}
+
+/* ============================================
+   STYLES SUPPLÉMENTAIRES (NON PRÉSENTS DANS DASHBOARD.CSS)
+   Header modern, Sidebar améliorée, etc.
+============================================ */
+
+/* Header modern - styles supplémentaires */
+.dashboard-header {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    padding: 0 2rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.website-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.2rem;
+    background: linear-gradient(135deg, var(--primary-color), #2a46d4);
+    color: white;
+    text-decoration: none;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(67, 97, 238, 0.25);
+}
+
+.website-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(67, 97, 238, 0.35);
+    color: white;
+}
+
+.website-link i {
+    font-size: 0.85rem;
+}
+
+/* Sidebar moderne - améliorations */
+.dashboard-sidebar {
+    background: linear-gradient(180deg, var(--sidebar-dark) 0%, #0a0f1f 100%);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.logo-main img {
+    width: 180px;
+    height: auto;
+}
+
+/* Améliorations des sous-menus */
+.submenu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1.5rem 0.6rem 3.2rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.submenu-item:hover {
+    padding-left: 3.5rem;
+}
+
+.submenu-icon {
+    width: 20px;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.submenu-badge {
+    margin-left: auto;
+    background: rgba(67, 97, 238, 0.2);
+    color: var(--primary-color);
+    border-radius: 12px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.submenu-badge.bg-warning {
+    background: var(--warning-color);
+    color: #1e293b;
+}
+
+.submenu-badge.bg-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.submenu-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0.5rem 1.5rem;
+}
+
+/* Animation pour les sous-menus */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.has-submenu.active .submenu {
+    animation: slideDown 0.3s ease;
+}
+
+/* Scrollbar sidebar personnalisée */
+.dashboard-sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 10px;
+}
+
+/* Bouton toggle mobile */
+.sidebar-toggle-mobile {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    color: #1e293b;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-toggle-mobile:hover {
+    background: var(--light-bg);
+    color: var(--primary-color);
+}
+
+/* Stats cards modernes (si non présents) */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stats-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--card-shadow);
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+}
+
+.stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.stats-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.stats-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.stats-label {
+    color: var(--gray);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.stats-change {
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.stats-change.positive {
+    color: var(--accent-color);
+}
+
+.stats-change.negative {
+    color: var(--danger-color);
+}
+
+/* Welcome card améliorée */
+.welcome-card {
+    background: linear-gradient(135deg, var(--primary-color), #3a56e4);
+    border-radius: 20px;
+    color: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--card-shadow);
+}
+
+.welcome-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.welcome-text {
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+/* Overlay mobile */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1001;
+    display: none;
+}
+
+.overlay.active {
+    display: block;
+}
+
+/* Responsive supplémentaire */
+@media (max-width: 992px) {
+    .sidebar-toggle-mobile {
+        display: flex !important;
+    }
+    
+    .header-left .website-link span {
+        display: none;
+    }
+    
+    .header-left .website-link {
+        padding: 0.5rem;
+    }
+    
+    .user-info {
+        display: none;
+    }
+    
+    .search-container {
+        width: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .welcome-card {
+        padding: 1.5rem;
+    }
+    
+    .welcome-title {
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .search-container {
+        display: none;
+    }
+    
+    .dashboard-header {
+        padding: 0 0.8rem;
+    }
+    
+    .user-avatar {
+        width: 35px;
+        height: 35px;
+        font-size: 0.85rem;
+    }
+    
+    .stats-value {
+        font-size: 1.7rem;
+    }
+}
