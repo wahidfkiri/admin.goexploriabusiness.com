@@ -41,6 +41,7 @@
             </div>
         </div>
         
+        
         <!-- Navigation Links -->
         <div class="nav flex-column vertical-tabs-modern">
             <a href="{{ route('cms.admin.dashboard', ['etablissementId' => $stats['etablissement']->id, 'section' => 'dashboard']) }}" 
