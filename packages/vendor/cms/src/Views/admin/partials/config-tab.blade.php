@@ -149,7 +149,7 @@
                 </div>
                 <div class="config-item mt-3">
                     <label class="config-label">Téléphone</label>
-                    <input type="text" class="form-control" name="phone" value="{{ $stats['etablissement']->getSetting('phone', $stats['etablissement']->phone ?? '') }}">
+                    <input type="text" class="form-control" name="phone" value="{{ $stats['etablissement']->getSetting('phone', $stats['etablissement']->phone ?? '', 'company') }}">
                 </div>
             </div>
         </div>
