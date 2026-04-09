@@ -4,7 +4,11 @@
         <div class="profile-header-modern">
             <div class="profile-avatar-modern">
                 <div class="avatar-gradient">
+                    @if(has_logo())
+                        <img src="{{ get_logo_url() }}" alt="Logo de l'établissement" class="avatar-image">
+                    @else
                     <i class="fas fa-building"></i>
+                    @endif
                 </div>
                 <div class="avatar-status {{ ($stats['etablissement']->is_active ?? false) ? 'active' : 'inactive' }}"></div>
             </div>

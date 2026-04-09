@@ -62,6 +62,7 @@ if (!function_exists('getCurrentTheme')) {
         $etablissement = getCurrentEtablissement();
         
         if (!$etablissement) {
+            \Log::warning('getCurrentTheme: No etablissement found');
             return null;
         }
         
@@ -85,19 +86,44 @@ if (!function_exists('getCurrentTheme')) {
             }
         }
         
-        // Thème actif pour l'établissement via la relation many-to-many
-        $activeTheme = $etablissement->themes()
-            ->wherePivot('is_active', true)
-            ->first();
-        
-        // Fallback: premier thème lié à l'établissement
-        if (!$activeTheme) {
-            $activeTheme = $etablissement->themes()->first();
+        // 🔥 CORRECTION : Utiliser la relation themes() de l'établissement
+        try {
+            // Récupérer le thème actif via la relation many-to-many
+            $activeTheme = $etablissement->themes()
+                ->wherePivot('is_active', true)
+                ->first();
+            
+            // Fallback: premier thème lié à l'établissement
+            if (!$activeTheme) {
+                $activeTheme = $etablissement->themes()->first();
+            }
+            
+            // Fallback ultime: n'importe quel thème (sans condition d'établissement)
+            if (!$activeTheme) {
+                $activeTheme = \Vendor\Cms\Models\Theme::first();
+                if ($activeTheme) {
+                    \Log::info('getCurrentTheme: Using fallback theme without etablissement link', [
+                        'theme_id' => $activeTheme->id,
+                        'theme_name' => $activeTheme->name,
+                        'etablissement_id' => $etablissement->id
+                    ]);
+                }
+            }
+            
+        } catch (\Exception $e) {
+            \Log::error('getCurrentTheme error: ' . $e->getMessage());
+            $activeTheme = \Vendor\Cms\Models\Theme::first();
         }
         
-        // Fallback ultime: thème par défaut global
         if (!$activeTheme) {
-            $activeTheme = \Vendor\Cms\Models\Theme::where('is_default', true)->first();
+            \Log::warning('getCurrentTheme: No theme found at all for etablissement: ' . $etablissement->id);
+        } else {
+            \Log::info('getCurrentTheme: Theme found', [
+                'theme_id' => $activeTheme->id,
+                'theme_name' => $activeTheme->name,
+                'storage_type' => $activeTheme->storage_type,
+                'is_cdn' => $activeTheme->isCdnStorage()
+            ]);
         }
         
         return $activeTheme;
@@ -118,11 +144,11 @@ if (!function_exists('getThemeStoragePath')) {
         
         if ($theme->isCdnStorage()) {
             // For CDN, return the virtual path
-            return "cms/themes/{$etablissementId}/{$theme->slug}";
+            return "cms/themes/{$theme->slug}";
         }
         
         // Local storage path
-        return storage_path("app/public/cms/themes/{$etablissementId}/{$theme->slug}");
+        return storage_path("app/public/cms/themes/{$theme->slug}");
     }
 }
 
@@ -138,18 +164,18 @@ if (!function_exists('theme_asset')) {
         $etablissement = getCurrentEtablissement();
         $theme = getCurrentTheme();
         
-        if (!$etablissement || !$theme) {
-            return asset($path);
-        }
+        // if (!$etablissement || !$theme) {
+        //     return asset($path);
+        // }
         
         // Check if theme uses CDN storage
          if ($theme->isCdnStorage()) {
             $cdnUrl = rtrim(env('THEME_CDN_URL', 'https://goexploriabusiness.com'), '/');
-            return "{$cdnUrl}/storage/theme/cms/themes/{$etablissement->id}/{$theme->slug}/assets/" . ltrim($path, '/');
+            return "{$cdnUrl}/storage/theme/cms/themes/{$theme->slug}/assets/" . ltrim($path, '/');
         }
         
         // Local storage URL
-        return url("/storage/cms/themes/{$etablissement->id}/{$theme->slug}/assets/" . ltrim($path, '/'));
+        return url("/storage/cms/themes/{$theme->slug}/assets/" . ltrim($path, '/'));
     }
 }
 
@@ -171,11 +197,11 @@ if (!function_exists('theme_path')) {
         
         if ($theme->isCdnStorage()) {
             // For CDN, return the virtual path (no physical file)
-            return "cms/themes/{$etablissement->id}/{$theme->slug}/" . ltrim($path, '/');
+            return "cms/themes/{$theme->slug}/" . ltrim($path, '/');
         }
         
         // Local storage path
-        return storage_path("app/public/cms/themes/{$etablissement->id}/{$theme->slug}/" . ltrim($path, '/'));
+        return storage_path("app/public/cms/themes/{$theme->slug}/" . ltrim($path, '/'));
     }
 }
 
@@ -197,8 +223,8 @@ if (!function_exists('render_theme_view')) {
         }
         
         $themePath = $theme->isCdnStorage() 
-            ? "cms/themes/{$etablissement->id}/{$theme->slug}"
-            : storage_path("app/public/cms/themes/{$etablissement->id}/{$theme->slug}");
+            ? "cms/themes/{$theme->slug}"
+            : storage_path("app/public/cms/themes/{$theme->slug}");
         
         $viewPath = str_replace('.', '/', $view);
         
@@ -537,15 +563,362 @@ if (!function_exists('get_theme_file_content')) {
         
         if ($theme->isCdnStorage()) {
             $cdnService = app(\App\Services\CDNService::class);
-            $fullPath = "cms/themes/{$etablissement->id}/{$theme->slug}/" . ltrim($relativePath, '/');
+            $fullPath = "cms/themes/{$theme->slug}/" . ltrim($relativePath, '/');
             return $cdnService->getFile($fullPath);
         }
         
-        $fullPath = storage_path("app/public/cms/themes/{$etablissement->id}/{$theme->slug}/" . ltrim($relativePath, '/'));
+        $fullPath = storage_path("app/public/cms/themes/{$theme->slug}/" . ltrim($relativePath, '/'));
         if (file_exists($fullPath)) {
             return file_get_contents($fullPath);
         }
         
         return null;
     }
+
+    if (!function_exists('get_logo_url')) {
+    /**
+     * Get the logo URL for the current establishment.
+     *
+     * @param int|null $etablissementId
+     * @param string $default
+     * @return string|null
+     */
+    function get_logo_url($etablissementId = null, $default = null)
+    {
+        $etablissement = $etablissementId 
+            ? \App\Models\Etablissement::find($etablissementId)
+            : getCurrentEtablissement();
+        
+        if (!$etablissement) {
+            return $default;
+        }
+        
+        $logo = $etablissement->getSetting('site_logo', null, 'general');
+        
+        if (!$logo) {
+            return $default;
+        }
+        
+        // Si c'est déjà une URL complète (CDN ou local)
+        if (filter_var($logo, FILTER_VALIDATE_URL)) {
+            return $logo;
+        }
+        
+        // Sinon, construire l'URL locale
+        return Storage::disk('public')->url($logo);
+    }
+}
+
+if (!function_exists('get_favicon_url')) {
+    /**
+     * Get the favicon URL for the current establishment.
+     *
+     * @param int|null $etablissementId
+     * @param string $default
+     * @return string|null
+     */
+    function get_favicon_url($etablissementId = null, $default = null)
+    {
+        $etablissement = $etablissementId 
+            ? \App\Models\Etablissement::find($etablissementId)
+            : getCurrentEtablissement();
+        
+        if (!$etablissement) {
+            return $default;
+        }
+        
+        $favicon = $etablissement->getSetting('site_favicon', null, 'general');
+        
+        if (!$favicon) {
+            return $default;
+        }
+        
+        // Si c'est déjà une URL complète (CDN ou local)
+        if (filter_var($favicon, FILTER_VALIDATE_URL)) {
+            return $favicon;
+        }
+        
+        // Sinon, construire l'URL locale
+        return Storage::disk('public')->url($favicon);
+    }
+}
+
+if (!function_exists('has_logo')) {
+    /**
+     * Check if the establishment has a logo.
+     *
+     * @param int|null $etablissementId
+     * @return bool
+     */
+    function has_logo($etablissementId = null)
+    {
+        $etablissement = $etablissementId 
+            ? \App\Models\Etablissement::find($etablissementId)
+            : getCurrentEtablissement();
+        
+        if (!$etablissement) {
+            return false;
+        }
+        
+        $logo = $etablissement->getSetting('site_logo', null, 'general');
+        return !empty($logo);
+    }
+}
+
+if (!function_exists('has_favicon')) {
+    /**
+     * Check if the establishment has a favicon.
+     *
+     * @param int|null $etablissementId
+     * @return bool
+     */
+    function has_favicon($etablissementId = null)
+    {
+        $etablissement = $etablissementId 
+            ? \App\Models\Etablissement::find($etablissementId)
+            : getCurrentEtablissement();
+        
+        if (!$etablissement) {
+            return false;
+        }
+        
+        $favicon = $etablissement->getSetting('site_favicon', null, 'general');
+        return !empty($favicon);
+    }
+}
+
+if (!function_exists('get_logo_html')) {
+    /**
+     * Get HTML img tag for logo.
+     *
+     * @param int|null $etablissementId
+     * @param string $alt
+     * @param array $attributes
+     * @return string
+     */
+    function get_logo_html($etablissementId = null, $alt = 'Logo', $attributes = [])
+    {
+        $logoUrl = get_logo_url($etablissementId);
+        
+        if (!$logoUrl) {
+            return '';
+        }
+        
+        $attrs = '';
+        foreach ($attributes as $key => $value) {
+            $attrs .= ' ' . $key . '="' . htmlspecialchars($value) . '"';
+        }
+        
+        return '<img src="' . htmlspecialchars($logoUrl) . '" alt="' . htmlspecialchars($alt) . '"' . $attrs . '>';
+    }
+}
+
+if (!function_exists('get_favicon_html')) {
+    /**
+     * Get HTML link tag for favicon.
+     *
+     * @param int|null $etablissementId
+     * @param string $type
+     * @return string
+     */
+    function get_favicon_html($etablissementId = null, $type = 'image/x-icon')
+    {
+        $faviconUrl = get_favicon_url($etablissementId);
+        
+        if (!$faviconUrl) {
+            return '';
+        }
+        
+        $sizes = '';
+        
+        // Détecter la taille du favicon
+        if (strpos($faviconUrl, 'favicon-32x32') !== false) {
+            $sizes = ' sizes="32x32"';
+        } elseif (strpos($faviconUrl, 'favicon-16x16') !== false) {
+            $sizes = ' sizes="16x16"';
+        } elseif (strpos($faviconUrl, 'favicon-64x64') !== false) {
+            $sizes = ' sizes="64x64"';
+        } elseif (strpos($faviconUrl, 'favicon-128x128') !== false) {
+            $sizes = ' sizes="128x128"';
+        }
+        
+        return '<link rel="icon" type="' . htmlspecialchars($type) . '" href="' . htmlspecialchars($faviconUrl) . '"' . $sizes . '>';
+    }
+}
+
+if (!function_exists('get_apple_touch_icon_html')) {
+    /**
+     * Get HTML link tag for Apple Touch Icon (using favicon as fallback).
+     *
+     * @param int|null $etablissementId
+     * @return string
+     */
+    function get_apple_touch_icon_html($etablissementId = null)
+    {
+        $faviconUrl = get_favicon_url($etablissementId);
+        
+        if (!$faviconUrl) {
+            return '';
+        }
+        
+        return '<link rel="apple-touch-icon" href="' . htmlspecialchars($faviconUrl) . '">';
+    }
+}
+
+if (!function_exists('get_all_favicon_sizes')) {
+    /**
+     * Get HTML for all favicon sizes (best practice for modern browsers).
+     *
+     * @param int|null $etablissementId
+     * @return string
+     */
+    function get_all_favicon_sizes($etablissementId = null)
+    {
+        $faviconUrl = get_favicon_url($etablissementId);
+        
+        if (!$faviconUrl) {
+            return '';
+        }
+        
+        $html = '';
+        
+        // Standard favicon
+        $html .= '<link rel="icon" type="image/x-icon" href="' . htmlspecialchars($faviconUrl) . '">' . "\n";
+        
+        // PNG versions for modern browsers
+        $baseUrl = pathinfo($faviconUrl, PATHINFO_DIRNAME);
+        $filename = pathinfo($faviconUrl, PATHINFO_FILENAME);
+        
+        // Try to generate multiple sizes (if they exist)
+        $sizes = [16, 32, 48, 64, 128, 256];
+        foreach ($sizes as $size) {
+            $sizeUrl = $baseUrl . '/' . $filename . '-' . $size . 'x' . $size . '.png';
+            $html .= '<link rel="icon" type="image/png" sizes="' . $size . 'x' . $size . '" href="' . htmlspecialchars($sizeUrl) . '">' . "\n";
+        }
+        
+        return $html;
+    }
+}
+
+if (!function_exists('get_site_name')) {
+    /**
+     * Get the site name for the current establishment.
+     *
+     * @param int|null $etablissementId
+     * @param string $default
+     * @return string
+     */
+    function get_site_name($etablissementId = null, $default = 'Mon site')
+    {
+        $etablissement = $etablissementId 
+            ? \App\Models\Etablissement::find($etablissementId)
+            : getCurrentEtablissement();
+        
+        if (!$etablissement) {
+            return $default;
+        }
+        
+        $siteName = $etablissement->getSetting('site_name', null, 'general');
+        
+        return $siteName ?: ($etablissement->name ?: $default);
+    }
+}
+
+if (!function_exists('get_site_slogan')) {
+    /**
+     * Get the site slogan for the current establishment.
+     *
+     * @param int|null $etablissementId
+     * @return string|null
+     */
+    function get_site_slogan($etablissementId = null)
+    {
+        $etablissement = $etablissementId 
+            ? \App\Models\Etablissement::find($etablissementId)
+            : getCurrentEtablissement();
+        
+        if (!$etablissement) {
+            return null;
+        }
+        
+        return $etablissement->getSetting('site_slogan', null, 'general');
+    }
+}
+
+if (!function_exists('get_site_description')) {
+    /**
+     * Get the site description for the current establishment.
+     *
+     * @param int|null $etablissementId
+     * @return string|null
+     */
+    function get_site_description($etablissementId = null)
+    {
+        $etablissement = $etablissementId 
+            ? \App\Models\Etablissement::find($etablissementId)
+            : getCurrentEtablissement();
+        
+        if (!$etablissement) {
+            return null;
+        }
+        
+        return $etablissement->getSetting('site_description', null, 'general');
+    }
+}
+
+if (!function_exists('get_contact_email')) {
+    /**
+     * Get the contact email for the current establishment.
+     *
+     * @param int|null $etablissementId
+     * @return string|null
+     */
+    function get_contact_email($etablissementId = null)
+    {
+        $etablissement = $etablissementId 
+            ? \App\Models\Etablissement::find($etablissementId)
+            : getCurrentEtablissement();
+        
+        if (!$etablissement) {
+            return null;
+        }
+        
+        $email = $etablissement->getSetting('contact_email', null, 'general');
+        
+        return $email ?: $etablissement->email_contact;
+    }
+}
+
+if (!function_exists('get_company_info')) {
+    /**
+     * Get company information for the current establishment.
+     *
+     * @param int|null $etablissementId
+     * @return array
+     */
+    function get_company_info($etablissementId = null)
+    {
+        $etablissement = $etablissementId 
+            ? \App\Models\Etablissement::find($etablissementId)
+            : getCurrentEtablissement();
+        
+        if (!$etablissement) {
+            return [];
+        }
+        
+        return [
+            'name' => get_site_name($etablissementId),
+            'slogan' => get_site_slogan($etablissementId),
+            'description' => get_site_description($etablissementId),
+            'logo' => get_logo_url($etablissementId),
+            'favicon' => get_favicon_url($etablissementId),
+            'email' => get_contact_email($etablissementId),
+            'phone' => $etablissement->getSetting('phone', $etablissement->phone, 'general'),
+            'address' => $etablissement->getSetting('address', $etablissement->adresse, 'general'),
+            'city' => $etablissement->getSetting('city', $etablissement->ville, 'general'),
+            'zip_code' => $etablissement->getSetting('zip_code', $etablissement->zip_code, 'general'),
+            'website' => $etablissement->getSetting('website', $etablissement->website, 'general'),
+        ];
+    }
+}
 }
