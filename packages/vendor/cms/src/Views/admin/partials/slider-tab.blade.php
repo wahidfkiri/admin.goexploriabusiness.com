@@ -130,7 +130,6 @@
                         </div>
                     </div>
 
-                    <!-- Upload section -->
                     <div id="uploadSection" class="mb-3">
                         <div class="upload-area" id="uploadArea">
                             <div class="upload-icon">
@@ -156,7 +155,6 @@
                         </div>
                     </div>
 
-                    <!-- Media library section -->
                     <div id="mediaSection" class="mb-3" style="display: none;">
                         <label class="form-label">Sélectionner depuis la médiathèque</label>
                         <div class="media-selector">
@@ -178,7 +176,6 @@
                         </div>
                     </div>
 
-                    <!-- Video URL section for external videos (YouTube, Vimeo) -->
                     <div id="videoUrlSection" class="mb-3" style="display: none;">
                         <label class="form-label">URL de la vidéo externe (YouTube, Vimeo)</label>
                         <input type="text" class="form-control" name="video_url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/...">
@@ -223,7 +220,6 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteSlideModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -253,33 +249,27 @@
     text-align: center;
     transition: all 0.3s ease;
 }
-
 .slider-stats .stat-mini-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
-
 .slider-filters .btn-group {
     margin-bottom: 20px;
 }
-
 .slider-filters .btn {
     border-radius: 20px;
     padding: 6px 16px;
 }
-
 .table th {
     background: #f8f9fa;
     border-bottom: 2px solid #e9ecef;
     font-weight: 600;
     padding: 12px;
 }
-
 .table td {
     vertical-align: middle;
     padding: 12px;
 }
-
 .slider-preview {
     width: 100px;
     height: 60px;
@@ -290,14 +280,12 @@
     align-items: center;
     justify-content: center;
 }
-
 .slider-preview img,
 .slider-preview video {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-
 .slider-preview .video-placeholder {
     display: flex;
     align-items: center;
@@ -308,7 +296,6 @@
     color: white;
     font-size: 20px;
 }
-
 .type-badge {
     display: inline-block;
     padding: 4px 10px;
@@ -316,17 +303,14 @@
     font-size: 0.75rem;
     font-weight: 500;
 }
-
 .type-badge.image {
     background: #dbeafe;
     color: #1e40af;
 }
-
 .type-badge.video {
     background: #fee2e2;
     color: #991b1b;
 }
-
 .status-badge {
     display: inline-block;
     padding: 4px 10px;
@@ -334,17 +318,14 @@
     font-size: 0.75rem;
     font-weight: 500;
 }
-
 .status-badge.active {
     background: #d1fae5;
     color: #065f46;
 }
-
 .status-badge.inactive {
     background: #f3f4f6;
     color: #6b7280;
 }
-
 .btn-icon {
     width: 32px;
     height: 32px;
@@ -355,22 +336,18 @@
     border-radius: 8px;
     margin: 0 2px;
 }
-
 .drag-handle-cell {
     cursor: move;
     color: #9ca3af;
     font-size: 18px;
     text-align: center;
 }
-
 .drag-handle-cell i {
     cursor: grab;
 }
-
 .drag-handle-cell i:active {
     cursor: grabbing;
 }
-
 .upload-area {
     border: 2px dashed #cbd5e1;
     border-radius: 16px;
@@ -380,17 +357,14 @@
     transition: all 0.3s ease;
     background: #f8fafc;
 }
-
 .upload-area:hover {
     border-color: #4361ee;
     background: #f1f5f9;
 }
-
 .upload-area.drag-over {
     border-color: #10b981;
     background: #f0fdf4;
 }
-
 .media-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -402,7 +376,6 @@
     border-radius: 12px;
     background: #f9fafb;
 }
-
 .media-item {
     cursor: pointer;
     border-radius: 8px;
@@ -411,23 +384,19 @@
     border: 2px solid transparent;
     background: white;
 }
-
 .media-item:hover {
     transform: scale(1.02);
 }
-
 .media-item.selected {
     border-color: #4361ee;
     box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
 }
-
 .media-item img,
 .media-item video {
     width: 100%;
     height: 60px;
     object-fit: cover;
 }
-
 .media-item .media-info {
     padding: 4px;
     font-size: 0.65rem;
@@ -437,16 +406,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
 .delete-icon {
     margin-bottom: 20px;
 }
-
 tr.dragging {
     opacity: 0.5;
     background: #e5e7eb;
 }
-
 .youtube-thumbnail {
     position: relative;
     width: 100%;
@@ -454,17 +420,14 @@ tr.dragging {
     background-size: cover;
     background-position: center;
 }
-
 @media (max-width: 768px) {
     .table {
         font-size: 0.85rem;
     }
-    
     .slider-preview {
         width: 70px;
         height: 45px;
     }
-    
     .btn-icon {
         width: 28px;
         height: 28px;
@@ -473,11 +436,16 @@ tr.dragging {
 </style>
 
 <script>
-// Initialisation
 let sliderItems = [];
 let deleteId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Vérifier que currentEtablissementId est défini
+    if (typeof currentEtablissementId === 'undefined') {
+        console.error('currentEtablissementId is not defined');
+        showToast('Erreur: ID établissement non défini', 'error');
+        return;
+    }
     loadSliders();
     initEventListeners();
 });
@@ -497,17 +465,14 @@ function initEventListeners() {
         refreshBtn.addEventListener('click', () => loadSliders());
     }
     
-    // Type change
     document.querySelectorAll('input[name="type"]').forEach(radio => {
         radio.addEventListener('change', handleTypeChange);
     });
     
-    // Source change
     document.querySelectorAll('input[name="source"]').forEach(radio => {
         radio.addEventListener('change', handleSourceChange);
     });
     
-    // File upload
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('mediaFileInput');
     
@@ -557,7 +522,6 @@ function initEventListeners() {
         confirmDeleteBtn.addEventListener('click', confirmDelete);
     }
     
-    // Filter buttons
     document.querySelectorAll('[data-filter]').forEach(button => {
         button.addEventListener('click', function() {
             document.querySelectorAll('[data-filter]').forEach(btn => btn.classList.remove('active'));
@@ -571,29 +535,49 @@ function loadSliders() {
     const tbody = document.getElementById('sliderTableBody');
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Chargement...</p></td></tr>';
     
-    fetch(`/admin/cms/${currentEtablissementId}/slider`)
-        .then(response => response.json())
-        .then(result => {
-            if (result.success && result.data) {
-                sliderItems = result.data;
-                renderSliderTable(result.data);
-                updateStats(result.data);
-            } else {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5"><i class="fas fa-sliders-h fa-3x text-muted mb-3"></i><p>Aucun slide</p><button class="btn btn-primary btn-sm" onclick="document.getElementById(\'addSlideBtn\').click()">Ajouter</button></td></tr>';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-circle fa-2x"></i><p>Erreur de chargement</p></td></tr>';
-        });
+    // Utilisez la nouvelle URL avec /api/
+    const url = `/admin/cms/${currentEtablissementId}/api/slider`;
+    console.log('Fetching from:', url);
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include'
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(result => {
+        console.log('Result:', result);
+        if (result.success && result.data) {
+            sliderItems = result.data;
+            renderSliderTable(result.data);
+            updateStats(result.data);
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5"><i class="fas fa-sliders-h fa-3x text-muted mb-3"></i><p>Aucun slide</p><button class="btn btn-primary btn-sm" onclick="document.getElementById(\'addSlideBtn\').click()">Ajouter</button></td></tr>';
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger">
+            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+            <p>Erreur: ${error.message}</p>
+            <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadSliders()">Réessayer</button>
+        </td></tr>`;
+        showToast('Erreur de chargement', 'error');
+    });
 }
 
 function getPreviewHtml(item) {
-    // Pour les vidéos YouTube avec URL vide mais video_html
     if (item.type === 'video') {
-        // Si c'est une vidéo YouTube/Vimeo avec HTML embed
         if (item.video_html) {
-            // Extraire l'ID YouTube pour afficher une miniature
             const youtubeMatch = item.video_html.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
             if (youtubeMatch) {
                 const youtubeId = youtubeMatch[1];
@@ -607,20 +591,16 @@ function getPreviewHtml(item) {
             }
             return `<div class="slider-preview"><div class="video-placeholder"><i class="fab fa-youtube fa-2x"></i></div></div>`;
         }
-        // Si c'est une vidéo locale avec URL
         else if (item.url && item.url !== '') {
             return `<div class="slider-preview"><video src="${escapeHtml(item.url)}"></video></div>`;
         }
-        // Fallback pour vidéo sans média
         else {
             return `<div class="slider-preview"><div class="video-placeholder"><i class="fas fa-video fa-2x"></i></div></div>`;
         }
     }
-    // Pour les images
     else if (item.type === 'image' && item.url && item.url !== '') {
         return `<div class="slider-preview"><img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.title)}"></div>`;
     }
-    // Fallback
     else {
         return `<div class="slider-preview"><div class="video-placeholder"><i class="fas fa-image fa-2x"></i></div></div>`;
     }
@@ -652,12 +632,10 @@ function renderSliderTable(items) {
         </tr>
     `).join('');
     
-    // Attach events
     document.querySelectorAll('.edit-slide').forEach(btn => btn.addEventListener('click', () => editSlide(btn.dataset.id)));
     document.querySelectorAll('.delete-slide').forEach(btn => btn.addEventListener('click', () => { deleteId = btn.dataset.id; new bootstrap.Modal(document.getElementById('deleteSlideModal')).show(); }));
     document.querySelectorAll('.toggle-active').forEach(btn => btn.addEventListener('click', () => toggleActive(btn.dataset.id)));
     
-    // Drag and drop
     initDragAndDrop();
 }
 
@@ -726,10 +704,10 @@ function handleTypeChange() {
     
     if (isVideo) {
         fileInput.setAttribute('accept', 'video/mp4,video/webm,video/ogg');
-        videoUrlSection.style.display = 'block';
+        if (videoUrlSection) videoUrlSection.style.display = 'block';
     } else {
         fileInput.setAttribute('accept', 'image/*');
-        videoUrlSection.style.display = 'none';
+        if (videoUrlSection) videoUrlSection.style.display = 'none';
     }
     clearFilePreview();
 }
@@ -790,6 +768,10 @@ function loadMediaLibrary() {
             } else {
                 grid.innerHTML = '<div class="text-center py-4"><p class="text-muted">Aucun média trouvé</p></div>';
             }
+        })
+        .catch(error => {
+            console.error('Error loading media:', error);
+            grid.innerHTML = '<div class="text-center py-4 text-danger"><p>Erreur de chargement</p></div>';
         });
 }
 
@@ -810,7 +792,6 @@ function saveSlide(e) {
     if (source === 'upload') {
         const file = document.getElementById('mediaFileInput').files[0];
         if (!file && !isEdit) { 
-            // Pour les vidéos, vérifier si une URL externe a été fournie
             if (type === 'video') {
                 const videoUrl = document.getElementById('videoUrl').value;
                 if (videoUrl) {
@@ -888,9 +869,8 @@ function editSlide(id) {
         document.getElementById('filePreview').style.display = 'block';
         document.getElementById('uploadArea').style.display = 'none';
     } else if (item.video_html) {
-        // Pour les vidéos YouTube sans URL directe
-        document.getElementById('videoUrlSection').style.display = 'block';
-        // Essayer d'extraire l'URL YouTube
+        const videoUrlSection = document.getElementById('videoUrlSection');
+        if (videoUrlSection) videoUrlSection.style.display = 'block';
         const youtubeMatch = item.video_html.match(/src="([^"]+)"/);
         if (youtubeMatch) {
             document.getElementById('videoUrl').value = youtubeMatch[1];
@@ -948,7 +928,6 @@ function showToast(message, type = 'success') {
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
-// Styles for toast
 if (!document.querySelector('#slider-toast-styles')) {
     const style = document.createElement('style');
     style.id = 'slider-toast-styles';

@@ -109,7 +109,7 @@
             const preloaderEl = document.getElementById('preloader');
             let loadCompleted = false;
             let minDisplayPassed = false;
-            const MIN_DISPLAY_MS = 2200;  // 2.2 secondes minimum pour profiter de l'animation
+            const MIN_DISPLAY_MS = 1500;  // 1.5 secondes minimum pour profiter de l'animation
             
             function hidePreloader() {
                 if (!preloaderEl) return;

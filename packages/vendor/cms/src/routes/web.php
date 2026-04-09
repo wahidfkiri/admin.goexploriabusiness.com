@@ -99,11 +99,11 @@ Route::middleware(['web', 'auth'])->group(function () {
     // ==================================================================
     Route::prefix('admin/cms/{etablissementId}')->name('cms.admin.')->group(function () {
 
-    // Routes SEO
-Route::prefix('/seo')->name('seo.')->group(function () {
-    Route::get('/', [AdminSettingController::class, 'getSeoSettings'])->name('get');
-    Route::post('/preview', [AdminSettingController::class, 'previewSeo'])->name('preview');
-});
+        // Routes SEO
+        Route::prefix('/seo')->name('seo.')->group(function () {
+            Route::get('/', [AdminSettingController::class, 'getSeoSettings'])->name('get');
+            Route::post('/preview', [AdminSettingController::class, 'previewSeo'])->name('preview');
+        });
 
 
         // Dashboard
@@ -124,14 +124,14 @@ Route::prefix('/seo')->name('seo.')->group(function () {
         });
 
         // Dans le groupe des routes admin/cms/{etablissementId}
-Route::prefix('/slider')->name('slider.')->group(function () {
-    Route::get('/', [SliderController::class, 'index'])->name('index');
-    Route::post('/', [SliderController::class, 'store'])->name('store');
-    Route::put('/{id}', [SliderController::class, 'update'])->name('update');
-    Route::delete('/{id}', [SliderController::class, 'destroy'])->name('destroy');
-    Route::post('/reorder', [SliderController::class, 'reorder'])->name('reorder');
-    Route::post('/{id}/toggle', [SliderController::class, 'toggleActive'])->name('toggle');
-});
+        Route::prefix('/api/slider')->name('slider.')->group(function () {
+            Route::get('/', [SliderController::class, 'index'])->name('index');
+            Route::post('/', [SliderController::class, 'store'])->name('store');
+            Route::put('/{id}', [SliderController::class, 'update'])->name('update');
+            Route::delete('/{id}', [SliderController::class, 'destroy'])->name('destroy');
+            Route::post('/reorder', [SliderController::class, 'reorder'])->name('reorder');
+            Route::post('/{id}/toggle', [SliderController::class, 'toggleActive'])->name('toggle');
+        });
 
         // ------------------------------------------------------------------
         // Actions thèmes scoped à l'établissement (lier/activer/prévisualiser)
@@ -255,3 +255,4 @@ Route::prefix('api/cms')->middleware(['web'])->group(function () {
 });
 
 Route::post('/webhook/cms/{token}', [PublicPageController::class, 'webhook'])->name('cms.webhook');
+

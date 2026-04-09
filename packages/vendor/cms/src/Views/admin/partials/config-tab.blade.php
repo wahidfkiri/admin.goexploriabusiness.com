@@ -6,337 +6,120 @@
         </h3>
     </div>
     
-    <form action="{{ route('cms.admin.settings.update', ['etablissementId' => $stats['etablissement']->id]) }}" method="POST">
+    <form id="configForm">
         @csrf
+        <input type="hidden" name="_method" value="POST">
         
         <div class="config-sections">
             <div class="config-group">
                 <h4>Informations générales</h4>
                 <div class="config-item">
                     <label class="config-label">Nom du site</label>
-                    <input type="text" class="form-control" name="site_name" value="{{ $stats['etablissement']->getSetting('site_name', $stats['etablissement']->name ?? 'Mon site') }}">
+                    <input type="text" class="form-control" name="site_name" value="{{ $stats['etablissement']->getSetting('name', $stats['etablissement']->name ?? 'Mon site') }}">
                 </div>
                 <div class="config-item mt-3">
                     <label class="config-label">Slogan</label>
-                    <input type="text" class="form-control" name="site_slogan" value="{{ $stats['etablissement']->getSetting('site_slogan', '') }}">
+                    <input type="text" class="form-control" name="site_slogan" value="{{ $stats['etablissement']->getSetting('slogan', '') }}">
                 </div>
                 <div class="config-item mt-3">
                     <label class="config-label">Description</label>
-                    <textarea class="form-control" name="site_description" rows="3">{{ $stats['etablissement']->getSetting('site_description', '') }}</textarea>
+                    <textarea class="form-control" name="site_description" rows="3">{{ $stats['etablissement']->getSetting('description', '') }}</textarea>
                 </div>
             </div>
 
             <div class="config-group">
-    <h4>Identité visuelle</h4>
-    
-    <!-- Logo Section -->
-    <div class="config-item">
-        <label class="required">Logo du site</label>
-        
-        <div class="upload-area" data-target="logo">
-            <i class="fas fa-cloud-upload-alt upload-icon"></i>
-            <div class="upload-title">Télécharger le logo</div>
-            <div class="upload-subtitle">PNG, JPG, SVG jusqu'à 2MB</div>
-            <button type="button" class="upload-button" data-type="logo">
-                <i class="fas fa-folder-open"></i>
-                Parcourir
-            </button>
-            <input type="file" class="file-input-hidden" data-type="logo" accept="image/png,image/jpeg,image/jpg,image/svg+xml">
-        </div>
-        
-        <div class="preview-container logo-preview" data-preview="logo" 
-             style="{{ $logo = $stats['etablissement']->getSetting('site_logo') ? 'display: block;' : 'display: none;' }}">
-            <div class="preview-header">
-                <span class="preview-title">Logo actuel</span>
-                <button type="button" class="remove-image" data-type="logo">
-                    <i class="fas fa-trash-alt"></i>
-                    Supprimer
-                </button>
-            </div>
-            <div class="preview-image">
-                @if($logo = $stats['etablissement']->getSetting('site_logo'))
-                    <img src="{{ Storage::url($logo) }}" alt="Logo" data-logo-preview>
-                @endif
-            </div>
-        </div>
-        
-        <div class="upload-progress" data-progress="logo">
-            <div class="progress-bar">
-                <div class="progress-fill"></div>
-            </div>
-            <div class="progress-text">Téléchargement en cours...</div>
-        </div>
-    </div>
-    
-    <!-- Favicon Section -->
-    <div class="config-item mt-4">
-        <label>Favicon</label>
-        
-        <div class="upload-area" data-target="favicon">
-            <i class="fas fa-image upload-icon"></i>
-            <div class="upload-title">Télécharger le favicon</div>
-            <div class="upload-subtitle">ICO, PNG, SVG - 32x32 ou 64x64 pixels</div>
-            <button type="button" class="upload-button" data-type="favicon">
-                <i class="fas fa-folder-open"></i>
-                Parcourir
-            </button>
-            <input type="file" class="file-input-hidden" data-type="favicon" accept="image/x-icon,image/png,image/svg+xml">
-        </div>
-        
-        <div class="preview-container favicon-preview" data-preview="favicon"
-             style="{{ $favicon = $stats['etablissement']->getSetting('site_favicon') ? 'display: block;' : 'display: none;' }}">
-            <div class="preview-header">
-                <span class="preview-title">Favicon actuel</span>
-                <button type="button" class="remove-image" data-type="favicon">
-                    <i class="fas fa-trash-alt"></i>
-                    Supprimer
-                </button>
-            </div>
-            <div class="preview-image">
-                @if($favicon = $stats['etablissement']->getSetting('site_favicon'))
-                    <img src="{{ Storage::url($favicon) }}" alt="Favicon" data-favicon-preview>
-                @endif
-            </div>
-            <div class="favicon-sizes">
-                <div class="favicon-size">
-                    <i class="fas fa-desktop"></i>
-                    <span>Ordinateur</span>
-                    <small>32x32</small>
-                </div>
-                <div class="favicon-size">
-                    <i class="fas fa-mobile-alt"></i>
-                    <span>Mobile</span>
-                    <small>64x64</small>
-                </div>
-            </div>
-        </div>
-        
-        <div class="upload-progress" data-progress="favicon">
-            <div class="progress-bar">
-                <div class="progress-fill"></div>
-            </div>
-            <div class="progress-text">Téléchargement en cours...</div>
-        </div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Configuration des uploads
-const uploadConfigs = {
-    logo: {
-        accept: ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'],
-        maxSize: 2 * 1024 * 1024, // 2MB
-        field: 'site_logo',
-        preview: 'logo',
-        endpoint: '{{ route("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
-    },
-    favicon: {
-        accept: ['image/x-icon', 'image/png', 'image/svg+xml'],
-        maxSize: 1 * 1024 * 1024, // 1MB
-        field: 'site_favicon',
-        preview: 'favicon',
-        endpoint: '{{ route("cms.admin.settings.upload", ["etablissementId" => $stats["etablissement"]->id]) }}'
-    }
-};
-    
-    // Initialiser les uploads
-    Object.keys(uploadConfigs).forEach(type => {
-        initUpload(type, uploadConfigs[type]);
-    });
-    
-    function initUpload(type, config) {
-        const uploadArea = document.querySelector(`.upload-area[data-target="${type}"]`);
-        const fileInput = document.querySelector(`.file-input-hidden[data-type="${type}"]`);
-        const uploadBtn = document.querySelector(`.upload-button[data-type="${type}"]`);
-        const previewContainer = document.querySelector(`[data-preview="${type}"]`);
-        const progressContainer = document.querySelector(`[data-progress="${type}"]`);
-        const removeBtn = document.querySelector(`.remove-image[data-type="${type}"]`);
-        
-        // Upload button click
-        if (uploadBtn) {
-            uploadBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                fileInput.click();
-            });
-        }
-        
-        // Upload area click
-        if (uploadArea) {
-            uploadArea.addEventListener('click', () => {
-                fileInput.click();
-            });
-            
-            // Drag & drop
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('drag-over');
-            });
-            
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('drag-over');
-            });
-            
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('drag-over');
-                const files = e.dataTransfer.files;
-                if (files.length) {
-                    handleFileUpload(files[0], type, config);
-                }
-            });
-        }
-        
-        // File input change
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length) {
-                    handleFileUpload(e.target.files[0], type, config);
-                }
-            });
-        }
-        
-        // Remove button
-        if (removeBtn) {
-            removeBtn.addEventListener('click', () => {
-                removeFile(type, config);
-            });
-        }
-    }
-    
-    async function handleFileUpload(file, type, config) {
-        // Validation
-        if (!config.accept.includes(file.type)) {
-            showToast(`Format non supporté. Formats acceptés: ${config.accept.join(', ')}`, 'error');
-            return;
-        }
-        
-        if (file.size > config.maxSize) {
-            showToast(`Fichier trop volumineux. Maximum: ${config.maxSize / 1024 / 1024}MB`, 'error');
-            return;
-        }
-        
-        // Show progress
-        const progressContainer = document.querySelector(`[data-progress="${type}"]`);
-        if (progressContainer) {
-            progressContainer.classList.add('active');
-        }
-        
-        // Prepare form data
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('field', config.field);
-        formData.append('_token', document.querySelector('input[name="_token"]').value);
-        
-        try {
-            const response = await fetch(config.endpoint, {
-                method: 'POST',
-                body: formData
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                updatePreview(type, result.path);
-                showToast('Fichier téléchargé avec succès', 'success');
+                <h4>Identité visuelle</h4>
                 
-                // Update progress to 100%
-                updateProgress(progressContainer, 100);
-                setTimeout(() => {
-                    if (progressContainer) progressContainer.classList.remove('active');
-                }, 1000);
-            } else {
-                throw new Error(result.message || 'Erreur lors du téléchargement');
-            }
-        } catch (error) {
-            showToast(error.message, 'error');
-            if (progressContainer) progressContainer.classList.remove('active');
-        }
-    }
-    
-    function updatePreview(type, path) {
-        const previewContainer = document.querySelector(`[data-preview="${type}"]`);
-        const previewImg = document.querySelector(`[data-${type}-preview]`);
-        
-        if (previewContainer) {
-            previewContainer.style.display = 'block';
-        }
-        
-        if (previewImg) {
-            previewImg.src = path;
-        } else if (previewContainer) {
-            // Create preview if doesn't exist
-            const previewImage = previewContainer.querySelector('.preview-image');
-            if (previewImage) {
-                previewImage.innerHTML = `<img src="${path}" alt="${type}">`;
-            }
-        }
-    }
-    
-    async function removeFile(type, config) {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer ce fichier ?')) {
-            return;
-        }
-        
-        try {
-            const response = await fetch('{{ route("cms.admin.settings.remove-file", ["etablissementId" => $stats["etablissement"]->id]) }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
-                },
-                body: JSON.stringify({
-                    field: config.field
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                const previewContainer = document.querySelector(`[data-preview="${type}"]`);
-                if (previewContainer) {
-                    previewContainer.style.display = 'none';
-                    const previewImg = previewContainer.querySelector('img');
-                    if (previewImg) {
-                        previewImg.src = '';
-                    }
-                }
-                showToast('Fichier supprimé avec succès', 'success');
-            } else {
-                throw new Error(result.message || 'Erreur lors de la suppression');
-            }
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
-    }
-    
-    function updateProgress(container, percent) {
-        if (!container) return;
-        const fill = container.querySelector('.progress-fill');
-        if (fill) {
-            fill.style.width = `${percent}%`;
-        }
-    }
-    
-    function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `toast-notification ${type}`;
-        
-        const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
-        toast.innerHTML = `
-            <span style="font-size: 18px;">${icon}</span>
-            <span>${message}</span>
-        `;
-        
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.animation = 'slideInRight 0.3s ease reverse';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-});
-</script>
+                <!-- Logo Section -->
+                <div class="config-item">
+                    <label class="required">Logo du site</label>
+                    
+                    <div class="upload-area" data-target="logo">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <div class="upload-title">Télécharger le logo</div>
+                        <div class="upload-subtitle">PNG, JPG, SVG jusqu'à 2MB</div>
+                        <button type="button" class="upload-button" data-type="logo">
+                            <i class="fas fa-folder-open"></i>
+                            Parcourir
+                        </button>
+                        <input type="file" class="file-input-hidden" data-type="logo" accept="image/png,image/jpeg,image/jpg,image/svg+xml">
+                    </div>
+                    
+                    <div class="preview-container logo-preview" data-preview="logo" 
+                         style="{{ $logo = $stats['etablissement']->getSetting('site_logo') ? 'display: block;' : 'display: none;' }}">
+                        <div class="preview-header">
+                            <span class="preview-title">Logo actuel</span>
+                            <button type="button" class="remove-image" data-type="logo">
+                                <i class="fas fa-trash-alt"></i>
+                                Supprimer
+                            </button>
+                        </div>
+                        <div class="preview-image">
+                            @if($logo = $stats['etablissement']->getSetting('site_logo'))
+                                <img src="{{ $logo }}" alt="Logo" data-logo-preview>
+                            @endif
+                        </div>
+                    </div>
+                    
+                    <div class="upload-progress" data-progress="logo">
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <div class="progress-text">Téléchargement en cours...</div>
+                    </div>
+                </div>
+                
+                <!-- Favicon Section -->
+                <div class="config-item mt-4">
+                    <label>Favicon</label>
+                    
+                    <div class="upload-area" data-target="favicon">
+                        <i class="fas fa-image upload-icon"></i>
+                        <div class="upload-title">Télécharger le favicon</div>
+                        <div class="upload-subtitle">ICO, PNG, SVG - 32x32 ou 64x64 pixels</div>
+                        <button type="button" class="upload-button" data-type="favicon">
+                            <i class="fas fa-folder-open"></i>
+                            Parcourir
+                        </button>
+                        <input type="file" class="file-input-hidden" data-type="favicon" accept="image/x-icon,image/png,image/svg+xml">
+                    </div>
+                    
+                    <div class="preview-container favicon-preview" data-preview="favicon"
+                         style="{{ $favicon = $stats['etablissement']->getSetting('site_favicon') ? 'display: block;' : 'display: none;' }}">
+                        <div class="preview-header">
+                            <span class="preview-title">Favicon actuel</span>
+                            <button type="button" class="remove-image" data-type="favicon">
+                                <i class="fas fa-trash-alt"></i>
+                                Supprimer
+                            </button>
+                        </div>
+                        <div class="preview-image">
+                            @if($favicon = $stats['etablissement']->getSetting('site_favicon'))
+                                <img src="{{ $favicon }}" alt="Favicon" data-favicon-preview>
+                            @endif
+                        </div>
+                        <div class="favicon-sizes">
+                            <div class="favicon-size">
+                                <i class="fas fa-desktop"></i>
+                                <span>Ordinateur</span>
+                                <small>32x32</small>
+                            </div>
+                            <div class="favicon-size">
+                                <i class="fas fa-mobile-alt"></i>
+                                <span>Mobile</span>
+                                <small>64x64</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="upload-progress" data-progress="favicon">
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <div class="progress-text">Téléchargement en cours...</div>
+                    </div>
+                </div>
+            </div>
             
             <div class="config-group mt-4">
                 <h4>Email et notifications</h4>
@@ -372,9 +155,12 @@ const uploadConfigs = {
         </div>
         
         <div class="form-actions mt-4">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" id="saveConfigBtn">
                 <i class="fas fa-save me-2"></i>Sauvegarder la configuration
             </button>
+            <div class="spinner-border spinner-border-sm text-primary ms-2" id="configLoading" style="display: none;" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
         </div>
     </form>
 </div>
@@ -432,20 +218,10 @@ const uploadConfigs = {
     transition: color 0.2s ease;
 }
 
-.config-item label::after {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    background: #ef4444;
-    border-radius: 50%;
-    margin-left: 4px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
 .config-item.required label::after {
-    opacity: 1;
+    content: '*';
+    color: #ef4444;
+    margin-left: 4px;
 }
 
 /* Upload Area Styles */
@@ -522,12 +298,10 @@ const uploadConfigs = {
     transform: translateY(0);
 }
 
-/* File Input Hidden */
 .file-input-hidden {
     display: none;
 }
 
-/* Preview Container */
 .preview-container {
     margin-top: 20px;
     padding: 16px;
@@ -595,17 +369,8 @@ const uploadConfigs = {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Logo specific */
 .logo-preview img {
     max-height: 80px;
-}
-
-/* Favicon specific */
-.favicon-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
 }
 
 .favicon-preview img {
@@ -628,7 +393,6 @@ const uploadConfigs = {
     color: #64748b;
 }
 
-/* Progress Bar */
 .upload-progress {
     margin-top: 12px;
     display: none;
@@ -660,38 +424,12 @@ const uploadConfigs = {
     text-align: center;
 }
 
-/* Toast Notifications */
-.toast-notification {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    background: #1e293b;
-    color: white;
-    padding: 12px 20px;
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 9999;
-    animation: slideInRight 0.3s ease;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+.form-actions {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.toast-notification.success {
-    background: linear-gradient(135deg, #10b981, #059669);
-}
-
-.toast-notification.error {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-}
-
-.toast-notification.info {
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-}
-
-/* Animations */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -703,43 +441,6 @@ const uploadConfigs = {
     }
 }
 
-@keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(100px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes pulse {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
-    }
-}
-
-.loading-spinner {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Responsive */
 @media (max-width: 768px) {
     .config-group {
         padding: 16px;
@@ -756,9 +457,318 @@ const uploadConfigs = {
     .preview-image img {
         max-height: 100px;
     }
-    
-    .favicon-sizes {
-        flex-wrap: wrap;
-    }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const etablissementId = {{ $stats['etablissement']->id }};
+    
+    // Configuration des uploads
+    const uploadConfigs = {
+        logo: {
+            accept: ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'],
+            maxSize: 2 * 1024 * 1024,
+            field: 'site_logo',
+            preview: 'logo',
+            endpoint: `/admin/cms/${etablissementId}/settings/upload`
+        },
+        favicon: {
+            accept: ['image/x-icon', 'image/png', 'image/svg+xml'],
+            maxSize: 1 * 1024 * 1024,
+            field: 'site_favicon',
+            preview: 'favicon',
+            endpoint: `/admin/cms/${etablissementId}/settings/upload`
+        }
+    };
+    
+    // Initialiser les uploads
+    Object.keys(uploadConfigs).forEach(type => {
+        initUpload(type, uploadConfigs[type]);
+    });
+    
+    // Formulaire de configuration
+    const configForm = document.getElementById('configForm');
+    if (configForm) {
+        configForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const saveBtn = document.getElementById('saveConfigBtn');
+            const loading = document.getElementById('configLoading');
+            const formData = new FormData(this);
+            
+            saveBtn.disabled = true;
+            loading.style.display = 'inline-block';
+            
+            try {
+                const response = await fetch(`/admin/cms/${etablissementId}/settings`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(result.message, 'success');
+                } else {
+                    showToast(result.message || 'Erreur lors de la sauvegarde', 'error');
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                showToast('Erreur lors de la sauvegarde', 'error');
+            } finally {
+                saveBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+    }
+    
+    function initUpload(type, config) {
+        const uploadArea = document.querySelector(`.upload-area[data-target="${type}"]`);
+        const fileInput = document.querySelector(`.file-input-hidden[data-type="${type}"]`);
+        const uploadBtn = document.querySelector(`.upload-button[data-type="${type}"]`);
+        const previewContainer = document.querySelector(`[data-preview="${type}"]`);
+        const progressContainer = document.querySelector(`[data-progress="${type}"]`);
+        const removeBtn = document.querySelector(`.remove-image[data-type="${type}"]`);
+        
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+        }
+        
+        if (uploadArea) {
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('drag-over');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('drag-over');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    handleFileUpload(files[0], type, config);
+                }
+            });
+        }
+        
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileUpload(e.target.files[0], type, config);
+                }
+            });
+        }
+        
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                removeFile(type, config);
+            });
+        }
+    }
+    
+    async function handleFileUpload(file, type, config) {
+        if (!config.accept.includes(file.type)) {
+            showToast(`Format non supporté. Formats acceptés: ${config.accept.join(', ')}`, 'error');
+            return;
+        }
+        
+        if (file.size > config.maxSize) {
+            showToast(`Fichier trop volumineux. Maximum: ${config.maxSize / 1024 / 1024}MB`, 'error');
+            return;
+        }
+        
+        const progressContainer = document.querySelector(`[data-progress="${type}"]`);
+        if (progressContainer) {
+            progressContainer.classList.add('active');
+            updateProgress(progressContainer, 0);
+        }
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('field', config.field);
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+        
+        // Simulate progress
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            if (progress <= 90 && progressContainer) {
+                updateProgress(progressContainer, progress);
+            }
+        }, 100);
+        
+        try {
+            const response = await fetch(config.endpoint, {
+                method: 'POST',
+                body: formData
+            });
+            
+            clearInterval(interval);
+            
+            const result = await response.json();
+            
+            if (progressContainer) {
+                updateProgress(progressContainer, 100);
+                setTimeout(() => {
+                    progressContainer.classList.remove('active');
+                }, 500);
+            }
+            
+            if (result.success) {
+                updatePreview(type, result.path || result.stored_path);
+                showToast('Fichier téléchargé avec succès', 'success');
+            } else {
+                throw new Error(result.message || 'Erreur lors du téléchargement');
+            }
+        } catch (error) {
+            clearInterval(interval);
+            if (progressContainer) {
+                progressContainer.classList.remove('active');
+            }
+            showToast(error.message, 'error');
+        }
+    }
+    
+    function updatePreview(type, path) {
+        const previewContainer = document.querySelector(`[data-preview="${type}"]`);
+        const previewImg = document.querySelector(`[data-${type}-preview]`);
+        
+        if (previewContainer) {
+            previewContainer.style.display = 'block';
+        }
+        
+        if (previewImg) {
+            previewImg.src = path;
+        } else if (previewContainer) {
+            const previewImage = previewContainer.querySelector('.preview-image');
+            if (previewImage) {
+                previewImage.innerHTML = `<img src="${path}" alt="${type}">`;
+            }
+        }
+    }
+    
+    async function removeFile(type, config) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer ce fichier ?')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/admin/cms/${etablissementId}/settings/remove-file`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ field: config.field })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                const previewContainer = document.querySelector(`[data-preview="${type}"]`);
+                if (previewContainer) {
+                    previewContainer.style.display = 'none';
+                    const previewImg = previewContainer.querySelector('img');
+                    if (previewImg) {
+                        previewImg.src = '';
+                    }
+                }
+                showToast('Fichier supprimé avec succès', 'success');
+            } else {
+                throw new Error(result.message || 'Erreur lors de la suppression');
+            }
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+    
+    function updateProgress(container, percent) {
+        if (!container) return;
+        const fill = container.querySelector('.progress-fill');
+        if (fill) {
+            fill.style.width = `${percent}%`;
+        }
+    }
+    
+    function showToast(message, type = 'success') {
+        const existingToasts = document.querySelectorAll('.toast-notification');
+        existingToasts.forEach(toast => toast.remove());
+        
+        const toast = document.createElement('div');
+        toast.className = `toast-notification ${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 100);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+    
+    // Styles for toast
+    if (!document.querySelector('#config-toast-styles')) {
+        const style = document.createElement('style');
+        style.id = 'config-toast-styles';
+        style.textContent = `
+            .toast-notification {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                transform: translateX(400px);
+                transition: transform 0.3s ease;
+                z-index: 10000;
+                min-width: 280px;
+            }
+            .toast-notification.show {
+                transform: translateX(0);
+            }
+            .toast-content {
+                padding: 16px 20px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                border-left: 4px solid;
+                border-radius: 12px;
+            }
+            .toast-notification.success .toast-content {
+                border-left-color: #10b981;
+            }
+            .toast-notification.success i {
+                color: #10b981;
+            }
+            .toast-notification.error .toast-content {
+                border-left-color: #ef4444;
+            }
+            .toast-notification.error i {
+                color: #ef4444;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+});
+</script>

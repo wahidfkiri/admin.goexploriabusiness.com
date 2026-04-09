@@ -55,7 +55,7 @@ class SettingController extends Controller
             ->groupBy('group');
         
         // Récupérer les thèmes pour la sélection
-        $themes = Theme::where('etablissement_id', $etablissement->id)->get();
+        $themes = Theme::all();
         
         // Valeurs par défaut pour les paramètres manquants
         $defaultSettings = $this->getDefaultSettings($etablissement);

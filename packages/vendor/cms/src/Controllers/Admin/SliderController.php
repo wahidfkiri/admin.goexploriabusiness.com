@@ -71,7 +71,9 @@ class SliderController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Slider index error: ' . $e->getMessage());
+            \Log::error('Slider index error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la récupération du slider: ' . $e->getMessage()
