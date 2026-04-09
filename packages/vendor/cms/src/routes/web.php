@@ -9,6 +9,7 @@ use Vendor\Cms\Controllers\Admin\SettingController as AdminSettingController;
 use Vendor\Cms\Controllers\Admin\DashboardController;
 use Vendor\Cms\Controllers\Admin\MediaController;
 use Vendor\Cms\Controllers\Admin\BlockController;
+use Vendor\Cms\Controllers\Admin\SliderController;
 use Illuminate\Support\Facades\Auth;
 
 /*
@@ -121,6 +122,16 @@ Route::prefix('/seo')->name('seo.')->group(function () {
             Route::post('/upload', [AdminSettingController::class, 'uploadFile'])->name('upload');
             Route::post('/remove-file', [AdminSettingController::class, 'removeFile'])->name('remove-file');
         });
+
+        // Dans le groupe des routes admin/cms/{etablissementId}
+Route::prefix('/slider')->name('slider.')->group(function () {
+    Route::get('/', [SliderController::class, 'index'])->name('index');
+    Route::post('/', [SliderController::class, 'store'])->name('store');
+    Route::put('/{id}', [SliderController::class, 'update'])->name('update');
+    Route::delete('/{id}', [SliderController::class, 'destroy'])->name('destroy');
+    Route::post('/reorder', [SliderController::class, 'reorder'])->name('reorder');
+    Route::post('/{id}/toggle', [SliderController::class, 'toggleActive'])->name('toggle');
+});
 
         // ------------------------------------------------------------------
         // Actions thèmes scoped à l'établissement (lier/activer/prévisualiser)

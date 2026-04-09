@@ -51,6 +51,9 @@
                             <!-- SEO -->
                             @include('cms::admin.partials.seo-tab')
                             
+                            <!-- Sliders -->
+                            @include('cms::admin.partials.slider-tab')
+                            
                             <!-- Médiathèque -->
                             @include('cms::admin.partials.media-tab')
                             
@@ -515,7 +518,6 @@
             top: 0;
             height: 100%;
             width: 3px;
-            background: linear-gradient(135deg, #4361ee, #3a56e4);
             border-radius: 0 4px 4px 0;
             transform: scaleY(0);
             transition: transform 0.25s ease;

@@ -20,6 +20,7 @@ class Setting extends Model
         'value',
         'type',
         'options',
+        'order',
     ];
 
     protected $casts = [

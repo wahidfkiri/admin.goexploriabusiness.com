@@ -131,6 +131,20 @@
                 <div class="tab-badge"></div>
             </a>
             
+            <a href="{{ route('cms.admin.dashboard', ['etablissementId' => $stats['etablissement']->id, 'section' => 'slider']) }}" 
+               class="nav-link-modern {{ request()->get('section') == 'slider' ? 'active' : '' }}" 
+               data-section="v-pills-slider"
+               onclick="navigateTo('v-pills-slider'); return false;">
+                <div class="tab-icon-wrapper">
+                    <i class="fas fa-video"></i>
+                </div>
+                <div class="tab-content-wrapper-modern">
+                    <span class="tab-title-modern">Slider Vidéos</span>
+                    <span class="tab-description">Gestion des slides</span>
+                </div>
+                <div class="tab-badge"></div>
+            </a>
+            
             <a href="{{ route('cms.admin.dashboard', ['etablissementId' => $stats['etablissement']->id, 'section' => 'media']) }}" 
                class="nav-link-modern {{ request()->get('section') == 'media' ? 'active' : '' }}" 
                data-section="v-pills-media"
