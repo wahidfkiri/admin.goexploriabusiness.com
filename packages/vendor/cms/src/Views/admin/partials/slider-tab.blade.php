@@ -816,7 +816,7 @@ function saveSlide(e) {
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...';
     
-    const url = isEdit ? `/admin/cms/${currentEtablissementId}/slider/${slideId}` : `/admin/cms/${currentEtablissementId}/slider`;
+    const url = isEdit ? `/admin/cms/${currentEtablissementId}/api/slider/${slideId}` : `/admin/cms/${currentEtablissementId}/api/slider`;
     if (isEdit) formData.append('_method', 'PUT');
     
     fetch(url, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }, body: formData })
