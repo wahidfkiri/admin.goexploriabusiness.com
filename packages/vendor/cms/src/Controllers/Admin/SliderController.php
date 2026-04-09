@@ -35,14 +35,26 @@ class SliderController extends Controller
             $sliderItems = Setting::where('etablissement_id', $etablissement->id)
                 ->where('group', 'slider')
                 ->orderBy('order', 'asc')
+                ->orderBy('id', 'asc')
                 ->get()
                 ->map(function ($setting) {
                     $value = $this->parseSettingValue($setting->value);
+                    
+                    // Nettoyer l'URL si nécessaire
+                    $url = $value['url'] ?? '';
+                    if (!empty($url) && !filter_var($url, FILTER_VALIDATE_URL) && !str_starts_with($url, '/storage/')) {
+                        // Si c'est un chemin relatif, construire l'URL complète
+                        if (Storage::disk('public')->exists($url)) {
+                            $url = Storage::disk('public')->url($url);
+                        }
+                    }
+                    
                     return [
                         'id' => $setting->id,
                         'type' => $value['type'] ?? 'image',
-                        'url' => $value['url'] ?? '',
+                        'url' => $url,
                         'video_path' => $value['video_path'] ?? '',
+                        'video_html' => $value['video_html'] ?? null,
                         'title' => $value['title'] ?? '',
                         'subtitle' => $value['subtitle'] ?? '',
                         'button_text' => $value['button_text'] ?? '',
@@ -61,7 +73,7 @@ class SliderController extends Controller
             Log::error('Slider index error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors de la récupération du slider'
+                'message' => 'Erreur lors de la récupération du slider: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -74,10 +86,11 @@ class SliderController extends Controller
         try {
             $etablissement = Etablissement::findOrFail($etablissementId);
             
-            $validated = $request->validate([
+            $request->validate([
                 'type' => 'required|in:image,video',
                 'media_id' => 'nullable|exists:cms_media,id',
-                'video_file' => 'nullable|file|mimes:mp4,mov,ogg,webm|max:51200', // 50MB max
+                'image_file' => 'nullable|file|image|max:5120',
+                'video_file' => 'nullable|file|mimes:mp4,mov,ogg,webm|max:51200',
                 'title' => 'nullable|string|max:255',
                 'subtitle' => 'nullable|string|max:500',
                 'button_text' => 'nullable|string|max:100',
@@ -100,22 +113,23 @@ class SliderController extends Controller
                 'is_active' => true,
             ];
 
-            // Handle media based on type
+            // Handle media based on type and source
             if ($request->type === 'image') {
                 $mediaUrl = $this->handleImageUpload($request, $etablissement);
                 $value['url'] = $mediaUrl;
             } else {
-                // Video handling
                 $videoUrl = $this->handleVideoUpload($request, $etablissement);
                 $value['url'] = $videoUrl;
-                $value['video_path'] = $request->video_path ?? '';
             }
+
+            // Générer une clé unique
+            $key = 'slider_item_' . Str::random(8) . '_' . time();
 
             $setting = Setting::create([
                 'etablissement_id' => $etablissement->id,
                 'group' => 'slider',
-                'key' => 'slider_item_' . Str::random(8),
-                'value' => json_encode($value),
+                'key' => $key,
+                'value' => json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 'type' => 'json',
                 'order' => $order,
             ]);
@@ -166,9 +180,10 @@ class SliderController extends Controller
             
             $currentValue = $this->parseSettingValue($setting->value);
             
-            $validated = $request->validate([
+            $request->validate([
                 'type' => 'sometimes|in:image,video',
                 'media_id' => 'nullable|exists:cms_media,id',
+                'image_file' => 'nullable|file|image|max:5120',
                 'video_file' => 'nullable|file|mimes:mp4,mov,ogg,webm|max:51200',
                 'title' => 'nullable|string|max:255',
                 'subtitle' => 'nullable|string|max:500',
@@ -187,18 +202,22 @@ class SliderController extends Controller
             ];
 
             // Handle media update if new file provided
-            if ($request->hasFile('video_file') || ($request->type === 'image' && $request->media_id)) {
+            $hasNewFile = $request->hasFile('image_file') || $request->hasFile('video_file') || $request->media_id;
+            
+            if ($hasNewFile) {
                 // Delete old file if exists
                 if (!empty($currentValue['url'])) {
                     $this->deleteMediaFile($currentValue['url'], $etablissement);
                 }
                 
-                if ($request->type === 'image') {
+                if ($request->type === 'image' || ($request->type === null && $currentValue['type'] === 'image')) {
                     $mediaUrl = $this->handleImageUpload($request, $etablissement);
                     $value['url'] = $mediaUrl;
+                    $value['type'] = 'image';
                 } else {
                     $videoUrl = $this->handleVideoUpload($request, $etablissement);
                     $value['url'] = $videoUrl;
+                    $value['type'] = 'video';
                 }
             } else {
                 // Keep existing URL
@@ -206,10 +225,13 @@ class SliderController extends Controller
                 if (isset($currentValue['video_path'])) {
                     $value['video_path'] = $currentValue['video_path'];
                 }
+                if (isset($currentValue['video_html'])) {
+                    $value['video_html'] = $currentValue['video_html'];
+                }
             }
 
             $setting->update([
-                'value' => json_encode($value),
+                'value' => json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ]);
 
             return response()->json([
@@ -252,8 +274,8 @@ class SliderController extends Controller
             
             $value = $this->parseSettingValue($setting->value);
             
-            // Delete the physical file
-            if (!empty($value['url'])) {
+            // Delete the physical file if it exists and is local
+            if (!empty($value['url']) && !$this->isExternalUrl($value['url'])) {
                 $this->deleteMediaFile($value['url'], $etablissement);
             }
             
@@ -271,7 +293,7 @@ class SliderController extends Controller
             Log::error('Slider delete error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors de la suppression'
+                'message' => 'Erreur lors de la suppression: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -306,7 +328,7 @@ class SliderController extends Controller
             Log::error('Slider reorder error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors de la réorganisation'
+                'message' => 'Erreur lors de la réorganisation: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -328,19 +350,20 @@ class SliderController extends Controller
             $value['is_active'] = !($value['is_active'] ?? true);
             
             $setting->update([
-                'value' => json_encode($value)
+                'value' => json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Statut modifié',
+                'message' => $value['is_active'] ? 'Slide activé' : 'Slide désactivé',
                 'is_active' => $value['is_active']
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Slider toggle error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors du changement de statut'
+                'message' => 'Erreur lors du changement de statut: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -357,7 +380,7 @@ class SliderController extends Controller
         // If media_id is provided, get from media library
         if ($request->media_id) {
             $media = \Vendor\Cms\Models\Media::find($request->media_id);
-            if ($media) {
+            if ($media && $media->isImage()) {
                 return $media->url;
             }
         }
@@ -368,13 +391,18 @@ class SliderController extends Controller
             $path = "sliders/{$etablissement->id}/images";
             $filename = 'slide_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
             
-            if ($this->cdnEnabled) {
-                $result = $this->cdnService->upload($file, $path, 'public');
-                if ($result['success'] ?? false) {
-                    return $result['url'];
+            if ($this->cdnEnabled && $this->cdnService) {
+                try {
+                    $result = $this->cdnService->upload($file, $path, 'public');
+                    if (isset($result['success']) && $result['success']) {
+                        return $result['url'];
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('CDN upload failed, falling back to local: ' . $e->getMessage());
                 }
             }
             
+            // Fallback to local storage
             $storedPath = $file->storeAs($path, $filename, 'public');
             return Storage::disk('public')->url($storedPath);
         }
@@ -401,20 +429,20 @@ class SliderController extends Controller
             $path = "sliders/{$etablissement->id}/videos";
             $filename = 'video_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
             
-            if ($this->cdnEnabled) {
-                $result = $this->cdnService->upload($file, $path, 'public');
-                if ($result['success'] ?? false) {
-                    return $result['url'];
+            if ($this->cdnEnabled && $this->cdnService) {
+                try {
+                    $result = $this->cdnService->upload($file, $path, 'public');
+                    if (isset($result['success']) && $result['success']) {
+                        return $result['url'];
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('CDN upload failed, falling back to local: ' . $e->getMessage());
                 }
             }
             
+            // Fallback to local storage
             $storedPath = $file->storeAs($path, $filename, 'public');
             return Storage::disk('public')->url($storedPath);
-        }
-        
-        // If video path is provided (from existing)
-        if ($request->video_path) {
-            return $request->video_path;
         }
         
         return '';
@@ -429,22 +457,52 @@ class SliderController extends Controller
             return;
         }
         
+        // Ne pas supprimer les URLs externes (YouTube, Vimeo, etc.)
+        if ($this->isExternalUrl($url)) {
+            return;
+        }
+        
         try {
             // Check if it's a local storage path
             if (strpos($url, '/storage/') !== false) {
                 $relativePath = str_replace('/storage/', '', parse_url($url, PHP_URL_PATH));
                 if (Storage::disk('public')->exists($relativePath)) {
                     Storage::disk('public')->delete($relativePath);
+                    Log::info('Deleted local file: ' . $relativePath);
                 }
             } 
             // CDN deletion
-            else if ($this->cdnEnabled && strpos($url, env('CDN_URL', '')) !== false) {
+            else if ($this->cdnEnabled && $this->cdnService && strpos($url, env('CDN_URL', '')) !== false) {
                 $path = str_replace(env('CDN_URL', '') . '/storage/', '', $url);
                 $this->cdnService->delete($path);
+                Log::info('Deleted CDN file: ' . $path);
             }
         } catch (\Exception $e) {
             Log::warning('Failed to delete media file: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Check if URL is external (YouTube, Vimeo, etc.)
+     */
+    private function isExternalUrl($url): bool
+    {
+        if (empty($url)) {
+            return false;
+        }
+        
+        $externalDomains = [
+            'youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com',
+            'facebook.com', 'twitter.com', 'instagram.com', 'tiktok.com'
+        ];
+        
+        foreach ($externalDomains as $domain) {
+            if (strpos($url, $domain) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -455,6 +513,7 @@ class SliderController extends Controller
         $sliders = Setting::where('etablissement_id', $etablissementId)
             ->where('group', 'slider')
             ->orderBy('order', 'asc')
+            ->orderBy('id', 'asc')
             ->get();
         
         $order = 1;
@@ -469,10 +528,28 @@ class SliderController extends Controller
      */
     private function parseSettingValue($value): array
     {
-        if (is_string($value)) {
-            $decoded = json_decode($value, true);
-            return $decoded ?: [];
+        if (empty($value)) {
+            return [];
         }
+        
+        if (is_string($value)) {
+            // Nettoyer les caractères indésirables avant le décodage
+            $cleanValue = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $value);
+            $decoded = json_decode($cleanValue, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+            
+            // Tentative avec le value original
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+            
+            Log::warning('Failed to parse JSON value', ['value' => substr($value, 0, 200)]);
+            return [];
+        }
+        
         return is_array($value) ? $value : [];
     }
 }
