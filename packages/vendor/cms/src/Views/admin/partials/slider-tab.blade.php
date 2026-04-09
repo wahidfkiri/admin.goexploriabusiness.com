@@ -60,7 +60,7 @@
             <thead>
                 <tr>
                     <th style="width: 40px"><i class="fas fa-grip-vertical"></i></th>
-                    <th style="width: 100px">Aperçu</th>
+                    <th style="width: 120px">Aperçu</th>
                     <th>Titre</th>
                     <th>Sous-titre</th>
                     <th style="width: 80px">Type</th>
@@ -178,6 +178,13 @@
                         </div>
                     </div>
 
+                    <!-- Video URL section for external videos (YouTube, Vimeo) -->
+                    <div id="videoUrlSection" class="mb-3" style="display: none;">
+                        <label class="form-label">URL de la vidéo externe (YouTube, Vimeo)</label>
+                        <input type="text" class="form-control" name="video_url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/...">
+                        <small class="text-muted">Laissez vide pour uploader une vidéo locale</small>
+                    </div>
+
                     <hr>
 
                     <div class="row">
@@ -274,8 +281,8 @@
 }
 
 .slider-preview {
-    width: 80px;
-    height: 50px;
+    width: 100px;
+    height: 60px;
     border-radius: 8px;
     overflow: hidden;
     background: #f3f4f6;
@@ -289,6 +296,17 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.slider-preview .video-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 20px;
 }
 
 .type-badge {
@@ -429,14 +447,22 @@ tr.dragging {
     background: #e5e7eb;
 }
 
+.youtube-thumbnail {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+}
+
 @media (max-width: 768px) {
     .table {
         font-size: 0.85rem;
     }
     
     .slider-preview {
-        width: 50px;
-        height: 35px;
+        width: 70px;
+        height: 45px;
     }
     
     .btn-icon {
@@ -562,6 +588,44 @@ function loadSliders() {
         });
 }
 
+function getPreviewHtml(item) {
+    // Pour les vidéos YouTube avec URL vide mais video_html
+    if (item.type === 'video') {
+        // Si c'est une vidéo YouTube/Vimeo avec HTML embed
+        if (item.video_html) {
+            // Extraire l'ID YouTube pour afficher une miniature
+            const youtubeMatch = item.video_html.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+            if (youtubeMatch) {
+                const youtubeId = youtubeMatch[1];
+                return `<div class="slider-preview">
+                            <div class="youtube-thumbnail" style="background-image: url('https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg'); background-size: cover; background-position: center;">
+                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(0,0,0,0.3);">
+                                    <i class="fab fa-youtube" style="color: red; font-size: 24px;"></i>
+                                </div>
+                            </div>
+                        </div>`;
+            }
+            return `<div class="slider-preview"><div class="video-placeholder"><i class="fab fa-youtube fa-2x"></i></div></div>`;
+        }
+        // Si c'est une vidéo locale avec URL
+        else if (item.url && item.url !== '') {
+            return `<div class="slider-preview"><video src="${escapeHtml(item.url)}"></video></div>`;
+        }
+        // Fallback pour vidéo sans média
+        else {
+            return `<div class="slider-preview"><div class="video-placeholder"><i class="fas fa-video fa-2x"></i></div></div>`;
+        }
+    }
+    // Pour les images
+    else if (item.type === 'image' && item.url && item.url !== '') {
+        return `<div class="slider-preview"><img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.title)}"></div>`;
+    }
+    // Fallback
+    else {
+        return `<div class="slider-preview"><div class="video-placeholder"><i class="fas fa-image fa-2x"></i></div></div>`;
+    }
+}
+
 function renderSliderTable(items) {
     const tbody = document.getElementById('sliderTableBody');
     const sortedItems = [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -574,14 +638,7 @@ function renderSliderTable(items) {
     tbody.innerHTML = sortedItems.map((item, index) => `
         <tr data-id="${item.id}" data-order="${item.order || index + 1}">
             <td class="drag-handle-cell"><i class="fas fa-grip-vertical"></i></td>
-            <td>
-                <div class="slider-preview">
-                    ${item.type === 'video' 
-                        ? `<video src="${escapeHtml(item.url)}"></video>`
-                        : `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.title)}">`
-                    }
-                </div>
-            </td>
+            <td>${getPreviewHtml(item)}</td>
             <td><strong>${escapeHtml(item.title) || '<span class="text-muted">-</span>'}</strong></td>
             <td><small class="text-muted">${escapeHtml(item.subtitle) || '-'}</small></td>
             <td><span class="type-badge ${item.type}"><i class="fas fa-${item.type === 'video' ? 'video' : 'image'} me-1"></i>${item.type === 'video' ? 'Vidéo' : 'Image'}</span></td>
@@ -664,7 +721,16 @@ function applyFilter(filter) {
 
 function handleTypeChange() {
     const isVideo = document.querySelector('input[name="type"]:checked').value === 'video';
-    document.getElementById('mediaFileInput').setAttribute('accept', isVideo ? 'video/mp4,video/webm,video/ogg' : 'image/*');
+    const fileInput = document.getElementById('mediaFileInput');
+    const videoUrlSection = document.getElementById('videoUrlSection');
+    
+    if (isVideo) {
+        fileInput.setAttribute('accept', 'video/mp4,video/webm,video/ogg');
+        videoUrlSection.style.display = 'block';
+    } else {
+        fileInput.setAttribute('accept', 'image/*');
+        videoUrlSection.style.display = 'none';
+    }
     clearFilePreview();
 }
 
@@ -743,7 +809,21 @@ function saveSlide(e) {
     
     if (source === 'upload') {
         const file = document.getElementById('mediaFileInput').files[0];
-        if (!file && !isEdit) { showToast('Veuillez sélectionner un fichier', 'error'); return; }
+        if (!file && !isEdit) { 
+            // Pour les vidéos, vérifier si une URL externe a été fournie
+            if (type === 'video') {
+                const videoUrl = document.getElementById('videoUrl').value;
+                if (videoUrl) {
+                    formData.append('video_url', videoUrl);
+                } else {
+                    showToast('Veuillez sélectionner un fichier ou entrer une URL vidéo', 'error');
+                    return;
+                }
+            } else {
+                showToast('Veuillez sélectionner un fichier', 'error');
+                return;
+            }
+        }
         if (file) formData.append(type === 'video' ? 'video_file' : 'image_file', file);
     } else {
         const mediaId = document.getElementById('selectedMediaId').value;
@@ -770,7 +850,12 @@ function saveSlide(e) {
                 resetForm();
             } else showToast(result.message || 'Erreur', 'error');
         })
-        .catch(() => { saveBtn.disabled = false; saveBtn.innerHTML = 'Enregistrer'; showToast('Erreur', 'error'); });
+        .catch((error) => { 
+            saveBtn.disabled = false; 
+            saveBtn.innerHTML = 'Enregistrer'; 
+            console.error('Save error:', error);
+            showToast('Erreur lors de l\'enregistrement', 'error'); 
+        });
 }
 
 function editSlide(id) {
@@ -786,14 +871,30 @@ function editSlide(id) {
     document.getElementById('slideButtonLink').value = item.button_link || '';
     document.getElementById('sourceUpload').checked = true;
     handleSourceChange();
+    handleTypeChange();
     
-    if (item.url) {
+    if (item.url && item.url !== '') {
         const imgPreview = document.getElementById('imagePreview');
         const vidPreview = document.getElementById('videoPreview');
-        if (item.type === 'video') { imgPreview.style.display = 'none'; vidPreview.style.display = 'block'; vidPreview.src = item.url; }
-        else { vidPreview.style.display = 'none'; imgPreview.style.display = 'block'; imgPreview.src = item.url; }
+        if (item.type === 'video') { 
+            imgPreview.style.display = 'none'; 
+            vidPreview.style.display = 'block'; 
+            vidPreview.src = item.url; 
+        } else { 
+            vidPreview.style.display = 'none'; 
+            imgPreview.style.display = 'block'; 
+            imgPreview.src = item.url; 
+        }
         document.getElementById('filePreview').style.display = 'block';
         document.getElementById('uploadArea').style.display = 'none';
+    } else if (item.video_html) {
+        // Pour les vidéos YouTube sans URL directe
+        document.getElementById('videoUrlSection').style.display = 'block';
+        // Essayer d'extraire l'URL YouTube
+        const youtubeMatch = item.video_html.match(/src="([^"]+)"/);
+        if (youtubeMatch) {
+            document.getElementById('videoUrl').value = youtubeMatch[1];
+        }
     }
     
     new bootstrap.Modal(document.getElementById('slideModal')).show();
@@ -824,10 +925,12 @@ function resetForm() {
     document.getElementById('slideId').value = '';
     document.getElementById('selectedMediaId').value = '';
     document.getElementById('selectedMediaPreview').style.display = 'none';
+    document.getElementById('videoUrl').value = '';
     clearFilePreview();
     document.getElementById('sourceUpload').checked = true;
     handleSourceChange();
     document.getElementById('typeImage').checked = true;
+    handleTypeChange();
 }
 
 function escapeHtml(str) {
