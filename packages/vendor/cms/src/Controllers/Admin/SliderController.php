@@ -23,6 +23,7 @@ class SliderController extends Controller
             $this->cdnService = app(\App\Services\CDNService::class);
         }
     }
+    
 
     /**
      * Get all slider items
