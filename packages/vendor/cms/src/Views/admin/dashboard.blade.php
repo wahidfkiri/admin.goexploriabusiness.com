@@ -365,6 +365,100 @@
     </script>
     
     <style>
+         /* Styles pour la recherche */
+    .clear-search {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+    
+    .clear-search:hover {
+        background: #f1f5f9;
+        color: #ef4444;
+    }
+    
+    .no-results-message {
+        text-align: center;
+        padding: 40px 20px;
+        background: #f8fafc;
+        border-radius: 16px;
+        margin-top: 20px;
+        animation: fadeInUp 0.3s ease;
+    }
+    
+    .no-results-icon {
+        font-size: 48px;
+        color: #94a3b8;
+        margin-bottom: 16px;
+    }
+    
+    .no-results-text {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+    
+    .clear-search-btn {
+        background: #e2e8f0;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .clear-search-btn:hover {
+        background: #cbd5e1;
+        color: #1e293b;
+    }
+    
+    .search-highlight {
+        background: #fef08a;
+        color: #854d0e;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+    
+    /* Animation */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Transition pour les éléments filtrés */
+    .nav-link-modern {
+        transition: display 0.3s ease, opacity 0.3s ease;
+    }
+    
+    /* Compteur de résultats */
+    .search-results-count {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 12px;
+        padding: 0 16px;
+        text-align: center;
+    }
         /* Animated badge */
         .badge-count {
             position: relative;
