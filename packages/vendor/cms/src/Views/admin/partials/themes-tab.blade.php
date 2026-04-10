@@ -57,9 +57,6 @@
             <i class="fas fa-palette"></i>
             <h4>Aucun thème disponible</h4>
             <p>Commencez par uploader un thème depuis la bibliothèque globale.</p>
-            <a href="{{ route('cms.admin.themes.index') }}" class="btn btn-primary">
-                <i class="fas fa-upload me-2"></i>Aller à la bibliothèque
-            </a>
         </div>
     @else
         <div class="themes-grid-dashboard">
