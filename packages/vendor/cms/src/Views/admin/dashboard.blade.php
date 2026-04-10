@@ -187,6 +187,160 @@
             const urlParams = new URLSearchParams(window.location.search);
             const section = urlParams.get('section');
             
+            const searchInput = document.getElementById('tabSearchInput');
+            const navLinks = document.querySelectorAll('.nav-link-modern');
+
+            
+    if (searchInput) {
+        // Fonction de filtrage
+        function filterTabs(searchTerm) {
+            const term = searchTerm.toLowerCase().trim();
+            
+            navLinks.forEach(link => {
+                // Récupérer le titre et la description de l'onglet
+                const titleElement = link.querySelector('.tab-title-modern');
+                const descriptionElement = link.querySelector('.tab-description');
+                
+                const title = titleElement ? titleElement.textContent.toLowerCase() : '';
+                const description = descriptionElement ? descriptionElement.textContent.toLowerCase() : '';
+                
+                // Vérifier si le terme de recherche correspond
+                const matches = term === '' || 
+                               title.includes(term) || 
+                               description.includes(term);
+                
+                // Afficher ou cacher l'onglet
+                if (matches) {
+                    link.style.display = 'flex';
+                    // Ajouter une animation d'apparition
+                    link.style.animation = 'fadeInUp 0.3s ease';
+                } else {
+                    link.style.display = 'none';
+                }
+            });
+            
+            // Afficher un message si aucun résultat
+            showNoResultsMessage(term);
+        }
+        
+        // Fonction pour afficher un message "aucun résultat"
+        function showNoResultsMessage(searchTerm) {
+            const container = document.querySelector('.vertical-tabs-modern');
+            const existingMessage = document.querySelector('.no-results-message');
+            
+            // Compter les éléments visibles
+            const visibleLinks = Array.from(navLinks).filter(link => link.style.display !== 'none');
+            
+            if (visibleLinks.length === 0 && searchTerm !== '') {
+                // Créer le message si inexistant
+                if (!existingMessage) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'no-results-message';
+                    messageDiv.innerHTML = `
+                        <div class="no-results-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="no-results-text">Aucun menu trouvé pour "${escapeHtml(searchTerm)}"</div>
+                        <button class="clear-search-btn" onclick="document.getElementById('tabSearchInput').value = ''; filterTabs('');">
+                            <i class="fas fa-times"></i> Effacer la recherche
+                        </button>
+                    `;
+                    container.appendChild(messageDiv);
+                } else {
+                    existingMessage.style.display = 'block';
+                    const textElement = existingMessage.querySelector('.no-results-text');
+                    if (textElement) {
+                        textElement.innerHTML = `Aucun menu trouvé pour "${escapeHtml(searchTerm)}"`;
+                    }
+                }
+            } else {
+                if (existingMessage) {
+                    existingMessage.style.display = 'none';
+                }
+            }
+        }
+        
+        // Écouteur d'événement avec debounce pour meilleures performances
+        let debounceTimer;
+        searchInput.addEventListener('input', function(e) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                filterTabs(e.target.value);
+            }, 300);
+        });
+        
+        // Ajouter un bouton pour effacer la recherche
+        const searchWrapper = document.querySelector('.search-input-wrapper');
+        if (searchWrapper && !searchWrapper.querySelector('.clear-search')) {
+            const clearButton = document.createElement('button');
+            clearButton.type = 'button';
+            clearButton.className = 'clear-search';
+            clearButton.innerHTML = '<i class="fas fa-times"></i>';
+            clearButton.style.display = 'none';
+            clearButton.addEventListener('click', function() {
+                searchInput.value = '';
+                filterTabs('');
+                searchInput.focus();
+                clearButton.style.display = 'none';
+            });
+            
+            searchWrapper.appendChild(clearButton);
+            
+            // Afficher/masquer le bouton clear
+            searchInput.addEventListener('input', function() {
+                clearButton.style.display = this.value.length > 0 ? 'flex' : 'none';
+            });
+        }
+    }
+    
+    // Fonction utilitaire pour échapper le HTML
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // Animation de mise en évidence pour les résultats
+    function highlightMatchingText(link, term) {
+        if (!term || term === '') return;
+        
+        const titleElement = link.querySelector('.tab-title-modern');
+        const descriptionElement = link.querySelector('.tab-description');
+        
+        if (titleElement) {
+            const originalTitle = titleElement.getAttribute('data-original-title');
+            if (originalTitle && term) {
+                const regex = new RegExp(`(${term})`, 'gi');
+                titleElement.innerHTML = originalTitle.replace(regex, '<mark class="search-highlight">$1</mark>');
+            }
+        }
+        
+        if (descriptionElement) {
+            const originalDesc = descriptionElement.getAttribute('data-original-desc');
+            if (originalDesc && term) {
+                const regex = new RegExp(`(${term})`, 'gi');
+                descriptionElement.innerHTML = originalDesc.replace(regex, '<mark class="search-highlight">$1</mark>');
+            }
+        }
+    }
+    
+    // Sauvegarder les textes originaux pour le highlighting
+    navLinks.forEach(link => {
+        const titleElement = link.querySelector('.tab-title-modern');
+        const descriptionElement = link.querySelector('.tab-description');
+        
+        if (titleElement && !titleElement.getAttribute('data-original-title')) {
+            titleElement.setAttribute('data-original-title', titleElement.innerHTML);
+        }
+        if (descriptionElement && !descriptionElement.getAttribute('data-original-desc')) {
+            descriptionElement.setAttribute('data-original-desc', descriptionElement.innerHTML);
+        }
+    });
+            
             if (section) {
                 const sectionMap = {
                     'dashboard': 'v-pills-dashboard',
