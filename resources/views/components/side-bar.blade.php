@@ -84,14 +84,49 @@
                 <span class="menu-arrow"><i class="fas fa-chevron-down"></i></span>
             </a>
             <ul class="submenu">
-                <li><a href="{{ route('products.index') }}" class="submenu-item"><i class="fas fa-box submenu-icon"></i>Produits @php($productsCount = \App\Models\Product::count())@if($productsCount > 0)<span class="submenu-badge">{{ $productsCount }}</span>@endif</a></li>
-                <li><a href="{{ route('payments.index') }}" class="submenu-item"><i class="fas fa-credit-card submenu-icon"></i>Paiements @php($pendingPayments = \App\Models\Payment::where('status', 'en_attente')->count())@if($pendingPayments > 0)<span class="submenu-badge bg-warning">{{ $pendingPayments }}</span>@endif</a></li>
-                <li><a href="{{ url('transactions.index') }}" class="submenu-item"><i class="fas fa-history submenu-icon"></i>Transactions</a></li>
-                <li><a href="{{ url('orders.index') }}" class="submenu-item"><i class="fas fa-shopping-cart submenu-icon"></i>Commandes</a></li>
-                <li><a href="{{ url('customers.index') }}" class="submenu-item"><i class="fas fa-users submenu-icon"></i>Clients @php($customersCount = \App\Models\Customer::count())<span class="submenu-badge">{{ $customersCount }}</span>@endphp</a></li>
+                <li>
+                    <a href="{{ route('products.index') }}" class="submenu-item">
+                        <i class="fas fa-box submenu-icon"></i>
+                        Produits @php($productsCount = \App\Models\Product::count())@if($productsCount > 0)<span class="submenu-badge">{{ $productsCount }}</span>@endif
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('payments.index') }}" class="submenu-item">
+                        <i class="fas fa-credit-card submenu-icon"></i>
+                        Paiements @php($pendingPayments = \App\Models\Payment::where('status', 'en_attente')->count())@if($pendingPayments > 0)<span class="submenu-badge bg-warning">{{ $pendingPayments }}</span>@endif
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('transactions.index') }}" class="submenu-item">
+                        <i class="fas fa-history submenu-icon"></i>
+                        Transactions
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('orders.index') }}" class="submenu-item">
+                        <i class="fas fa-shopping-cart submenu-icon"></i>
+                        Commandes
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('customers.index') }}" class="submenu-item">
+                        <i class="fas fa-users submenu-icon"></i>
+                        Clients @php($customersCount = \App\Models\Customer::count())<span class="submenu-badge">{{ $customersCount }}</span>@endphp
+                    </a>
+                </li>
                 <li class="submenu-divider"></li>
-                <li><a href="{{ route('admin.payment.gateways') }}" class="submenu-item"><i class="fas fa-cog submenu-icon"></i>Configuration paiements</a></li>
-                <li><a href="{{ url('ecommerce/stats') }}" class="submenu-item"><i class="fas fa-chart-line submenu-icon"></i>Statistiques</a></li>
+                <li>
+                    <a href="{{ route('admin.payment.gateways') }}" class="submenu-item">
+                        <i class="fas fa-cog submenu-icon"></i>
+                        Configuration paiements
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('ecommerce/stats') }}" class="submenu-item">
+                        <i class="fas fa-chart-line submenu-icon"></i>
+                        Statistiques
+                    </a>
+                </li>
             </ul>
         </li>
         
