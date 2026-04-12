@@ -1,54 +1,55 @@
 <?php
 
+use Vendor\Chatbot\Controllers\InternalChatController;
+use Vendor\Chatbot\Controllers\InternalPollController;
 use Illuminate\Support\Facades\Route;
-use Vendor\Chatbot\Controllers\Web\ChatWidgetController;
-use Vendor\Chatbot\Controllers\Web\ChatAdminController;
 
 /*
 |--------------------------------------------------------------------------
-| Routes publiques — widget embarquable
+| Chat Interne — Vues
+|--------------------------------------------------------------------------
+| Toutes les vues sont protégées par auth.
+| L'URL /chat est accessible depuis la navbar principale.
 |--------------------------------------------------------------------------
 */
-Route::middleware(['web'])->group(function () {
+Route::middleware(['auth','web'])->prefix('/admin/chat')->name('internal.chat.')->group(function () {
 
-    // Assets du widget (JS + CSS dynamiques avec config par établissement)
-    Route::get('/chatbot/{etablissementId}/widget.js', [ChatWidgetController::class, 'widgetJs'])
-        ->name('chatbot.widget.js');
+    // Page principale (liste des conversations)
+    Route::get('/', [InternalChatController::class, 'index'])->name('index');
 
-    Route::get('/chatbot/{etablissementId}/widget.css', [ChatWidgetController::class, 'widgetCss'])
-        ->name('chatbot.widget.css');
+    // Vue d'une conversation spécifique
+    Route::get('/room/{roomId}', [InternalChatController::class, 'room'])
+         ->name('room')
+         ->whereNumber('roomId');
 
-    Route::get('/chatbot/{etablissementId}/iframe', [ChatWidgetController::class, 'iframe'])
-        ->name('chatbot.widget.iframe');
+    // Nouvelle conversation
+    Route::get('/new', [InternalChatController::class, 'new'])->name('new');
+});
 
-    /*
-    |--------------------------------------------------------------------------
-    | Routes admin — protégées par auth
-    |--------------------------------------------------------------------------
-    */
-    Route::prefix('/company/{etablissementId}/chatbot')
-        ->name('chatbot.admin.')
-        ->middleware(['auth'])
-        ->group(function () {
 
-            // Dashboard agent
-            Route::get('/', [ChatAdminController::class, 'dashboard'])->name('dashboard');
+Route::middleware(['auth', 'web'])->prefix('/internal-chat')->name('api.')->group(function () {
 
-            // Détail d'une room (interface de réponse agent)
-            Route::get('/rooms/{roomId}', [ChatAdminController::class, 'roomDetail'])->name('room');
+    // ── Rooms ──
+    Route::get('/rooms',                             [InternalChatController::class, 'roomsList'])->name('rooms');
+    Route::post('/direct',                           [InternalChatController::class, 'startDirect'])->name('direct');
+    Route::post('/group',                            [InternalChatController::class, 'startGroup'])->name('group');
+    Route::put('/rooms/{roomId}/group',              [InternalChatController::class, 'updateGroup'])->name('group.update')->whereNumber('roomId');
+    Route::delete('/rooms/{roomId}/leave',           [InternalChatController::class, 'leaveGroup'])->name('leave')->whereNumber('roomId');
 
-            // Historique conversations fermées
-            Route::get('/history', [ChatAdminController::class, 'history'])->name('history');
+    // ── Messages ──
+    Route::post('/rooms/{roomId}/messages',          [InternalChatController::class, 'sendMessage'])->name('internal.chat.send')->whereNumber('roomId');
+    Route::post('/rooms/{roomId}/files',             [InternalChatController::class, 'sendFile'])->name('internal.chat.file')->whereNumber('roomId');
+    Route::delete('/rooms/{roomId}/messages/{msgId}',[InternalChatController::class, 'deleteMessage'])->name('internal.chat.message.delete')->whereNumber(['roomId', 'msgId']);
+    Route::get('/rooms/{roomId}/messages',           [InternalChatController::class, 'loadMessages'])->name('internal.chat.messages.load')->whereNumber('roomId');
 
-            // Configuration (quick replies, bot flows, widget)
-            Route::get('/settings', [ChatAdminController::class, 'settings'])->name('settings');
+    // ── Lecture & présence ──
+    Route::post('/rooms/{roomId}/read',              [InternalChatController::class, 'markRead'])->name('internal.chat.read')->whereNumber('roomId');
+    Route::post('/heartbeat',                        [InternalChatController::class, 'heartbeat'])->name('internal.chat.heartbeat');
 
-            // Rapports & stats
-            Route::get('/reports', [ChatAdminController::class, 'reports'])->name('reports');
+    // ── Long-Polling & Typing ──
+    Route::get('/rooms/{roomId}/poll',               [InternalPollController::class, 'poll'])->name('internal.chat.poll')->whereNumber('roomId');
+    Route::post('/rooms/{roomId}/typing',            [InternalPollController::class, 'typing'])->name('internal.chat.typing')->whereNumber('roomId');
 
-            // CRUD Bot Flows
-            Route::post('/flows', [ChatAdminController::class, 'storeFlow'])->name('flows.store');
-            Route::put('/flows/{flowId}', [ChatAdminController::class, 'updateFlow'])->name('flows.update');
-            Route::delete('/flows/{flowId}', [ChatAdminController::class, 'destroyFlow'])->name('flows.destroy');
-        });
+    // ── Recherche utilisateurs ──
+    Route::get('/users/search',                      [InternalChatController::class, 'searchUsers'])->name('internal.chat.users.search');
 });

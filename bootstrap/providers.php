@@ -22,4 +22,5 @@ return [
     Vendor\Theme\ThemeServiceProvider::class,
     Vendor\Users\UsersServiceProvider::class,
     Vendor\Website\WebsiteServiceProvider::class,
+    Vendor\Chatbot\InternalChatServiceProvider::class,
 ];

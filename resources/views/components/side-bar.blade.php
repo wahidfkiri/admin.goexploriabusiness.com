@@ -87,13 +87,23 @@
                 <li>
                     <a href="{{ route('products.index') }}" class="submenu-item">
                         <i class="fas fa-box submenu-icon"></i>
-                        Produits @php($productsCount = \App\Models\Product::count())@if($productsCount > 0)<span class="submenu-badge">{{ $productsCount }}</span>@endif
+                        Produits 
+                        @if(\App\Models\Product::count() > 0)
+                        <span class="submenu-badge">
+                            {{ \App\Models\Product::count() }}
+                        </span>
+                        @endif
                     </a>
                 </li>
                 <li>
                     <a href="{{ route('payments.index') }}" class="submenu-item">
                         <i class="fas fa-credit-card submenu-icon"></i>
-                        Paiements @php($pendingPayments = \App\Models\Payment::where('status', 'en_attente')->count())@if($pendingPayments > 0)<span class="submenu-badge bg-warning">{{ $pendingPayments }}</span>@endif
+                        Paiements  
+                        @if(\App\Models\Payment::where('status', 'en_attente')->count() > 0)
+                        <span class="submenu-badge bg-warning">
+                            {{ \App\Models\Payment::where('status', 'en_attente')->count() }}
+                        </span>
+                        @endif
                     </a>
                 </li>
                 <li>
@@ -111,7 +121,10 @@
                 <li>
                     <a href="{{ url('customers.index') }}" class="submenu-item">
                         <i class="fas fa-users submenu-icon"></i>
-                        Clients @php($customersCount = \App\Models\Customer::count())<span class="submenu-badge">{{ $customersCount }}</span>@endphp
+                        Clients
+                        <span class="submenu-badge">
+                            {{ \App\Models\Customer::count() }}
+                        </span>
                     </a>
                 </li>
                 <li class="submenu-divider"></li>

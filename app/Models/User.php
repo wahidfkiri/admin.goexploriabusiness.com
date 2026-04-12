@@ -12,10 +12,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
+use Vendor\Chatbot\Traits\HasInternalChatRooms;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens, HasRoles;
+    use HasFactory, Notifiable, HasApiTokens, HasRoles, HasInternalChatRooms;
 
     /**
      * The attributes that are mass assignable.
@@ -443,5 +444,6 @@ public function activitielog(): HasMany
     {
         return $this->hasAnyRole(['admin', 'super_admin']);
     }
+    
     
 }

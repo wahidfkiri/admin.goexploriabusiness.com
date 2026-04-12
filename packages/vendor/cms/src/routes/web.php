@@ -46,13 +46,6 @@ Route::middleware(['web'])->group(function () {
         ->where('path', '.*')
         ->name('cms.theme.asset');
 
-    Route::fallback(function () {
-        $etablissement = \App\Models\Etablissement::first();
-        if ($etablissement) {
-            return redirect()->route('cms.company.home', ['etablissementId' => $etablissement->id]);
-        }
-        abort(404, 'Page non trouvée');
-    });
 
     
 // Routes publiques pour robots et sitemap

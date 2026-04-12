@@ -1,0 +1,25 @@
+{
+    "name": "vendor/chatbot",
+    "description": "Chatbot Module for Laravel",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Vendor\\Chatbot\\": "src/"
+        },
+         "files": [
+            "src/Helpers/InternalChatHelper.php"
+        ]
+    },
+    "require": {
+        "php": "^8.1",
+        "laravel/framework": "^10.0|^11.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Vendor\\Chatbot\\InternalChatServiceProvider"
+            ]
+        }
+    }
+}
