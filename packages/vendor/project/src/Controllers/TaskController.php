@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Vendor\Project\Mail\TaskCreated;
+use Vendor\Project\Mail\TaskUpdated;
 use Illuminate\Support\Facades\Mail;
 
 class TaskController extends Controller
@@ -852,6 +853,53 @@ public function update(Request $request, Task $task)
     try {
         DB::beginTransaction();
         
+        // ============================================
+        // DÉTECTER LES CHANGEMENTS AVANT LA MISE À JOUR
+        // ============================================
+        $changes = [];
+        
+        // Liste des champs à surveiller
+        $fieldsToWatch = [
+            'name', 'details', 'project_id', 'user_id', 'status', 
+            'due_date', 'delivery_date', 'estimated_hours', 'hourly_rate',
+            'country', 'location', 'contract_number', 'contact_name',
+            'test_date', 'test_details', 'integration_date', 'push_prod_date',
+            'module_url', 'general_manager_id', 'client_manager_id'
+        ];
+        
+        foreach ($fieldsToWatch as $field) {
+            $oldValue = $task->$field;
+            $newValue = $request->$field;
+            
+            // Comparer les valeurs (en convertissant les dates en string pour comparaison)
+            $oldComparable = $oldValue instanceof \DateTime ? $oldValue->format('Y-m-d H:i:s') : $oldValue;
+            $newComparable = $newValue instanceof \DateTime ? $newValue->format('Y-m-d H:i:s') : $newValue;
+            
+            if ($oldComparable != $newComparable) {
+                $changes[$field] = [
+                    'label' => $this->getFieldLabel($field),
+                    'old' => $this->getFormattedValue($task, $field, $oldValue),
+                    'new' => $this->getFormattedValue($task, $field, $newValue),
+                ];
+            }
+        }
+        
+        // Vérifier les changements de priorité dans metadata
+        $oldMetadata = json_decode($task->metadata, true) ?? [];
+        $oldPriority = $oldMetadata['priority'] ?? 'medium';
+        $newPriority = $request->priority ?? 'medium';
+        
+        if ($oldPriority != $newPriority) {
+            $changes['priority'] = [
+                'label' => 'Priorité',
+                'old' => $this->getFormattedPriority($oldPriority),
+                'new' => $this->getFormattedPriority($newPriority),
+            ];
+        }
+        
+        // ============================================
+        // EFFECTUER LA MISE À JOUR
+        // ============================================
         $project = Project::findOrFail($request->project_id);
         
         $estimatedCost = null;
@@ -864,8 +912,6 @@ public function update(Request $request, Task $task)
         $metadata['tags'] = $request->tags ? explode(',', $request->tags) : ($metadata['tags'] ?? []);
         $metadata['updated_by'] = Auth::user()->name;
         $metadata['updated_at'] = now()->toDateTimeString();
-        
-        $oldStatus = $task->status;
         
         $task->update([
             'name' => $request->name,
@@ -899,11 +945,9 @@ public function update(Request $request, Task $task)
             
             foreach ($request->file('new_files') as $file) {
                 try {
-                    // Générer un nom unique
                     $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
                     $filePath = $file->storeAs('tasks/' . $task->id, $fileName, 'public');
 
-                    // Créer l'enregistrement avec TOUS les champs requis
                     TaskFile::create([
                         'task_id' => $task->id,
                         'user_id' => Auth::id(),
@@ -933,11 +977,59 @@ public function update(Request $request, Task $task)
                 }
             }
             
-            // Mettre à jour le compteur
             if ($uploadedCount > 0) {
                 $task->increment('files_count', $uploadedCount);
             }
         }
+        
+        // ============================================
+        // ENVOI D'EMAIL À L'UTILISATEUR ASSIGNÉ
+        // (S'IL Y A EU DES CHANGEMENTS)
+        // ============================================
+        if (!empty($changes)) {
+            try {
+                $assignedUser = User::find($request->user_id);
+                
+                // Envoyer l'email à l'utilisateur assigné
+                if ($assignedUser && $assignedUser->email) {
+                    Mail::to($assignedUser->email)->send(new TaskUpdated($task, Auth::user(), $changes));
+                    
+                    \Log::info('Task update email sent to assigned user', [
+                        'task_id' => $task->id,
+                        'user_id' => $assignedUser->id,
+                        'user_email' => $assignedUser->email,
+                        'user_name' => $assignedUser->name,
+                        'changes' => array_keys($changes)
+                    ]);
+                } else {
+                    \Log::warning('Assigned user has no email for task update notification', [
+                        'task_id' => $task->id,
+                        'user_id' => $request->user_id
+                    ]);
+                }
+                
+                // Optionnel: Envoyer aussi au créateur de la tâche si différent
+                if ($task->creator && $task->creator->id != $request->user_id && $task->creator->email) {
+                    Mail::to($task->creator->email)->send(new TaskUpdated($task, Auth::user(), $changes));
+                    
+                    \Log::info('Task update email sent to task creator', [
+                        'task_id' => $task->id,
+                        'creator_id' => $task->creator->id,
+                        'creator_email' => $task->creator->email
+                    ]);
+                }
+                
+            } catch (\Exception $e) {
+                \Log::error('Failed to send task update email', [
+                    'task_id' => $task->id,
+                    'user_id' => $request->user_id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        // ============================================
+        // FIN DE L'ENVOI D'EMAIL
+        // ============================================
         
         DB::commit();
         
@@ -947,12 +1039,18 @@ public function update(Request $request, Task $task)
                 'message' => 'Tâche mise à jour avec succès' . ($request->hasFile('new_files') ? ' (' . count($request->file('new_files')) . ' nouveau(x) fichier(s))' : ''),
                 'data' => $task,
                 'files_count' => $task->files_count,
+                'changes' => $changes,
                 'redirect' => route('tasks.show', $task->id)
             ]);
         }
         
+        $message = 'Tâche mise à jour avec succès';
+        if (!empty($changes)) {
+            $message .= ' (' . count($changes) . ' modification(s))';
+        }
+        
         return redirect()->route('tasks.show', $task->id)
-            ->with('success', 'Tâche mise à jour avec succès');
+            ->with('success', $message);
             
     } catch (\Exception $e) {
         DB::rollBack();
@@ -970,6 +1068,21 @@ public function update(Request $request, Task $task)
             ->with('error', 'Erreur lors de la mise à jour de la tâche')
             ->withInput();
     }
+}
+
+/**
+ * Get formatted priority label.
+ */
+private function getFormattedPriority(string $priority): string
+{
+    $priorities = [
+        'low' => 'Basse',
+        'medium' => 'Moyenne',
+        'high' => 'Haute',
+        'urgent' => 'Urgente',
+    ];
+    
+    return $priorities[$priority] ?? $priority;
 }
 
     /**
@@ -2402,4 +2515,81 @@ public function getTemporaryPreviewUrl(Task $task, TaskComment $comment, TaskCom
         
         return rmdir($dir);
     }
+
+    /**
+ * Get human-readable label for a field.
+ */
+private function getFieldLabel(string $field): string
+{
+    $labels = [
+        'name' => 'Nom',
+        'details' => 'Description',
+        'project_id' => 'Projet',
+        'user_id' => 'Assigné à',
+        'status' => 'Statut',
+        'due_date' => 'Date d\'échéance',
+        'delivery_date' => 'Date de livraison',
+        'estimated_hours' => 'Heures estimées',
+        'hourly_rate' => 'Taux horaire',
+        'country' => 'Pays',
+        'location' => 'Lieu',
+        'contract_number' => 'Numéro de contrat',
+        'contact_name' => 'Nom du contact',
+        'test_date' => 'Date de test',
+        'test_details' => 'Détails du test',
+        'integration_date' => 'Date d\'intégration',
+        'push_prod_date' => 'Date de mise en production',
+        'module_url' => 'URL du module',
+        'general_manager_id' => 'Manager général',
+        'client_manager_id' => 'Manager client',
+    ];
+    
+    return $labels[$field] ?? $field;
+}
+
+/**
+ * Get formatted value for display.
+ */
+private function getFormattedValue(Task $task, string $field, $value): string
+{
+    if ($value === null || $value === '') {
+        return 'Non défini';
+    }
+    
+    switch ($field) {
+        case 'project_id':
+            $project = Project::find($value);
+            return $project ? $project->name : 'N/A';
+        case 'user_id':
+            $user = User::find($value);
+            return $user ? $user->name : 'Non assigné';
+        case 'general_manager_id':
+        case 'client_manager_id':
+            $user = User::find($value);
+            return $user ? $user->name : 'Non défini';
+        case 'status':
+            $statuses = [
+                'pending' => 'En attente',
+                'in_progress' => 'En cours',
+                'test' => 'En test',
+                'integrated' => 'Intégré',
+                'delivered' => 'Livré',
+                'approved' => 'Approuvé',
+                'cancelled' => 'Annulé',
+            ];
+            return $statuses[$value] ?? $value;
+        case 'due_date':
+        case 'delivery_date':
+        case 'test_date':
+        case 'integration_date':
+        case 'push_prod_date':
+            return $value ? Carbon::parse($value)->format('d/m/Y H:i') : 'Non défini';
+        case 'estimated_hours':
+            return $value ? $value . ' h' : '0 h';
+        case 'hourly_rate':
+            return $value ? number_format($value, 2, ',', ' ') . ' €/h' : '0 €/h';
+        default:
+            return (string) $value;
+    }
+}
 }
