@@ -12,6 +12,7 @@ class InternalChatCacheService
 {
     protected string $prefix;
     protected int    $ttl;
+    private array $localCache = [];
 
     public function __construct()
     {
@@ -36,10 +37,21 @@ class InternalChatCacheService
      * Récupère le dernier message_id connu pour une room.
      * Retourne 0 si aucune notification récente en cache.
      */
-    public function getLastNotifiedMessageId(int $roomId): int
-    {
-        return (int) Cache::get($this->roomKey($roomId), 0);
+
+public function getLastNotifiedMessageId(int $roomId): int
+{
+    // Cache local pour éviter les appels Redis multiples
+    $now = time();
+    if (isset($this->localCache[$roomId]) && ($now - $this->localCache[$roomId]['time']) < 1) {
+        return $this->localCache[$roomId]['id'];
     }
+    
+    $id = (int) Cache::get($this->roomKey($roomId), 0);
+    
+    $this->localCache[$roomId] = ['id' => $id, 'time' => $now];
+    
+    return $id;
+}
 
     // ──────────────────────────────────────────────────────────────
     // TYPING INDICATOR

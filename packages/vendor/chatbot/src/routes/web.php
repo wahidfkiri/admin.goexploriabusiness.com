@@ -35,6 +35,7 @@ Route::middleware(['auth', 'web'])->prefix('/internal-chat')->name('api.')->grou
     Route::post('/group',                            [InternalChatController::class, 'startGroup'])->name('group');
     Route::put('/rooms/{roomId}/group',              [InternalChatController::class, 'updateGroup'])->name('group.update')->whereNumber('roomId');
     Route::delete('/rooms/{roomId}/leave',           [InternalChatController::class, 'leaveGroup'])->name('leave')->whereNumber('roomId');
+    Route::delete('/rooms/{roomId}',                 [InternalChatController::class, 'deleteRoom'])->name('room.delete')->whereNumber('roomId');
 
     // ── Messages ──
     Route::post('/rooms/{roomId}/messages',          [InternalChatController::class, 'sendMessage'])->name('internal.chat.send')->whereNumber('roomId');

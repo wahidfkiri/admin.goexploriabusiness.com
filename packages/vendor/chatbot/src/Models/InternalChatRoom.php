@@ -186,7 +186,7 @@ class InternalChatRoom extends Model
     /**
      * Retourne les données sérialisées pour l'API (sidebar).
      */
-    public function toApiArray(int $forUserId): array
+    public function toApiArray(int $forUserId, ?int $unreadCount = null): array
     {
         $last = $this->lastMessage;
 
@@ -195,7 +195,7 @@ class InternalChatRoom extends Model
             'type'         => $this->type,
             'name'         => $this->displayName($forUserId),
             'avatar'       => $this->displayAvatar($forUserId),
-            'unread_count' => $this->unreadCount($forUserId),
+            'unread_count' => $unreadCount ?? $this->unreadCount($forUserId),
             'last_message' => $last ? [
                 'body'       => $last->deleted_at ? '[Message supprimé]' : ($last->body ?? ''),
                 'type'       => $last->type,

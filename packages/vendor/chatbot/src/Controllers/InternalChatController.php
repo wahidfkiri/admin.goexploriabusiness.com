@@ -12,6 +12,7 @@ use Vendor\Chatbot\Requests\UserSearchRequest;
 use Vendor\Chatbot\Models\InternalChatRoom;
 use Vendor\Chatbot\Models\InternalChatMessage;
 use Vendor\Chatbot\Models\InternalChatParticipant;
+use Vendor\Chatbot\Models\InternalChatRead;
 use App\Models\User;
 use Vendor\Chatbot\Services\InternalChatService;
 use Vendor\Chatbot\Services\InternalChatCacheService;
@@ -75,13 +76,17 @@ class InternalChatController extends Controller
             
             // Toutes les rooms pour la sidebar
             $rooms = $this->chatService->getRoomsForUser(auth()->user());
+            $viewerId = auth()->id();
+            $unreadByRoom = $this->chatService->getUnreadCountsForRooms($viewerId, $rooms->pluck('id')->all());
             
-            // 60 derniers messages
+            // 60 derniers messages (puis remis dans l'ordre chronologique)
             $messages = InternalChatMessage::where('room_id', $roomId)
                 ->with(['user:id,name,avatar', 'files'])
-                ->orderBy('id')
+                ->orderByDesc('id')
                 ->limit(60)
-                ->get();
+                ->get()
+                ->reverse()
+                ->values();
             
             $lastMessageId = $messages->last()?->id ?? 0;
             
@@ -90,6 +95,9 @@ class InternalChatController extends Controller
             
             // IDs participants pour polling typing indicator
             $participantIds = $room->participants->pluck('user_id')->all();
+            $readByOthersMaxId = (int) InternalChatRead::where('room_id', $roomId)
+                ->where('user_id', '!=', auth()->id())
+                ->max('last_read_message_id');
             
             Log::debug('Conversation chargée avec succès', [
                 'user_id' => auth()->id(), 
@@ -98,7 +106,7 @@ class InternalChatController extends Controller
             ]);
             
             return view('chatbot::internal-chat.room', compact(
-                'room', 'rooms', 'messages', 'lastMessageId', 'participantIds'
+                'room', 'rooms', 'messages', 'lastMessageId', 'participantIds', 'readByOthersMaxId', 'unreadByRoom'
             ));
         } catch (ModelNotFoundException $e) {
             Log::warning('Conversation non trouvée', ['user_id' => auth()->id(), 'room_id' => $roomId]);
@@ -341,13 +349,53 @@ class InternalChatController extends Controller
      *
      * GET /api/internal-chat/rooms
      */
+    /**
+     * API: Supprime une discussion.
+     *
+     * DELETE /api/internal-chat/rooms/{roomId}
+     */
+    public function deleteRoom(int $roomId): JsonResponse
+    {
+        try {
+            Log::info('Tentative de suppression de discussion', [
+                'user_id' => auth()->id(),
+                'room_id' => $roomId,
+            ]);
+
+            $room = $this->resolveRoomForUser($roomId);
+            $deleted = $this->chatService->deleteRoom($room, auth()->user());
+
+            if (!$deleted) {
+                return response()->json(['error' => 'Suppression non autorisee.'], 403);
+            }
+
+            Log::info('Discussion supprimee avec succes', [
+                'user_id' => auth()->id(),
+                'room_id' => $roomId,
+            ]);
+
+            return response()->json(['success' => true]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Discussion non trouvee.'], 404);
+        } catch (Exception $e) {
+            Log::error('Erreur lors de la suppression de discussion', [
+                'user_id' => auth()->id(),
+                'room_id' => $roomId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Erreur lors de la suppression.'], 500);
+        }
+    }
     public function roomsList(): JsonResponse
     {
         try {
             Log::debug('Récupération de la liste des conversations', ['user_id' => auth()->id()]);
             
+            $viewerId = auth()->id();
             $rooms = $this->chatService->getRoomsForUser(auth()->user());
-            $totalUnread = $rooms->sum(fn($r) => $r->unreadCount(auth()->id()));
+            $unreadByRoom = $this->chatService->getUnreadCountsForRooms($viewerId, $rooms->pluck('id')->all());
+            $totalUnread = array_sum($unreadByRoom);
             
             Log::debug('Liste des conversations récupérée', [
                 'user_id' => auth()->id(),
@@ -356,7 +404,9 @@ class InternalChatController extends Controller
             ]);
             
             return response()->json([
-                'rooms'        => $rooms->map(fn($r) => $r->toApiArray(auth()->id()))->values(),
+                'rooms'        => $rooms->map(
+                    fn($r) => $r->toApiArray($viewerId, $unreadByRoom[$r->id] ?? 0)
+                )->values(),
                 'total_unread' => $totalUnread,
             ]);
         } catch (Exception $e) {
@@ -675,58 +725,59 @@ class InternalChatController extends Controller
      * GET /api/internal-chat/users/search?q={query}&exclude[]=id1
      */
     public function searchUsers(UserSearchRequest $request): JsonResponse
-    {
-        try {
-            $q       = $request->query('q');
-            $exclude = array_merge(
-                (array) $request->query('exclude', []),
-                [auth()->id()]    // toujours exclure soi-même
-            );
-            
-            Log::debug('Recherche d\'utilisateurs', [
-                'user_id' => auth()->id(),
-                'query' => $q,
-                'exclude' => $exclude
+{
+    try {
+        $q       = $request->query('q');
+        $exclude = array_merge(
+            (array) $request->query('exclude', []),
+            [auth()->id()]    // toujours exclure soi-même
+        );
+        
+        Log::debug('Recherche d\'utilisateurs', [
+            'user_id' => auth()->id(),
+            'query' => $q,
+            'exclude' => $exclude
+        ]);
+        
+        $users = User::where('is_active', true)
+            ->whereNotIn('id', $exclude)
+            ->whereDoesntHave('etablissement') // 🔥 Exclut les utilisateurs qui ont déjà un établissement
+            ->where(fn($query) =>
+                $query->where('name', 'like', "%{$q}%")
+                      ->orWhere('email', 'like', "%{$q}")
+            )
+            ->select('id', 'name', 'email', 'avatar', 'position', 'department')
+            ->orderBy('name')
+            ->limit(15)
+            ->get()
+            ->map(fn($u) => [
+                'id'         => $u->id,
+                'name'       => $u->name,
+                'email'      => $u->email,
+                'avatar_url' => $u->avatar_url,
+                'position'   => $u->position,
+                'department' => $u->department,
+                'online'     => $this->cache->isUserOnline($u->id),
             ]);
-            
-            $users = User::where('is_active', true)
-                ->whereNotIn('id', $exclude)
-                ->where(fn($query) =>
-                    $query->where('name', 'like', "%{$q}%")
-                          ->orWhere('email', 'like', "%{$q}%")
-                )
-                ->select('id', 'name', 'email', 'avatar', 'position', 'department')
-                ->orderBy('name')
-                ->limit(15)
-                ->get()
-                ->map(fn($u) => [
-                    'id'         => $u->id,
-                    'name'       => $u->name,
-                    'email'      => $u->email,
-                    'avatar_url' => $u->avatar_url,
-                    'position'   => $u->position,
-                    'department' => $u->department,
-                    'online'     => $this->cache->isUserOnline($u->id),
-                ]);
-            
-            Log::debug('Recherche d\'utilisateurs terminée', [
-                'user_id' => auth()->id(),
-                'query' => $q,
-                'results_count' => $users->count()
-            ]);
-            
-            return response()->json(['users' => $users]);
-        } catch (Exception $e) {
-            Log::error('Erreur lors de la recherche d\'utilisateurs', [
-                'user_id' => auth()->id(),
-                'query' => $request->query('q'),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json(['error' => 'Erreur lors de la recherche d\'utilisateurs.'], 500);
-        }
+        
+        Log::debug('Recherche d\'utilisateurs terminée', [
+            'user_id' => auth()->id(),
+            'query' => $q,
+            'results_count' => $users->count()
+        ]);
+        
+        return response()->json(['users' => $users]);
+    } catch (Exception $e) {
+        Log::error('Erreur lors de la recherche d\'utilisateurs', [
+            'user_id' => auth()->id(),
+            'query' => $request->query('q'),
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json(['error' => 'Erreur lors de la recherche d\'utilisateurs.'], 500);
     }
+}
 
     // ──────────────────────────────────────────────────────────────
     // HELPER
@@ -762,3 +813,5 @@ class InternalChatController extends Controller
         }
     }
 }
+
+

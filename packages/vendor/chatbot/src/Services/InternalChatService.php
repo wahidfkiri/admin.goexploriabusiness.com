@@ -114,6 +114,35 @@ class InternalChatService
         $this->createSystemMessage($room, "{$user->name} a quitté le groupe.");
     }
 
+    /**
+     * Supprime une discussion.
+     * - Direct: tout participant peut supprimer la room.
+     * - Groupe: admin uniquement.
+     */
+    public function deleteRoom(InternalChatRoom $room, User $actor): bool
+    {
+        if (!$room->hasParticipant($actor->id)) {
+            return false;
+        }
+
+        if ($room->type === 'group') {
+            $isAdmin = $room->participants()
+                ->where('user_id', $actor->id)
+                ->where('role', 'admin')
+                ->exists();
+
+            if (!$isAdmin) {
+                return false;
+            }
+        }
+
+        $roomId = $room->id;
+        $room->delete();
+        $this->cache->notifyNewMessage($roomId, PHP_INT_MAX);
+
+        return true;
+    }
+
     // ──────────────────────────────────────────────────────────────
     // MESSAGES
     // ──────────────────────────────────────────────────────────────
@@ -294,6 +323,46 @@ class InternalChatService
      */
     public function totalUnreadCount(User $user): int
     {
-        return $this->getRoomsForUser($user)->sum(fn($room) => $room->unreadCount($user->id));
+        $rooms = $this->getRoomsForUser($user);
+        $unreadByRoom = $this->getUnreadCountsForRooms($user->id, $rooms->pluck('id')->all());
+
+        return array_sum($unreadByRoom);
+    }
+
+    /**
+     * Retourne le nombre de non-lus par room pour un utilisateur en une seule requête SQL.
+     *
+     * @param array<int> $roomIds
+     * @return array<int, int> [room_id => unread_count]
+     */
+    public function getUnreadCountsForRooms(int $userId, array $roomIds): array
+    {
+        if (empty($roomIds)) {
+            return [];
+        }
+
+        $messageTable = (new InternalChatMessage())->getTable();
+        $readTable = (new InternalChatRead())->getTable();
+
+        $counts = DB::table("{$messageTable} as m")
+            ->leftJoin("{$readTable} as r", function ($join) use ($userId) {
+                $join->on('r.room_id', '=', 'm.room_id')
+                    ->where('r.user_id', '=', $userId);
+            })
+            ->whereIn('m.room_id', $roomIds)
+            ->whereNull('m.deleted_at')
+            ->where('m.user_id', '!=', $userId)
+            ->whereRaw('m.id > COALESCE(r.last_read_message_id, 0)')
+            ->selectRaw('m.room_id, COUNT(*) as unread_count')
+            ->groupBy('m.room_id')
+            ->pluck('unread_count', 'm.room_id')
+            ->map(fn($count) => (int) $count)
+            ->all();
+
+        foreach ($roomIds as $roomId) {
+            $counts[$roomId] = $counts[$roomId] ?? 0;
+        }
+
+        return $counts;
     }
 }

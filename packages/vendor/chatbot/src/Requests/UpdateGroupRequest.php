@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\Chatbot\Requests\InternalChat;
+namespace Vendor\Chatbot\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 

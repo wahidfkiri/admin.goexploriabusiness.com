@@ -14,7 +14,7 @@ class InternalChatServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__ . '/Config/internal_chat.php', 'chatbot'
+            __DIR__ . '/Config/internal_chat.php', 'internal_chat'
         );
 
         // Register models

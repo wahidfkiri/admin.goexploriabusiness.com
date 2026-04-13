@@ -1,40 +1,48 @@
+﻿{{-- resources/views/vendor/chatbot/internal-chat/_partials/_room-item.blade.php --}}
 @php
-    $other = $r->type === 'direct'
-        ? $r->users->firstWhere('id', '!=', auth()->id())
-        : null;
-    $displayName = $r->type === 'direct'
-        ? ($other?->name ?? 'Utilisateur')
-        : ($r->name ?? 'Groupe');
-    $unread = $r->unreadCount(auth()->id());
-    $last   = $r->lastMessage;
-    $preview = $last ? Str::limit($last->body, 40) : 'Aucun message';
-    $time    = $last ? $last->created_at->diffForHumans(null, true) : '';
+    $other       = $r->type === 'direct' ? $r->users->firstWhere('id', '!=', auth()->id()) : null;
+    $displayName = $r->type === 'direct' ? ($other?->name ?? 'Utilisateur') : ($r->name ?? 'Groupe');
+    $unread      = isset($unreadOverride) ? (int) $unreadOverride : $r->unreadCount(auth()->id());
+    $last        = $r->lastMessage;
+    $preview     = $last
+        ? ($last->type === 'file' ? 'Fichier joint' : \Illuminate\Support\Str::limit($last->body ?? '', 40))
+        : 'Aucun message';
+    $time        = $last ? $last->created_at->diffForHumans(null, true) : '';
+    $initials    = mb_substr($displayName, 0, 2);
+    $avatarClass = 'ic-room-avatar-style-' . ((abs(crc32((string) $displayName)) % 6) + 1);
 @endphp
 
 <li>
     <a href="{{ route('internal.chat.room', $r->id) }}"
-       class="room-item {{ $active ? 'active' : '' }}"
+       class="ic-room-item {{ $active ? 'ic-room-active' : '' }}"
        data-room-id="{{ $r->id }}">
 
-        @if($r->type === 'direct' && $other)
-            <img src="{{ $other->avatar_url }}" alt="{{ $other->name }}" class="avatar avatar-sm">
-        @else
-            <div class="avatar avatar-sm avatar-group">{{ mb_substr($displayName, 0, 2) }}</div>
-        @endif
-
-        <div class="room-item-meta">
-            <div class="room-item-name">{{ $displayName }}</div>
-            <div class="room-item-preview">{{ $preview }}</div>
+        <div class="ic-room-avatar {{ $avatarClass }}">
+            @if($r->type === 'direct' && $other?->avatar)
+                <img src="{{ $other->avatar_url }}" alt="{{ $other->name }}">
+            @else
+                <span>{{ $initials }}</span>
+            @endif
+            @if($r->type === 'direct')
+                <span class="ic-room-presence" id="presence-{{ $other?->id }}"></span>
+            @endif
         </div>
 
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
-            @if($time)
-                <span class="room-item-time">{{ $time }}</span>
-            @endif
-            @if($unread > 0)
-                <span class="unread-badge">{{ $unread > 99 ? '99+' : $unread }}</span>
-            @endif
+        <div class="ic-room-meta">
+            <div class="ic-room-row">
+                <span class="ic-room-name">{{ $displayName }}</span>
+                @if($time)
+                    <span class="ic-room-time">{{ $time }}</span>
+                @endif
+            </div>
+            <div class="ic-room-row">
+                <span class="ic-room-preview {{ $unread > 0 ? 'ic-room-preview-unread' : '' }}">
+                    {{ $preview }}
+                </span>
+                @if($unread > 0)
+                    <span class="ic-unread-badge">{{ $unread > 99 ? '99+' : $unread }}</span>
+                @endif
+            </div>
         </div>
     </a>
 </li>
-
