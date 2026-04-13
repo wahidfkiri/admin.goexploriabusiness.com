@@ -622,15 +622,19 @@
     transition: background .15s;
     max-width: 260px;
 }
-.ic-own .ic-msg-file { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.25); color: #fff; }
+.ic-own .ic-msg-file {
+    background: var(--ic-primary-lt);
+    border-color: color-mix(in srgb, var(--ic-primary) 28%, #dbeafe);
+    color: var(--ic-text);
+}
 .ic-msg-file:hover { background: #eef2ff; }
-.ic-own .ic-msg-file:hover { background: rgba(255,255,255,.25); }
+.ic-own .ic-msg-file:hover { background: #e4eaff; }
 .ic-msg-file-icon {
     width: 34px; height: 34px; border-radius: 8px;
     background: var(--ic-primary-lt); color: var(--ic-primary);
     display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
 }
-.ic-own .ic-msg-file-icon { background: rgba(255,255,255,.2); color: #fff; }
+.ic-own .ic-msg-file-icon { background: #dbe5ff; color: var(--ic-primary); }
 .ic-msg-file-info { flex: 1; min-width: 0; }
 .ic-msg-file-name { font-size: 12px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ic-msg-file-meta { font-size: 11px; opacity: .6; }

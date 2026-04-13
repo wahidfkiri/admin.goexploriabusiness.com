@@ -440,8 +440,6 @@
         if (!body) return;
 
         btnSend.disabled = true;
-        input.value = '';
-        resizeInput();
         sendTyping(false);
 
         const tempId = `tmp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -455,6 +453,9 @@
             files: [],
             created_at: new Date().toISOString(),
         });
+        input.value = '';
+        resizeInput();
+        updateSendButton();
         scrollBottom();
 
         try {
@@ -483,9 +484,9 @@
             tempNode?.remove();
             input.value = body;
             resizeInput();
-            updateSendButton();
         } finally {
             btnSend.disabled = false;
+            updateSendButton();
             input.focus();
         }
     }

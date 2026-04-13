@@ -54,13 +54,11 @@
                     @endif
                 @endforeach
             @else
-                <div class="ic-msg-bubble">
-                    @if($msg->deleted_at)
-                        <em style="opacity:.5">Message supprime</em>
-                    @else
-                        {{ $msg->body }}
-                    @endif
-                </div>
+                @if($msg->deleted_at)
+                    <div class="ic-msg-bubble"><em style="opacity:.5">Message supprime</em></div>
+                @else
+                    <div class="ic-msg-bubble">{{ trim((string) $msg->body) }}</div>
+                @endif
             @endif
 
             <div class="ic-msg-meta">
