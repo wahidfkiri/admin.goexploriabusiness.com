@@ -58,7 +58,7 @@
         </li>
         
         <li>
-            <a href="{{ route('plugins.index') }}" class="menu-item">
+            <a href="{{ route('modules.index') }}" class="menu-item">
                 <span class="menu-icon"><i class="fas fa-plug"></i></span>
                 <span class="menu-text">Applications</span>
             </a>

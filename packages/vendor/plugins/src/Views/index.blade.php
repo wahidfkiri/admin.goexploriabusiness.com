@@ -38,11 +38,9 @@
                     <label for="filterCategory" class="form-label-modern">Catégorie</label>
                     <select class="form-select-modern" id="filterCategory">
                         <option value="">Toutes les catégories</option>
-                        <option value="1">Analytics</option>
-                        <option value="2">Marketing</option>
-                        <option value="3">Sécurité</option>
-                        <option value="4">E-commerce</option>
-                        <option value="5">Productivité</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -77,7 +75,7 @@
                     <select class="form-select-modern" id="filterSortBy">
                         <option value="name">Nom</option>
                         <option value="installed_at">Date d'installation</option>
-                        <option value="popularity">Popularité</option>
+                        <option value="downloads">Popularité</option>
                         <option value="rating">Note</option>
                         <option value="updated_at">Dernière mise à jour</option>
                     </select>
@@ -90,7 +88,7 @@
             <div class="stats-card-modern">
                 <div class="stats-header-modern">
                     <div>
-                        <div class="stats-value-modern" id="totalModules">12</div>
+                        <div class="stats-value-modern" id="totalModules">0</div>
                         <div class="stats-label-modern">Total Modules</div>
                     </div>
                     <div class="stats-icon-modern" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
@@ -102,7 +100,7 @@
             <div class="stats-card-modern">
                 <div class="stats-header-modern">
                     <div>
-                        <div class="stats-value-modern" id="activeModules">8</div>
+                        <div class="stats-value-modern" id="activeModules">0</div>
                         <div class="stats-label-modern">Modules Actifs</div>
                     </div>
                     <div class="stats-icon-modern" style="background: linear-gradient(135deg, #10b981, #059669);">
@@ -114,7 +112,7 @@
             <div class="stats-card-modern">
                 <div class="stats-header-modern">
                     <div>
-                        <div class="stats-value-modern" id="inactiveModules">3</div>
+                        <div class="stats-value-modern" id="inactiveModules">0</div>
                         <div class="stats-label-modern">Modules Inactifs</div>
                     </div>
                     <div class="stats-icon-modern" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
@@ -126,7 +124,7 @@
             <div class="stats-card-modern">
                 <div class="stats-header-modern">
                     <div>
-                        <div class="stats-value-modern" id="updatesAvailable">2</div>
+                        <div class="stats-value-modern" id="updatesAvailable">0</div>
                         <div class="stats-label-modern">Mises à jour</div>
                     </div>
                     <div class="stats-icon-modern" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
@@ -138,7 +136,7 @@
             <div class="stats-card-modern">
                 <div class="stats-header-modern">
                     <div>
-                        <div class="stats-value-modern" id="freeModules">7</div>
+                        <div class="stats-value-modern" id="freeModules">0</div>
                         <div class="stats-label-modern">Modules Gratuits</div>
                     </div>
                     <div class="stats-icon-modern" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
@@ -169,7 +167,7 @@
             <div class="card-header-modern">
                 <h3 class="card-title-modern">Tous les modules</h3>
                 <div class="modules-count">
-                    <span id="visibleModulesCount">12</span> modules
+                    <span id="visibleModulesCount">0</span> modules
                 </div>
             </div>
             
@@ -183,744 +181,7 @@
                 
                 <!-- Modules Grid (Cards View) -->
                 <div class="modules-grid" id="modulesGridView">
-                    <!-- E-commerce Produits & Services Module -->
-<div class="module-card" data-module-id="9" data-category="4" data-status="inactive" data-type="official" data-price="paid">
-    <div class="module-card-header">
-        <div class="module-icon" style="background: linear-gradient(135deg, #f97316, #ea580c);">
-            <i class="fas fa-store"></i>
-        </div>
-        <div class="module-badges">
-            <span class="badge-official">Officiel</span>
-            <span class="badge-paid">Payant</span>
-        </div>
-    </div>
-    
-    <div class="module-card-body">
-        <h4 class="module-name">CommerceSuite Pro</h4>
-        <p class="module-description">Gestion complète de produits et services : catalogue avancé, variations, stock multi-entrepôts, avis clients et recommandations personnalisées.</p>
-        
-        <div class="module-meta">
-            <div class="meta-item">
-                <i class="fas fa-code-branch"></i>
-                <span>v3.2.1</span>
-            </div>
-            <div class="meta-item">
-                <i class="fas fa-user"></i>
-                <span>Commerce Labs</span>
-            </div>
-            <div class="meta-item">
-                <i class="fas fa-calendar"></i>
-                <span>10/04/2024</span>
-            </div>
-        </div>
-        
-        <div class="module-rating">
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <span class="rating-count">(312)</span>
-        </div>
-    </div>
-    
-    <div class="module-card-footer">
-        <div class="module-status">
-            <span class="status-badge status-inactive">
-                <i class="fas fa-circle"></i> Inactif
-            </span>
-        </div>
-        
-        <div class="module-actions">
-            <button class="action-btn activate-btn" onclick="activateModule(9)" title="Activer">
-                <i class="fas fa-play"></i>
-            </button>
-            
-            <a href="#" class="action-btn view-btn" title="Voir détails">
-                <i class="fas fa-eye"></i>
-            </a>
-            
-            <button class="action-btn settings-btn" onclick="openModuleSettings(9)" title="Paramètres">
-                <i class="fas fa-cog"></i>
-            </button>
-            
-            <button class="action-btn delete-btn" onclick="showDeleteConfirmation(9)" title="Désinstaller">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    </div>
-</div>
-<!-- Facturation Module -->
-<div class="module-card" data-module-id="10" data-category="5" data-status="inactive" data-type="official" data-price="paid">
-    <div class="module-card-header">
-        <div class="module-icon" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
-            <i class="fas fa-file-invoice"></i>
-        </div>
-        <div class="module-badges">
-            <span class="badge-official">Officiel</span>
-            <span class="badge-paid">Payant</span>
-        </div>
-    </div>
-    
-    <div class="module-card-body">
-        <h4 class="module-name">InvoiceFlow</h4>
-        <p class="module-description">Gestion complète de facturation : devis, factures, avoirs, relances automatiques, paiements en ligne, TVA multi-taux et exports comptables.</p>
-        
-        <div class="module-meta">
-            <div class="meta-item">
-                <i class="fas fa-code-branch"></i>
-                <span>v2.5.0</span>
-            </div>
-            <div class="meta-item">
-                <i class="fas fa-user"></i>
-                <span>FinTech Solutions</span>
-            </div>
-            <div class="meta-item">
-                <i class="fas fa-calendar"></i>
-                <span>05/04/2024</span>
-            </div>
-        </div>
-        
-        <div class="module-rating">
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <span class="rating-count">(245)</span>
-        </div>
-    </div>
-    
-    <div class="module-card-footer">
-        <div class="module-status">
-            <span class="status-badge status-inactive">
-                <i class="fas fa-circle"></i> Inactif
-            </span>
-        </div>
-        
-        <div class="module-actions">
-            <button class="action-btn activate-btn" onclick="activateModule(10)" title="Activer">
-                <i class="fas fa-play"></i>
-            </button>
-            
-            <a href="#" class="action-btn view-btn" title="Voir détails">
-                <i class="fas fa-eye"></i>
-            </a>
-            
-            <button class="action-btn settings-btn" onclick="openModuleSettings(10)" title="Paramètres">
-                <i class="fas fa-cog"></i>
-            </button>
-            
-            <button class="action-btn delete-btn" onclick="showDeleteConfirmation(10)" title="Désinstaller">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    </div>
-</div>
-<!-- GeoVideoMarker Module -->
-<div class="module-card" data-module-id="11" data-category="5" data-status="inactive" data-type="official" data-price="paid">
-    <div class="module-card-header">
-        <div class="module-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
-            <i class="fas fa-map-marked-alt"></i>
-        </div>
-        <div class="module-badges">
-            <span class="badge-official">Officiel</span>
-            <span class="badge-paid">Payant</span>
-        </div>
-    </div>
-    
-    <div class="module-card-body">
-        <h4 class="module-name">GeoVideoMarker</h4>
-        <p class="module-description">Cartographie interactive avec marqueurs vidéo. Placez des vidéos sur des points géolocalisés, itinéraires multimédia et storytelling géographique immersif.</p>
-        
-        <div class="module-meta">
-            <div class="meta-item">
-                <i class="fas fa-code-branch"></i>
-                <span>v1.8.3</span>
-            </div>
-            <div class="meta-item">
-                <i class="fas fa-user"></i>
-                <span>GeoMedia Labs</span>
-            </div>
-            <div class="meta-item">
-                <i class="fas fa-calendar"></i>
-                <span>12/04/2024</span>
-            </div>
-        </div>
-        
-        <div class="module-rating">
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-filled"></i>
-            <i class="fas fa-star star-half-alt"></i>
-            <span class="rating-count">(89)</span>
-        </div>
-    </div>
-    
-    <div class="module-card-footer">
-        <div class="module-status">
-            <span class="status-badge status-inactive">
-                <i class="fas fa-circle"></i> Inactif
-            </span>
-        </div>
-        
-        <div class="module-actions">
-            <button class="action-btn activate-btn" onclick="activateModule(11)" title="Activer">
-                <i class="fas fa-play"></i>
-            </button>
-            
-            <a href="{{route('map-points.index')}}" class="action-btn view-btn" title="Voir détails">
-                <i class="fas fa-eye"></i>
-            </a>
-            
-            <button class="action-btn settings-btn" onclick="openModuleSettings(11)" title="Paramètres">
-                <i class="fas fa-cog"></i>
-            </button>
-            
-            <button class="action-btn delete-btn" onclick="showDeleteConfirmation(11)" title="Désinstaller">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    </div>
-</div>
-                    <!-- Analytics Pro Module -->
-                    <div class="module-card" data-module-id="1" data-category="1" data-status="active" data-type="official" data-price="paid">
-                        <div class="module-card-header">
-                            <div class="module-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                                <i class="fas fa-chart-bar"></i>
-                            </div>
-                            <div class="module-badges">
-                                <span class="badge-official">Officiel</span>
-                                <span class="badge-paid">Payant</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-body">
-                            <h4 class="module-name">Analytics Pro</h4>
-                            <p class="module-description">Statistiques avancées, rapports personnalisés et tableaux de bord interactifs pour analyser vos données en temps réel.</p>
-                            
-                            <div class="module-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-code-branch"></i>
-                                    <span>v2.1.0</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>Acme Corp</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>15/03/2024</span>
-                                </div>
-                            </div>
-                            
-                            <div class="module-rating">
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <span class="rating-count">(128)</span>
-                            </div>
-                            
-                            <div class="update-available">
-                                <i class="fas fa-exclamation-circle"></i>
-                                <span>Mise à jour v2.2.0 disponible</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-footer">
-                            <div class="module-status">
-                                <span class="status-badge status-active">
-                                    <i class="fas fa-circle"></i> Actif
-                                </span>
-                            </div>
-                            
-                            <div class="module-actions">
-                                <button class="action-btn deactivate-btn" onclick="deactivateModule(1)" title="Désactiver">
-                                    <i class="fas fa-pause"></i>
-                                </button>
-                                
-                                <a href="#" class="action-btn view-btn" title="Voir détails">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                
-                                <button class="action-btn settings-btn" onclick="openModuleSettings(1)" title="Paramètres">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                
-                                <button class="action-btn delete-btn" onclick="showDeleteConfirmation(1)" title="Désinstaller">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Email Marketing Suite Module -->
-                    <div class="module-card" data-module-id="2" data-category="2" data-status="active" data-type="official" data-price="free">
-                        <div class="module-card-header">
-                            <div class="module-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-                                <i class="fas fa-envelope"></i>
-                            </div>
-                            <div class="module-badges">
-                                <span class="badge-official">Officiel</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-body">
-                            <h4 class="module-name">Email Marketing Suite</h4>
-                            <p class="module-description">Créez et envoyez des campagnes email professionnelles, gérez vos listes de contacts et suivez vos taux d'ouverture.</p>
-                            
-                            <div class="module-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-code-branch"></i>
-                                    <span>v1.5.2</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>Marketing Team</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>02/02/2024</span>
-                                </div>
-                            </div>
-                            
-                            <div class="module-rating">
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-empty"></i>
-                                <span class="rating-count">(89)</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-footer">
-                            <div class="module-status">
-                                <span class="status-badge status-active">
-                                    <i class="fas fa-circle"></i> Actif
-                                </span>
-                            </div>
-                            
-                            <div class="module-actions">
-                                <button class="action-btn deactivate-btn" onclick="deactivateModule(2)" title="Désactiver">
-                                    <i class="fas fa-pause"></i>
-                                </button>
-                                
-                                <a href="{{url('mail-campaigns')}}" class="action-btn view-btn" title="Voir détails">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                
-                                <button class="action-btn settings-btn" onclick="openModuleSettings(2)" title="Paramètres">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                
-                                <button class="action-btn delete-btn" onclick="showDeleteConfirmation(2)" title="Désinstaller">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Security Plus Module -->
-                    <div class="module-card" data-module-id="3" data-category="3" data-status="inactive" data-type="third-party" data-price="paid">
-                        <div class="module-card-header">
-                            <div class="module-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                                <i class="fas fa-shield-alt"></i>
-                            </div>
-                            <div class="module-badges">
-                                <span class="badge-paid">Payant</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-body">
-                            <h4 class="module-name">Security Plus</h4>
-                            <p class="module-description">Protection avancée contre les intrusions, pare-feu applicatif et authentification à deux facteurs.</p>
-                            
-                            <div class="module-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-code-branch"></i>
-                                    <span>v3.0.1</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>SecureSoft</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>10/01/2024</span>
-                                </div>
-                            </div>
-                            
-                            <div class="module-rating">
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <span class="rating-count">(256)</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-footer">
-                            <div class="module-status">
-                                <span class="status-badge status-inactive">
-                                    <i class="fas fa-circle"></i> Inactif
-                                </span>
-                            </div>
-                            
-                            <div class="module-actions">
-                                <button class="action-btn activate-btn" onclick="activateModule(3)" title="Activer">
-                                    <i class="fas fa-play"></i>
-                                </button>
-                                
-                                <a href="#" class="action-btn view-btn" title="Voir détails">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                
-                                <button class="action-btn settings-btn" onclick="openModuleSettings(3)" title="Paramètres">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                
-                                <button class="action-btn delete-btn" onclick="showDeleteConfirmation(3)" title="Désinstaller">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- E-commerce Essentials Module -->
-                    <div class="module-card" data-module-id="4" data-category="4" data-status="active" data-type="official" data-price="free">
-                        <div class="module-card-header">
-                            <div class="module-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
-                                <i class="fas fa-shopping-cart"></i>
-                            </div>
-                            <div class="module-badges">
-                                <span class="badge-official">Officiel</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-body">
-                            <h4 class="module-name">E-commerce Essentials</h4>
-                            <p class="module-description">Fonctionnalités de base pour votre boutique en ligne : panier, paiement, gestion des stocks et commandes.</p>
-                            
-                            <div class="module-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-code-branch"></i>
-                                    <span>v1.2.3</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>E-commerce Team</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>20/03/2024</span>
-                                </div>
-                            </div>
-                            
-                            <div class="module-rating">
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-empty"></i>
-                                <span class="rating-count">(67)</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-footer">
-                            <div class="module-status">
-                                <span class="status-badge status-active">
-                                    <i class="fas fa-circle"></i> Actif
-                                </span>
-                            </div>
-                            
-                            <div class="module-actions">
-                                <button class="action-btn deactivate-btn" onclick="deactivateModule(4)" title="Désactiver">
-                                    <i class="fas fa-pause"></i>
-                                </button>
-                                
-                                <a href="#" class="action-btn view-btn" title="Voir détails">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                
-                                <button class="action-btn settings-btn" onclick="openModuleSettings(4)" title="Paramètres">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                
-                                <button class="action-btn delete-btn" onclick="showDeleteConfirmation(4)" title="Désinstaller">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Core System Module -->
-                    <div class="module-card" data-module-id="5" data-category="5" data-status="active" data-type="core" data-price="free">
-                        <div class="module-card-header">
-                            <div class="module-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
-                                <i class="fas fa-cog"></i>
-                            </div>
-                            <div class="module-badges">
-                                <span class="badge-core">Cœur</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-body">
-                            <h4 class="module-name">Core System</h4>
-                            <p class="module-description">Module système essentiel pour le fonctionnement de base de l'application. Ne peut pas être désactivé.</p>
-                            
-                            <div class="module-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-code-branch"></i>
-                                    <span>v4.0.2</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>System Team</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>01/01/2024</span>
-                                </div>
-                            </div>
-                            
-                            <div class="update-available">
-                                <i class="fas fa-exclamation-circle"></i>
-                                <span>Mise à jour v4.1.0 disponible</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-footer">
-                            <div class="module-status">
-                                <span class="status-badge status-active">
-                                    <i class="fas fa-circle"></i> Actif
-                                </span>
-                            </div>
-                            
-                            <div class="module-actions">
-                                <button class="action-btn deactivate-btn" disabled style="opacity: 0.5; cursor: not-allowed;" title="Module système">
-                                    <i class="fas fa-pause"></i>
-                                </button>
-                                
-                                <a href="#" class="action-btn view-btn" title="Voir détails">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                
-                                <button class="action-btn settings-btn" onclick="openModuleSettings(5)" title="Paramètres">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                
-                                <button class="action-btn delete-btn" disabled style="opacity: 0.5; cursor: not-allowed;" title="Module système">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- SEO Optimizer Module -->
-                    <div class="module-card" data-module-id="6" data-category="5" data-status="pending" data-type="third-party" data-price="paid">
-                        <div class="module-card-header">
-                            <div class="module-icon" style="background: linear-gradient(135deg, #ec4899, #db2777);">
-                                <i class="fas fa-search"></i>
-                            </div>
-                            <div class="module-badges">
-                                <span class="badge-paid">Payant</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-body">
-                            <h4 class="module-name">SEO Optimizer</h4>
-                            <p class="module-description">Optimisez votre référencement naturel avec des outils d'analyse de mots-clés et de suggestions de contenu.</p>
-                            
-                            <div class="module-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-code-branch"></i>
-                                    <span>v2.0.0</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>SEO Masters</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>05/03/2024</span>
-                                </div>
-                            </div>
-                            
-                            <div class="module-rating">
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <span class="rating-count">(42)</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-footer">
-                            <div class="module-status">
-                                <span class="status-badge status-pending">
-                                    <i class="fas fa-circle"></i> En attente
-                                </span>
-                            </div>
-                            
-                            <div class="module-actions">
-                                <button class="action-btn activate-btn" onclick="activateModule(6)" title="Activer">
-                                    <i class="fas fa-play"></i>
-                                </button>
-                                
-                                <a href="#" class="action-btn view-btn" title="Voir détails">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                
-                                <button class="action-btn settings-btn" onclick="openModuleSettings(6)" title="Paramètres">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                
-                                <button class="action-btn delete-btn" onclick="showDeleteConfirmation(6)" title="Désinstaller">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Social Media Integration Module -->
-                    <div class="module-card" data-module-id="7" data-category="2" data-status="inactive" data-type="third-party" data-price="free">
-                        <div class="module-card-header">
-                            <div class="module-icon" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
-                                <i class="fas fa-share-alt"></i>
-                            </div>
-                            <div class="module-badges">
-                                <!-- No badges -->
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-body">
-                            <h4 class="module-name">Social Media Integration</h4>
-                            <p class="module-description">Partagez automatiquement vos contenus sur les réseaux sociaux et affichez vos flux sociaux.</p>
-                            
-                            <div class="module-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-code-branch"></i>
-                                    <span>v1.1.5</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>SocialTech</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>12/02/2024</span>
-                                </div>
-                            </div>
-                            
-                            <div class="module-rating">
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-empty"></i>
-                                <i class="fas fa-star star-empty"></i>
-                                <span class="rating-count">(23)</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-footer">
-                            <div class="module-status">
-                                <span class="status-badge status-inactive">
-                                    <i class="fas fa-circle"></i> Inactif
-                                </span>
-                            </div>
-                            
-                            <div class="module-actions">
-                                <button class="action-btn activate-btn" onclick="activateModule(7)" title="Activer">
-                                    <i class="fas fa-play"></i>
-                                </button>
-                                
-                                <a href="#" class="action-btn view-btn" title="Voir détails">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                
-                                <button class="action-btn settings-btn" onclick="openModuleSettings(7)" title="Paramètres">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                
-                                <button class="action-btn delete-btn" onclick="showDeleteConfirmation(7)" title="Désinstaller">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Backup Manager Module -->
-                    <div class="module-card" data-module-id="8" data-category="3" data-status="active" data-type="custom" data-price="free">
-                        <div class="module-card-header">
-                            <div class="module-icon" style="background: linear-gradient(135deg, #f43f5e, #e11d48);">
-                                <i class="fas fa-database"></i>
-                            </div>
-                            <div class="module-badges">
-                                <span class="badge-core">Personnalisé</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-body">
-                            <h4 class="module-name">Backup Manager</h4>
-                            <p class="module-description">Gérez vos sauvegardes automatiques, planifiez des backups et restaurez vos données en un clic.</p>
-                            
-                            <div class="module-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-code-branch"></i>
-                                    <span>v2.3.1</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>IT Team</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>18/03/2024</span>
-                                </div>
-                            </div>
-                            
-                            <div class="module-rating">
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-filled"></i>
-                                <i class="fas fa-star star-empty"></i>
-                                <span class="rating-count">(34)</span>
-                            </div>
-                        </div>
-                        
-                        <div class="module-card-footer">
-                            <div class="module-status">
-                                <span class="status-badge status-active">
-                                    <i class="fas fa-circle"></i> Actif
-                                </span>
-                            </div>
-                            
-                            <div class="module-actions">
-                                <button class="action-btn deactivate-btn" onclick="deactivateModule(8)" title="Désactiver">
-                                    <i class="fas fa-pause"></i>
-                                </button>
-                                
-                                <a href="#" class="action-btn view-btn" title="Voir détails">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                
-                                <button class="action-btn settings-btn" onclick="openModuleSettings(8)" title="Paramètres">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                
-                                <button class="action-btn delete-btn" onclick="showDeleteConfirmation(8)" title="Désinstaller">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Dynamic content will be loaded here -->
                 </div>
                 
                 <!-- Modules List (List View) -->
@@ -937,380 +198,29 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr data-module-id="1">
-                                <td>
-                                    <div class="list-module-info">
-                                        <div class="list-module-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                                            <i class="fas fa-chart-bar"></i>
-                                        </div>
-                                        <div class="list-module-details">
-                                            <div class="list-module-name">
-                                                Analytics Pro
-                                                <span class="badge-official-sm">Officiel</span>
-                                            </div>
-                                            <div class="list-module-description">Statistiques avancées et rapports personnalisés...</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="version-info">
-                                        <span class="current-version">v2.1.0</span>
-                                        <span class="update-indicator" title="Mise à jour disponible">
-                                            <i class="fas fa-arrow-up"></i>
-                                        </span>
-                                    </div>
-                                </td>
-                                <td>Acme Corp</td>
-                                <td>15/03/2024</td>
-                                <td>
-                                    <span class="status-badge status-active">
-                                        <i class="fas fa-circle"></i> Actif
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="list-actions">
-                                        <button class="list-action-btn deactivate-btn" onclick="deactivateModule(1)" title="Désactiver">
-                                            <i class="fas fa-pause"></i>
-                                        </button>
-                                        
-                                        <a href="#" class="list-action-btn view-btn" title="Voir détails">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        
-                                        <button class="list-action-btn settings-btn" onclick="openModuleSettings(1)" title="Paramètres">
-                                            <i class="fas fa-cog"></i>
-                                        </button>
-                                        
-                                        <button class="list-action-btn delete-btn" onclick="showDeleteConfirmation(1)" title="Désinstaller">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            <tr data-module-id="2">
-                                <td>
-                                    <div class="list-module-info">
-                                        <div class="list-module-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-                                            <i class="fas fa-envelope"></i>
-                                        </div>
-                                        <div class="list-module-details">
-                                            <div class="list-module-name">
-                                                Email Marketing Suite
-                                                <span class="badge-official-sm">Officiel</span>
-                                            </div>
-                                            <div class="list-module-description">Campagnes email et newsletters automatisées...</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>v1.5.2</td>
-                                <td>Marketing Team</td>
-                                <td>02/02/2024</td>
-                                <td>
-                                    <span class="status-badge status-active">
-                                        <i class="fas fa-circle"></i> Actif
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="list-actions">
-                                        <button class="list-action-btn deactivate-btn" onclick="deactivateModule(2)" title="Désactiver">
-                                            <i class="fas fa-pause"></i>
-                                        </button>
-                                        
-                                        <a href="#" class="list-action-btn view-btn" title="Voir détails">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        
-                                        <button class="list-action-btn settings-btn" onclick="openModuleSettings(2)" title="Paramètres">
-                                            <i class="fas fa-cog"></i>
-                                        </button>
-                                        
-                                        <button class="list-action-btn delete-btn" onclick="showDeleteConfirmation(2)" title="Désinstaller">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            <tr data-module-id="3">
-                                <td>
-                                    <div class="list-module-info">
-                                        <div class="list-module-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                                            <i class="fas fa-shield-alt"></i>
-                                        </div>
-                                        <div class="list-module-details">
-                                            <div class="list-module-name">Security Plus</div>
-                                            <div class="list-module-description">Sécurité renforcée et pare-feu...</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>v3.0.1</td>
-                                <td>SecureSoft</td>
-                                <td>10/01/2024</td>
-                                <td>
-                                    <span class="status-badge status-inactive">
-                                        <i class="fas fa-circle"></i> Inactif
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="list-actions">
-                                        <button class="list-action-btn activate-btn" onclick="activateModule(3)" title="Activer">
-                                            <i class="fas fa-play"></i>
-                                        </button>
-                                        
-                                        <a href="#" class="list-action-btn view-btn" title="Voir détails">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        
-                                        <button class="list-action-btn settings-btn" onclick="openModuleSettings(3)" title="Paramètres">
-                                            <i class="fas fa-cog"></i>
-                                        </button>
-                                        
-                                        <button class="list-action-btn delete-btn" onclick="showDeleteConfirmation(3)" title="Désinstaller">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            <tr data-module-id="4">
-                                <td>
-                                    <div class="list-module-info">
-                                        <div class="list-module-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
-                                            <i class="fas fa-shopping-cart"></i>
-                                        </div>
-                                        <div class="list-module-details">
-                                            <div class="list-module-name">
-                                                E-commerce Essentials
-                                                <span class="badge-official-sm">Officiel</span>
-                                            </div>
-                                            <div class="list-module-description">Fonctionnalités de base pour votre boutique en ligne...</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>v1.2.3</td>
-                                <td>E-commerce Team</td>
-                                <td>20/03/2024</td>
-                                <td>
-                                    <span class="status-badge status-active">
-                                        <i class="fas fa-circle"></i> Actif
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="list-actions">
-                                        <button class="list-action-btn deactivate-btn" onclick="deactivateModule(4)" title="Désactiver">
-                                            <i class="fas fa-pause"></i>
-                                        </button>
-                                        
-                                        <a href="#" class="list-action-btn view-btn" title="Voir détails">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        
-                                        <button class="list-action-btn settings-btn" onclick="openModuleSettings(4)" title="Paramètres">
-                                            <i class="fas fa-cog"></i>
-                                        </button>
-                                        
-                                        <button class="list-action-btn delete-btn" onclick="showDeleteConfirmation(4)" title="Désinstaller">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            <tr data-module-id="5">
-                                <td>
-                                    <div class="list-module-info">
-                                        <div class="list-module-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
-                                            <i class="fas fa-cog"></i>
-                                        </div>
-                                        <div class="list-module-details">
-                                            <div class="list-module-name">
-                                                Core System
-                                                <span class="badge-core-sm">Cœur</span>
-                                            </div>
-                                            <div class="list-module-description">Module système essentiel...</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="version-info">
-                                        <span class="current-version">v4.0.2</span>
-                                        <span class="update-indicator" title="Mise à jour disponible">
-                                            <i class="fas fa-arrow-up"></i>
-                                        </span>
-                                    </div>
-                                </td>
-                                <td>System Team</td>
-                                <td>01/01/2024</td>
-                                <td>
-                                    <span class="status-badge status-active">
-                                        <i class="fas fa-circle"></i> Actif
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="list-actions">
-                                        <button class="list-action-btn deactivate-btn" disabled style="opacity: 0.5; cursor: not-allowed;" title="Module système">
-                                            <i class="fas fa-pause"></i>
-                                        </button>
-                                        
-                                        <a href="#" class="list-action-btn view-btn" title="Voir détails">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        
-                                        <button class="list-action-btn settings-btn" onclick="openModuleSettings(5)" title="Paramètres">
-                                            <i class="fas fa-cog"></i>
-                                        </button>
-                                        
-                                        <button class="list-action-btn delete-btn" disabled style="opacity: 0.5; cursor: not-allowed;" title="Module système">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            <tr data-module-id="6">
-                                <td>
-                                    <div class="list-module-info">
-                                        <div class="list-module-icon" style="background: linear-gradient(135deg, #ec4899, #db2777);">
-                                            <i class="fas fa-search"></i>
-                                        </div>
-                                        <div class="list-module-details">
-                                            <div class="list-module-name">SEO Optimizer</div>
-                                            <div class="list-module-description">Optimisez votre référencement naturel...</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>v2.0.0</td>
-                                <td>SEO Masters</td>
-                                <td>05/03/2024</td>
-                                <td>
-                                    <span class="status-badge status-pending">
-                                        <i class="fas fa-circle"></i> En attente
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="list-actions">
-                                        <button class="list-action-btn activate-btn" onclick="activateModule(6)" title="Activer">
-                                            <i class="fas fa-play"></i>
-                                        </button>
-                                        
-                                        <a href="#" class="list-action-btn view-btn" title="Voir détails">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        
-                                        <button class="list-action-btn settings-btn" onclick="openModuleSettings(6)" title="Paramètres">
-                                            <i class="fas fa-cog"></i>
-                                        </button>
-                                        
-                                        <button class="list-action-btn delete-btn" onclick="showDeleteConfirmation(6)" title="Désinstaller">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            <tr data-module-id="7">
-                                <td>
-                                    <div class="list-module-info">
-                                        <div class="list-module-icon" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
-                                            <i class="fas fa-share-alt"></i>
-                                        </div>
-                                        <div class="list-module-details">
-                                            <div class="list-module-name">Social Media Integration</div>
-                                            <div class="list-module-description">Partagez automatiquement vos contenus...</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>v1.1.5</td>
-                                <td>SocialTech</td>
-                                <td>12/02/2024</td>
-                                <td>
-                                    <span class="status-badge status-inactive">
-                                        <i class="fas fa-circle"></i> Inactif
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="list-actions">
-                                        <button class="list-action-btn activate-btn" onclick="activateModule(7)" title="Activer">
-                                            <i class="fas fa-play"></i>
-                                        </button>
-                                        
-                                        <a href="#" class="list-action-btn view-btn" title="Voir détails">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        
-                                        <button class="list-action-btn settings-btn" onclick="openModuleSettings(7)" title="Paramètres">
-                                            <i class="fas fa-cog"></i>
-                                        </button>
-                                        
-                                        <button class="list-action-btn delete-btn" onclick="showDeleteConfirmation(7)" title="Désinstaller">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            <tr data-module-id="8">
-                                <td>
-                                    <div class="list-module-info">
-                                        <div class="list-module-icon" style="background: linear-gradient(135deg, #f43f5e, #e11d48);">
-                                            <i class="fas fa-database"></i>
-                                        </div>
-                                        <div class="list-module-details">
-                                            <div class="list-module-name">
-                                                Backup Manager
-                                                <span class="badge-core-sm">Personnalisé</span>
-                                            </div>
-                                            <div class="list-module-description">Gérez vos sauvegardes automatiques...</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>v2.3.1</td>
-                                <td>IT Team</td>
-                                <td>18/03/2024</td>
-                                <td>
-                                    <span class="status-badge status-active">
-                                        <i class="fas fa-circle"></i> Actif
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="list-actions">
-                                        <button class="list-action-btn deactivate-btn" onclick="deactivateModule(8)" title="Désactiver">
-                                            <i class="fas fa-pause"></i>
-                                        </button>
-                                        
-                                        <a href="#" class="list-action-btn view-btn" title="Voir détails">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        
-                                        <button class="list-action-btn settings-btn" onclick="openModuleSettings(8)" title="Paramètres">
-                                            <i class="fas fa-cog"></i>
-                                        </button>
-                                        
-                                        <button class="list-action-btn delete-btn" onclick="showDeleteConfirmation(8)" title="Désinstaller">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <!-- Dynamic content will be loaded here -->
                         </tbody>
                     </table>
+                </div>
+                
+                <!-- Empty State -->
+                <div class="empty-state-modern" id="emptyState" style="display: none;">
+                    <div class="empty-icon-modern">
+                        <i class="fas fa-puzzle-piece"></i>
+                    </div>
+                    <div class="empty-title-modern">Aucun module trouvé</div>
+                    <div class="empty-text-modern">Aucun module ne correspond à vos critères de recherche.</div>
+                    <button class="btn btn-primary" id="resetFiltersBtn">
+                        <i class="fas fa-redo me-2"></i>Réinitialiser les filtres
+                    </button>
                 </div>
             </div>
             
             <!-- Pagination -->
             <div class="pagination-container-modern" id="paginationContainer">
                 <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item disabled">
-                            <span class="page-link"><i class="fas fa-chevron-left"></i></span>
-                        </li>
-                        <li class="page-item active"><span class="page-link">1</span></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <li class="page-item">
-                            <a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a>
-                        </li>
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- Dynamic pagination will be loaded here -->
                     </ul>
                 </nav>
             </div>
@@ -1321,21 +231,11 @@
             <button class="category-filter active" data-category="all">
                 <i class="fas fa-th-large me-2"></i>Tous
             </button>
-            <button class="category-filter" data-category="1">
-                <i class="fas fa-chart-bar me-2"></i>Analytics
-            </button>
-            <button class="category-filter" data-category="2">
-                <i class="fas fa-bullhorn me-2"></i>Marketing
-            </button>
-            <button class="category-filter" data-category="3">
-                <i class="fas fa-shield-alt me-2"></i>Sécurité
-            </button>
-            <button class="category-filter" data-category="4">
-                <i class="fas fa-shopping-cart me-2"></i>E-commerce
-            </button>
-            <button class="category-filter" data-category="5">
-                <i class="fas fa-cog me-2"></i>Productivité
-            </button>
+            @foreach($categories as $category)
+                <button class="category-filter" data-category="{{ $category->id }}">
+                    <i class="{{ $category->icon }} me-2"></i>{{ $category->name }}
+                </button>
+            @endforeach
         </div>
         
         <!-- Floating Action Button -->
@@ -1368,6 +268,12 @@
                             <input type="file" id="fileInput" accept=".zip" style="display: none;">
                             <p class="upload-hint">Format accepté : ZIP (max 50 Mo)</p>
                         </div>
+                        <div class="upload-progress" id="uploadProgress" style="display: none;">
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <p class="text-center mt-2" id="uploadStatus">Upload en cours...</p>
+                        </div>
                     </div>
                     
                     <!-- OR Separator -->
@@ -1382,82 +288,12 @@
                             Explorer le marketplace
                         </h4>
                         
-                        <div class="marketplace-grid">
-                            <div class="marketplace-card">
-                                <div class="marketplace-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                                    <i class="fas fa-chart-bar"></i>
-                                </div>
-                                <div class="marketplace-info">
-                                    <h5>Analytics Pro</h5>
-                                    <p>Statistiques avancées et rapports personnalisés</p>
-                                    <div class="marketplace-meta">
-                                        <span class="price">€49.99</span>
-                                        <span class="rating">
-                                            <i class="fas fa-star"></i>
-                                            4.8
-                                        </span>
-                                    </div>
-                                </div>
-                                <button class="btn-install">Installer</button>
-                            </div>
-                            
-                            <div class="marketplace-card">
-                                <div class="marketplace-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-                                    <i class="fas fa-envelope"></i>
-                                </div>
-                                <div class="marketplace-info">
-                                    <h5>Email Marketing Suite</h5>
-                                    <p>Campagnes email et newsletters automatisées</p>
-                                    <div class="marketplace-meta">
-                                        <span class="price price-free">Gratuit</span>
-                                        <span class="rating">
-                                            <i class="fas fa-star"></i>
-                                            4.5
-                                        </span>
-                                    </div>
-                                </div>
-                                <button class="btn-install">Installer</button>
-                            </div>
-                            
-                            <div class="marketplace-card">
-                                <div class="marketplace-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                                    <i class="fas fa-shield-alt"></i>
-                                </div>
-                                <div class="marketplace-info">
-                                    <h5>Security Plus</h5>
-                                    <p>Sécurité renforcée et pare-feu</p>
-                                    <div class="marketplace-meta">
-                                        <span class="price">€29.99</span>
-                                        <span class="rating">
-                                            <i class="fas fa-star"></i>
-                                            4.9
-                                        </span>
-                                    </div>
-                                </div>
-                                <button class="btn-install">Installer</button>
-                            </div>
-                            
-                            <div class="marketplace-card">
-                                <div class="marketplace-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
-                                    <i class="fas fa-shopping-cart"></i>
-                                </div>
-                                <div class="marketplace-info">
-                                    <h5>E-commerce Essentials</h5>
-                                    <p>Fonctionnalités de base pour boutique en ligne</p>
-                                    <div class="marketplace-meta">
-                                        <span class="price price-free">Gratuit</span>
-                                        <span class="rating">
-                                            <i class="fas fa-star"></i>
-                                            4.6
-                                        </span>
-                                    </div>
-                                </div>
-                                <button class="btn-install">Installer</button>
-                            </div>
+                        <div class="marketplace-grid" id="marketplaceGrid">
+                            <!-- Marketplace items will be loaded dynamically -->
                         </div>
                         
                         <div class="text-center mt-4">
-                            <a href="#" class="view-more-link">
+                            <a href="#" class="view-more-link" id="viewMoreMarketplace">
                                 Voir tous les modules <i class="fas fa-arrow-right ms-2"></i>
                             </a>
                         </div>
@@ -1528,16 +364,110 @@
         </div>
     </div>
 
+    <!-- VIEW MODULE MODAL -->
+    <div class="modal fade" id="viewModuleModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content modern-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" id="viewModuleTitle">
+                        <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
+                        Détails du module
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="viewModuleContent">
+                    <!-- Module details will be loaded here -->
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content modern-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">
+                        <i class="fas fa-cog me-2" style="color: var(--primary-color);"></i>
+                        Paramètres du module
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="settingsModalContent">
+                    <!-- Settings form will be loaded here -->
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="saveSettingsBtn">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script>
-        // Configuration
-        let currentView = 'grid'; // 'grid' or 'list'
-        let currentModuleToDelete = null;
+        // ============================================
+        // BACKEND AJAX INTEGRATION
+        // ============================================
         
-        // Initialize
+        // Configuration
+        let currentView = 'grid';
+        let currentModuleToDelete = null;
+        let currentModuleToView = null;
+        let currentModuleSettings = null;
+        let currentPage = 1;
+        let itemsPerPage = 9;
+        let totalPlugins = 0;
+        
+        // API Routes
+        const API = {
+            getPlugins: '{{ route("modules.get-plugins") }}',
+            getStats: '{{ route("modules.stats") }}',
+            storePlugin: '{{ route("modules.store") }}',
+            uploadPlugin: '{{ route("modules.upload") }}',
+            updatePlugin: '{{ route("modules.update", "") }}',
+            deletePlugin: '{{ route("modules.destroy", "") }}',
+            activatePlugin: '{{ route("modules.activate", "") }}',
+            deactivatePlugin: '{{ route("modules.deactivate", "") }}',
+            getSettings: '{{ route("modules.settings.get", "") }}',
+            updateSettings: '{{ route("modules.settings.update", "") }}',
+            getCategories: '{{ route("modules.categories") }}',
+        };
+        
+        let currentPluginData = [];
+        let currentFilters = {
+            category: '',
+            status: '',
+            type: '',
+            price: '',
+            sort_by: 'name',
+            sort_order: 'asc',
+            search: ''
+        };
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
             setupFileUpload();
+            loadPluginsFromBackend();
+            loadStats();
+            loadMarketplaceItems();
+            
+            // Add CSRF token meta tag if not present
+            if (!document.querySelector('meta[name="csrf-token"]')) {
+                const meta = document.createElement('meta');
+                meta.name = 'csrf-token';
+                meta.content = '{{ csrf_token() }}';
+                document.head.appendChild(meta);
+            }
         });
         
         // Setup event listeners
@@ -1557,6 +487,10 @@
             // Filter buttons
             document.getElementById('applyFiltersBtn').addEventListener('click', applyFilters);
             document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
+            document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+                clearFilters();
+                document.getElementById('emptyState').style.display = 'none';
+            });
             
             // Toggle filter section
             document.getElementById('toggleFilterBtn').addEventListener('click', toggleFilterSection);
@@ -1564,11 +498,762 @@
             // Delete confirmation
             document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
             
+            // Save settings
+            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+            
             // File upload
             document.getElementById('fileInput').addEventListener('change', handleFileSelect);
         }
         
-        // Switch between grid and list view
+        // ============================================
+        // LOAD DATA FROM BACKEND
+        // ============================================
+        
+        async function loadPluginsFromBackend() {
+            showLoading();
+            
+            try {
+                const params = new URLSearchParams({
+                    ...currentFilters,
+                    page: currentPage,
+                    per_page: itemsPerPage
+                });
+                const response = await fetch(`${API.getPlugins}?${params}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentPluginData = result.data;
+                    totalPlugins = result.total || result.data.length;
+                    renderPlugins(currentPluginData);
+                    updateStatsFromData(currentPluginData);
+                    updateVisibleCount(currentPluginData.length);
+                    renderPagination();
+                    
+                    // Show/hide empty state
+                    if (currentPluginData.length === 0) {
+                        document.getElementById('emptyState').style.display = 'block';
+                        document.getElementById('modulesGridView').style.display = 'none';
+                        document.getElementById('modulesListView').style.display = 'none';
+                    } else {
+                        document.getElementById('emptyState').style.display = 'none';
+                        if (currentView === 'grid') {
+                            document.getElementById('modulesGridView').style.display = 'grid';
+                        } else {
+                            document.getElementById('modulesListView').style.display = 'block';
+                        }
+                    }
+                } else {
+                    showAlert('danger', 'Erreur lors du chargement des modules');
+                }
+            } catch (error) {
+                console.error('Error loading plugins:', error);
+                showAlert('danger', 'Erreur de connexion au serveur');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function loadStats() {
+            try {
+                const response = await fetch(API.getStats);
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('totalModules').textContent = result.data.total;
+                    document.getElementById('activeModules').textContent = result.data.active;
+                    document.getElementById('inactiveModules').textContent = result.data.inactive;
+                    document.getElementById('freeModules').textContent = result.data.free;
+                    document.getElementById('updatesAvailable').textContent = result.data.updates_available;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadMarketplaceItems() {
+            const marketplaceGrid = document.getElementById('marketplaceGrid');
+            if (!marketplaceGrid) return;
+            
+            // Sample marketplace items - in production, this would come from an API
+            const marketplaceItems = [
+                { name: 'Analytics Pro', description: 'Statistiques avancées', price: '€49.99', rating: 4.8, icon: 'fas fa-chart-bar', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
+                { name: 'Email Marketing Suite', description: 'Campagnes email automatisées', price: 'Gratuit', rating: 4.5, icon: 'fas fa-envelope', gradient: 'linear-gradient(135deg, #10b981, #059669)' },
+                { name: 'Security Plus', description: 'Sécurité renforcée', price: '€29.99', rating: 4.9, icon: 'fas fa-shield-alt', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+                { name: 'E-commerce Essentials', description: 'Boutique en ligne', price: 'Gratuit', rating: 4.6, icon: 'fas fa-shopping-cart', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
+            ];
+            
+            marketplaceGrid.innerHTML = marketplaceItems.map(item => `
+                <div class="marketplace-card">
+                    <div class="marketplace-icon" style="background: ${item.gradient};">
+                        <i class="${item.icon}"></i>
+                    </div>
+                    <div class="marketplace-info">
+                        <h5>${item.name}</h5>
+                        <p>${item.description}</p>
+                        <div class="marketplace-meta">
+                            <span class="price ${item.price === 'Gratuit' ? 'price-free' : ''}">${item.price}</span>
+                            <span class="rating">
+                                <i class="fas fa-star"></i>
+                                ${item.rating}
+                            </span>
+                        </div>
+                    </div>
+                    <button class="btn-install" onclick="installMarketplaceItem('${item.name}')">Installer</button>
+                </div>
+            `).join('');
+        }
+        
+        // ============================================
+        // RENDER FUNCTIONS
+        // ============================================
+        
+        function renderPlugins(plugins) {
+            // Render grid view
+            const gridContainer = document.getElementById('modulesGridView');
+            gridContainer.innerHTML = plugins.map(plugin => renderPluginCard(plugin)).join('');
+            
+            // Render list view
+            const listContainer = document.querySelector('#modulesListView tbody');
+            listContainer.innerHTML = plugins.map(plugin => renderPluginRow(plugin)).join('');
+            
+            // Re-attach event listeners
+            attachPluginEventListeners();
+        }
+        
+        function renderPluginCard(plugin) {
+            const categoryId = plugin.category_id || 0;
+            const starRating = getStarRatingHTML(plugin.rating);
+            const statusBadge = getStatusBadge(plugin.status);
+            const typeBadge = getTypeBadge(plugin.type);
+            const priceBadge = plugin.price_type === 'paid' ? '<span class="badge-paid">Payant</span>' : '';
+            const actionButtons = getActionButtons(plugin);
+            
+            return `
+                <div class="module-card" data-module-id="${plugin.id}" data-category="${categoryId}" data-status="${plugin.status}" data-type="${plugin.type}" data-price="${plugin.price_type}">
+                    <div class="module-card-header">
+                        <div class="module-icon" style="background: ${getIconGradient(plugin.type)};">
+                            <i class="${plugin.icon || 'fas fa-puzzle-piece'}"></i>
+                        </div>
+                        <div class="module-badges">
+                            ${typeBadge}
+                            ${priceBadge}
+                        </div>
+                    </div>
+                    
+                    <div class="module-card-body">
+                        <h4 class="module-name">${escapeHtml(plugin.name)}</h4>
+                        <p class="module-description">${escapeHtml(plugin.description)}</p>
+                        
+                        <div class="module-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-code-branch"></i>
+                                <span>v${plugin.version}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-user"></i>
+                                <span>${escapeHtml(plugin.author)}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>${formatDate(plugin.installed_at)}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="module-rating">
+                            ${starRating}
+                            <span class="rating-count">(${plugin.rating_count})</span>
+                        </div>
+                    </div>
+                    
+                    <div class="module-card-footer">
+                        <div class="module-status">
+                            ${statusBadge}
+                        </div>
+                        
+                        <div class="module-actions">
+                            ${actionButtons}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderPluginRow(plugin) {
+            const starRating = getStarRatingHTML(plugin.rating);
+            const statusBadge = getStatusBadge(plugin.status);
+            const typeBadge = plugin.type === 'official' ? '<span class="badge-official-sm">Officiel</span>' : 
+                             (plugin.type === 'core' ? '<span class="badge-core-sm">Cœur</span>' : 
+                             (plugin.type === 'custom' ? '<span class="badge-core-sm">Personnalisé</span>' : ''));
+            const actionButtons = getActionButtons(plugin, 'list');
+            
+            return `
+                <tr data-module-id="${plugin.id}">
+                    <td>
+                        <div class="list-module-info">
+                            <div class="list-module-icon" style="background: ${getIconGradient(plugin.type)};">
+                                <i class="${plugin.icon || 'fas fa-puzzle-piece'}"></i>
+                            </div>
+                            <div class="list-module-details">
+                                <div class="list-module-name">
+                                    ${escapeHtml(plugin.name)}
+                                    ${typeBadge}
+                                </div>
+                                <div class="list-module-description">${escapeHtml(plugin.description.substring(0, 80))}...</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>v${plugin.version}</td>
+                    <td>${escapeHtml(plugin.author)}</td>
+                    <td>${formatDate(plugin.installed_at)}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="list-actions">
+                            ${actionButtons}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        function getActionButtons(plugin, view = 'grid') {
+            const btnClass = view === 'grid' ? 'action-btn' : 'list-action-btn';
+            
+            if (plugin.type === 'core') {
+                return `
+                    <button class="${btnClass} deactivate-btn" disabled style="opacity: 0.5; cursor: not-allowed;" title="Module système">
+                        <i class="fas fa-pause"></i>
+                    </button>
+                    <button class="${btnClass} view-btn" title="Voir détails" data-id="${plugin.id}">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="${btnClass} settings-btn" title="Paramètres" data-id="${plugin.id}">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button class="${btnClass} delete-btn" disabled style="opacity: 0.5; cursor: not-allowed;" title="Module système">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+            }
+            
+            if (plugin.status === 'active') {
+                return `
+                    <button class="${btnClass} deactivate-btn" title="Désactiver" data-id="${plugin.id}">
+                        <i class="fas fa-pause"></i>
+                    </button>
+                    <button class="${btnClass} view-btn" title="Voir détails" data-id="${plugin.id}">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="${btnClass} settings-btn" title="Paramètres" data-id="${plugin.id}">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button class="${btnClass} delete-btn" title="Désinstaller" data-id="${plugin.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+            } else {
+                return `
+                    <button class="${btnClass} activate-btn" title="Activer" data-id="${plugin.id}">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="${btnClass} view-btn" title="Voir détails" data-id="${plugin.id}">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="${btnClass} settings-btn" title="Paramètres" data-id="${plugin.id}">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button class="${btnClass} delete-btn" title="Désinstaller" data-id="${plugin.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+            }
+        }
+        
+        function renderPagination() {
+            const totalPages = Math.ceil(totalPlugins / itemsPerPage);
+            const paginationContainer = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+            
+            let paginationHtml = '';
+            
+            // Previous button
+            paginationHtml += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <button class="page-link" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                </li>
+            `;
+            
+            // Page numbers
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (startPage > 1) {
+                paginationHtml += `<li class="page-item"><button class="page-link" data-page="1">1</button></li>`;
+                if (startPage > 2) {
+                    paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `
+                    <li class="page-item ${currentPage === i ? 'active' : ''}">
+                        <button class="page-link" data-page="${i}">${i}</button>
+                    </li>
+                `;
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+                paginationHtml += `<li class="page-item"><button class="page-link" data-page="${totalPages}">${totalPages}</button></li>`;
+            }
+            
+            // Next button
+            paginationHtml += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <button class="page-link" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </li>
+            `;
+            
+            paginationContainer.innerHTML = paginationHtml;
+            
+            // Add event listeners to pagination buttons
+            document.querySelectorAll('#pagination .page-link[data-page]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const page = parseInt(btn.dataset.page);
+                    if (!isNaN(page) && page !== currentPage && page >= 1 && page <= totalPages) {
+                        currentPage = page;
+                        loadPluginsFromBackend();
+                    }
+                });
+            });
+        }
+        
+        // ============================================
+        // HELPER FUNCTIONS
+        // ============================================
+        
+        function getStarRatingHTML(rating) {
+            const fullStars = Math.floor(rating);
+            const halfStar = (rating - fullStars) >= 0.5;
+            const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+            
+            let stars = '';
+            for (let i = 0; i < fullStars; i++) {
+                stars += '<i class="fas fa-star star-filled"></i>';
+            }
+            if (halfStar) {
+                stars += '<i class="fas fa-star-half-alt star-filled"></i>';
+            }
+            for (let i = 0; i < emptyStars; i++) {
+                stars += '<i class="fas fa-star star-empty"></i>';
+            }
+            
+            return stars;
+        }
+        
+        function getStatusBadge(status) {
+            const badges = {
+                'active': '<span class="status-badge status-active"><i class="fas fa-circle"></i> Actif</span>',
+                'inactive': '<span class="status-badge status-inactive"><i class="fas fa-circle"></i> Inactif</span>',
+                'pending': '<span class="status-badge status-pending"><i class="fas fa-circle"></i> En attente</span>'
+            };
+            return badges[status] || badges['inactive'];
+        }
+        
+        function getTypeBadge(type) {
+            const badges = {
+                'core': '<span class="badge-core">Cœur</span>',
+                'official': '<span class="badge-official">Officiel</span>',
+                'custom': '<span class="badge-core">Personnalisé</span>'
+            };
+            return badges[type] || '';
+        }
+        
+        function getIconGradient(type) {
+            const gradients = {
+                'core': 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                'official': 'linear-gradient(135deg, #10b981, #059669)',
+                'third-party': 'linear-gradient(135deg, #f59e0b, #d97706)',
+                'custom': 'linear-gradient(135deg, #3b82f6, #2563eb)'
+            };
+            return gradients[type] || 'linear-gradient(135deg, #6b7280, #4b5563)';
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function updateStatsFromData(plugins) {
+            // Stats are already loaded from dedicated endpoint
+            // This is just for visual consistency
+        }
+        
+        function updateVisibleCount(count) {
+            document.getElementById('visibleModulesCount').textContent = count;
+        }
+        
+        // ============================================
+        // API CALLS
+        // ============================================
+        
+        async function activatePlugin(pluginId) {
+            showLoading();
+            try {
+                const response = await fetch(`${API.activatePlugin}/${pluginId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    await loadPluginsFromBackend();
+                    await loadStats();
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', 'Erreur lors de l\'activation');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function deactivatePlugin(pluginId) {
+            showLoading();
+            try {
+                const response = await fetch(`${API.deactivatePlugin}/${pluginId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    await loadPluginsFromBackend();
+                    await loadStats();
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', 'Erreur lors de la désactivation');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function deletePlugin(pluginId) {
+            showLoading();
+            try {
+                const response = await fetch(`${API.deletePlugin}/${pluginId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    await loadPluginsFromBackend();
+                    await loadStats();
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', 'Erreur lors de la désinstallation');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function uploadPluginFile(file) {
+            showLoading();
+            const formData = new FormData();
+            formData.append('plugin_file', file);
+            
+            // Show progress bar
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadProgress = document.getElementById('uploadProgress');
+            uploadArea.style.display = 'none';
+            uploadProgress.style.display = 'block';
+            
+            try {
+                const response = await fetch(API.uploadPlugin, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    await loadPluginsFromBackend();
+                    await loadStats();
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('installModuleModal'));
+                    if (modal) modal.hide();
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', 'Erreur lors de l\'upload');
+            } finally {
+                hideLoading();
+                uploadArea.style.display = 'block';
+                uploadProgress.style.display = 'none';
+                document.querySelector('#uploadProgress .progress-bar').style.width = '0%';
+            }
+        }
+        
+        async function viewModuleDetails(pluginId) {
+            const plugin = currentPluginData.find(p => p.id == pluginId);
+            if (!plugin) return;
+            
+            const modalContent = document.getElementById('viewModuleContent');
+            modalContent.innerHTML = `
+                <div class="text-center mb-4">
+                    <div class="module-icon-lg" style="background: ${getIconGradient(plugin.type)}; width: 80px; height: 80px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; margin: 0 auto;">
+                        <i class="${plugin.icon || 'fas fa-puzzle-piece'}" style="font-size: 2rem; color: white;"></i>
+                    </div>
+                    <h3 class="mt-3">${escapeHtml(plugin.name)}</h3>
+                    <p class="text-muted">Version ${plugin.version} par ${escapeHtml(plugin.author)}</p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-group">
+                            <label>Description</label>
+                            <p>${escapeHtml(plugin.description)}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-group">
+                            <label>Informations</label>
+                            <ul class="list-unstyled">
+                                <li><strong>Type:</strong> ${plugin.type}</li>
+                                <li><strong>Prix:</strong> ${plugin.price_type === 'paid' ? '€' + plugin.price : 'Gratuit'}</li>
+                                <li><strong>Installé le:</strong> ${formatDate(plugin.installed_at)}</li>
+                                <li><strong>Téléchargements:</strong> ${plugin.downloads || 0}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                ${plugin.documentation_url ? `
+                <div class="text-center mt-3">
+                    <a href="${plugin.documentation_url}" target="_blank" class="btn btn-outline-primary">
+                        <i class="fas fa-book me-2"></i>Voir la documentation
+                    </a>
+                </div>
+                ` : ''}
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('viewModuleModal'));
+            modal.show();
+        }
+        
+        async function loadModuleSettings(pluginId) {
+            showLoading();
+            try {
+                const response = await fetch(`${API.getSettings}/${pluginId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentModuleSettings = {
+                        id: pluginId,
+                        settings: result.data
+                    };
+                    
+                    const modalContent = document.getElementById('settingsModalContent');
+                    modalContent.innerHTML = `
+                        <div class="settings-form">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Configurez les paramètres spécifiques de ce module.
+                            </div>
+                            <div id="settingsForm">
+                                <!-- Settings fields will be populated based on module type -->
+                                <div class="mb-3">
+                                    <label class="form-label">Configuration JSON</label>
+                                    <textarea class="form-control" id="settingsJson" rows="10">${JSON.stringify(result.data, null, 2)}</textarea>
+                                    <small class="text-muted">Modifiez la configuration JSON du module</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+                    modal.show();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', 'Erreur lors du chargement des paramètres');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function saveSettings() {
+            if (!currentModuleSettings) return;
+            
+            const settingsJson = document.getElementById('settingsJson')?.value;
+            if (!settingsJson) return;
+            
+            showLoading();
+            try {
+                let settings;
+                try {
+                    settings = JSON.parse(settingsJson);
+                } catch (e) {
+                    showAlert('danger', 'JSON invalide');
+                    return;
+                }
+                
+                const response = await fetch(`${API.updateSettings}/${currentModuleSettings.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ settings })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+                    if (modal) modal.hide();
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('danger', 'Erreur lors de l\'enregistrement');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // ============================================
+        // EVENT HANDLERS
+        // ============================================
+        
+        function attachPluginEventListeners() {
+            // Activate buttons
+            document.querySelectorAll('.activate-btn').forEach(btn => {
+                btn.removeEventListener('click', handleActivate);
+                btn.addEventListener('click', handleActivate);
+            });
+            
+            // Deactivate buttons
+            document.querySelectorAll('.deactivate-btn:not([disabled])').forEach(btn => {
+                btn.removeEventListener('click', handleDeactivate);
+                btn.addEventListener('click', handleDeactivate);
+            });
+            
+            // Delete buttons
+            document.querySelectorAll('.delete-btn:not([disabled])').forEach(btn => {
+                btn.removeEventListener('click', handleDelete);
+                btn.addEventListener('click', handleDelete);
+            });
+            
+            // View buttons
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.removeEventListener('click', handleView);
+                btn.addEventListener('click', handleView);
+            });
+            
+            // Settings buttons
+            document.querySelectorAll('.settings-btn:not([disabled])').forEach(btn => {
+                btn.removeEventListener('click', handleSettings);
+                btn.addEventListener('click', handleSettings);
+            });
+        }
+        
+        function handleActivate(e) {
+            e.preventDefault();
+            const btn = e.currentTarget;
+            const pluginId = btn.dataset.id;
+            if (pluginId) {
+                activatePlugin(pluginId);
+            }
+        }
+        
+        function handleDeactivate(e) {
+            e.preventDefault();
+            const btn = e.currentTarget;
+            const pluginId = btn.dataset.id;
+            if (pluginId) {
+                deactivatePlugin(pluginId);
+            }
+        }
+        
+        function handleDelete(e) {
+            e.preventDefault();
+            const btn = e.currentTarget;
+            const pluginId = btn.dataset.id;
+            if (pluginId) {
+                if (confirm('Êtes-vous sûr de vouloir désinstaller ce module ? Cette action est irréversible.')) {
+                    deletePlugin(pluginId);
+                }
+            }
+        }
+        
+        function handleView(e) {
+            e.preventDefault();
+            const btn = e.currentTarget;
+            const pluginId = btn.dataset.id;
+            if (pluginId) {
+                viewModuleDetails(pluginId);
+            }
+        }
+        
+        function handleSettings(e) {
+            e.preventDefault();
+            const btn = e.currentTarget;
+            const pluginId = btn.dataset.id;
+            if (pluginId) {
+                loadModuleSettings(pluginId);
+            }
+        }
+        
+        // ============================================
+        // UI CONTROLS
+        // ============================================
+        
         function switchView(view) {
             currentView = view;
             
@@ -1590,100 +1275,34 @@
             }
         }
         
-        // Handle search with debounce
         function handleSearch(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            
-            // Grid view search
-            document.querySelectorAll('.module-card').forEach(card => {
-                const moduleName = card.querySelector('.module-name').textContent.toLowerCase();
-                const moduleDesc = card.querySelector('.module-description').textContent.toLowerCase();
-                
-                if (moduleName.includes(searchTerm) || moduleDesc.includes(searchTerm)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-            
-            // List view search
-            document.querySelectorAll('#modulesListView tbody tr').forEach(row => {
-                const moduleName = row.querySelector('.list-module-name').textContent.toLowerCase();
-                const moduleDesc = row.querySelector('.list-module-description').textContent.toLowerCase();
-                
-                if (moduleName.includes(searchTerm) || moduleDesc.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
-            updateVisibleCount();
+            currentFilters.search = e.target.value.toLowerCase();
+            currentPage = 1;
+            loadPluginsFromBackend();
         }
         
-        // Filter by category
         function filterByCategory(categoryId) {
             // Update active state
             document.querySelectorAll('.category-filter').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.category === categoryId);
             });
             
-            // Filter cards
-            document.querySelectorAll('.module-card').forEach(card => {
-                if (categoryId === 'all' || card.dataset.category === categoryId) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-            
-            // Filter list rows
-            document.querySelectorAll('#modulesListView tbody tr').forEach(row => {
-                if (categoryId === 'all' || row.dataset.category === categoryId) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
-            updateVisibleCount();
+            currentFilters.category = categoryId === 'all' ? '' : categoryId;
+            currentPage = 1;
+            loadPluginsFromBackend();
         }
         
-        // Apply all filters
         function applyFilters() {
-            const category = document.getElementById('filterCategory').value;
-            const status = document.getElementById('filterStatus').value;
-            const type = document.getElementById('filterType').value;
-            const price = document.getElementById('filterPrice').value;
+            currentFilters.category = document.getElementById('filterCategory').value;
+            currentFilters.status = document.getElementById('filterStatus').value;
+            currentFilters.type = document.getElementById('filterType').value;
+            currentFilters.price = document.getElementById('filterPrice').value;
+            currentFilters.sort_by = document.getElementById('filterSortBy').value;
+            currentPage = 1;
             
-            // Filter grid view
-            document.querySelectorAll('.module-card').forEach(card => {
-                let show = true;
-                
-                if (category && card.dataset.category !== category) show = false;
-                if (status && card.dataset.status !== status) show = false;
-                if (type && card.dataset.type !== type) show = false;
-                if (price && card.dataset.price !== price) show = false;
-                
-                card.style.display = show ? 'block' : 'none';
-            });
-            
-            // Filter list view
-            document.querySelectorAll('#modulesListView tbody tr').forEach(row => {
-                let show = true;
-                
-                if (category && row.dataset.category !== category) show = false;
-                if (status && row.dataset.status !== status) show = false;
-                if (type && row.dataset.type !== type) show = false;
-                if (price && row.dataset.price !== price) show = false;
-                
-                row.style.display = show ? '' : 'none';
-            });
-            
-            updateVisibleCount();
+            loadPluginsFromBackend();
         }
         
-        // Clear all filters
         function clearFilters() {
             document.getElementById('filterCategory').value = '';
             document.getElementById('filterStatus').value = '';
@@ -1691,38 +1310,25 @@
             document.getElementById('filterPrice').value = '';
             document.getElementById('filterSortBy').value = 'name';
             
-            // Show all cards
-            document.querySelectorAll('.module-card').forEach(card => {
-                card.style.display = 'block';
-            });
-            
-            // Show all list rows
-            document.querySelectorAll('#modulesListView tbody tr').forEach(row => {
-                row.style.display = '';
-            });
+            currentFilters = {
+                category: '',
+                status: '',
+                type: '',
+                price: '',
+                sort_by: 'name',
+                sort_order: 'asc',
+                search: currentFilters.search || ''
+            };
+            currentPage = 1;
             
             // Reset category filters
             document.querySelectorAll('.category-filter').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.category === 'all');
             });
             
-            updateVisibleCount();
+            loadPluginsFromBackend();
         }
         
-        // Update visible modules count
-        function updateVisibleCount() {
-            let visibleCount;
-            
-            if (currentView === 'grid') {
-                visibleCount = document.querySelectorAll('.module-card[style="display: block"]').length;
-            } else {
-                visibleCount = document.querySelectorAll('#modulesListView tbody tr:not([style="display: none"])').length;
-            }
-            
-            document.getElementById('visibleModulesCount').textContent = visibleCount || 0;
-        }
-        
-        // Toggle filter section
         function toggleFilterSection() {
             const filterSection = document.getElementById('filterSection');
             const btn = document.getElementById('toggleFilterBtn');
@@ -1736,20 +1342,10 @@
             }
         }
         
-        // Debounce utility
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
+        // ============================================
+        // FILE UPLOAD
+        // ============================================
         
-        // Setup file upload drag & drop
         function setupFileUpload() {
             const uploadArea = document.getElementById('uploadArea');
             
@@ -1796,149 +1392,29 @@
             if (files.length > 0) {
                 const file = files[0];
                 if (file.name.endsWith('.zip')) {
-                    showAlert('success', `Fichier "${file.name}" prêt à être installé.`);
+                    uploadPluginFile(file);
                 } else {
                     showAlert('danger', 'Veuillez sélectionner un fichier ZIP valide.');
                 }
             }
         }
         
-        // Module actions
-        function activateModule(moduleId) {
-            const moduleNames = {
-                1: 'Analytics Pro',
-                2: 'Email Marketing Suite',
-                3: 'Security Plus',
-                4: 'E-commerce Essentials',
-                5: 'Core System',
-                6: 'SEO Optimizer',
-                7: 'Social Media Integration',
-                8: 'Backup Manager',
-                
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
             };
-            
-            const moduleName = moduleNames[moduleId] || 'Module';
-            showAlert('success', `Module "${moduleName}" activé avec succès !`);
         }
         
-        function deactivateModule(moduleId) {
-            const moduleNames = {
-                1: 'Analytics Pro',
-                2: 'Email Marketing Suite',
-                3: 'Security Plus',
-                4: 'E-commerce Essentials',
-                5: 'Core System',
-                6: 'SEO Optimizer',
-                7: 'Social Media Integration',
-                8: 'Backup Manager'
-            };
-            
-            const moduleName = moduleNames[moduleId] || 'Module';
-            
-            if (confirm(`Voulez-vous vraiment désactiver le module "${moduleName}" ?`)) {
-                showAlert('info', `Module "${moduleName}" désactivé.`);
-            }
-        }
-        
-        function openModuleSettings(moduleId) {
-            const moduleNames = {
-                1: 'Analytics Pro',
-                2: 'Email Marketing Suite',
-                3: 'Security Plus',
-                4: 'E-commerce Essentials',
-                5: 'Core System',
-                6: 'SEO Optimizer',
-                7: 'Social Media Integration',
-                8: 'Backup Manager'
-            };
-            
-            const moduleName = moduleNames[moduleId] || 'Module';
-            showAlert('info', `Ouverture des paramètres du module "${moduleName}"...`);
-        }
-        
-        function showDeleteConfirmation(moduleId) {
-            const modules = {
-                1: { name: 'Analytics Pro', version: 'v2.1.0', author: 'Acme Corp', installed_at: '15/03/2024', icon: 'fas fa-chart-bar', icon_bg: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
-                2: { name: 'Email Marketing Suite', version: 'v1.5.2', author: 'Marketing Team', installed_at: '02/02/2024', icon: 'fas fa-envelope', icon_bg: 'linear-gradient(135deg, #10b981, #059669)' },
-                3: { name: 'Security Plus', version: 'v3.0.1', author: 'SecureSoft', installed_at: '10/01/2024', icon: 'fas fa-shield-alt', icon_bg: 'linear-gradient(135deg, #f59e0b, #d97706)' },
-                4: { name: 'E-commerce Essentials', version: 'v1.2.3', author: 'E-commerce Team', installed_at: '20/03/2024', icon: 'fas fa-shopping-cart', icon_bg: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
-                5: { name: 'Core System', version: 'v4.0.2', author: 'System Team', installed_at: '01/01/2024', icon: 'fas fa-cog', icon_bg: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
-                6: { name: 'SEO Optimizer', version: 'v2.0.0', author: 'SEO Masters', installed_at: '05/03/2024', icon: 'fas fa-search', icon_bg: 'linear-gradient(135deg, #ec4899, #db2777)' },
-                7: { name: 'Social Media Integration', version: 'v1.1.5', author: 'SocialTech', installed_at: '12/02/2024', icon: 'fas fa-share-alt', icon_bg: 'linear-gradient(135deg, #14b8a6, #0d9488)' },
-                8: { name: 'Backup Manager', version: 'v2.3.1', author: 'IT Team', installed_at: '18/03/2024', icon: 'fas fa-database', icon_bg: 'linear-gradient(135deg, #f43f5e, #e11d48)' }
-            };
-            
-            const module = modules[moduleId];
-            if (!module) return;
-            
-            currentModuleToDelete = moduleId;
-            
-            const infoDiv = document.getElementById('moduleToDeleteInfo');
-            infoDiv.innerHTML = `
-                <div class="module-info">
-                    <div class="module-info-icon" style="background: ${module.icon_bg};">
-                        <i class="${module.icon}"></i>
-                    </div>
-                    <div>
-                        <div class="module-info-name">${module.name}</div>
-                        <div class="module-info-details">
-                            <div><strong>Version:</strong> ${module.version}</div>
-                            <div><strong>Auteur:</strong> ${module.author}</div>
-                            <div><strong>Installé le:</strong> ${module.installed_at}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
-            modal.show();
-        }
-        
-        function confirmDelete() {
-            if (!currentModuleToDelete) return;
-            
-            const modules = {
-                1: 'Analytics Pro',
-                2: 'Email Marketing Suite',
-                3: 'Security Plus',
-                4: 'E-commerce Essentials',
-                5: 'Core System',
-                6: 'SEO Optimizer',
-                7: 'Social Media Integration',
-                8: 'Backup Manager'
-            };
-            
-            const moduleName = modules[currentModuleToDelete] || 'Module';
-            
-            const deleteBtn = document.getElementById('confirmDeleteBtn');
-            const originalText = deleteBtn.innerHTML;
-            
-            deleteBtn.innerHTML = `
-                <span class="btn-text" style="display: none;">
-                    <i class="fas fa-trash me-2"></i>Désinstaller
-                </span>
-                <div class="spinner-border spinner-border-sm text-light" role="status">
-                    <span class="visually-hidden">Désinstallation...</span>
-                </div>
-                Désinstallation en cours...
-            `;
-            deleteBtn.disabled = true;
-            
-            setTimeout(() => {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
-                modal.hide();
-                
-                showAlert('success', `Module "${moduleName}" désinstallé avec succès !`);
-                
-                setTimeout(() => {
-                    deleteBtn.innerHTML = originalText;
-                    deleteBtn.disabled = false;
-                    currentModuleToDelete = null;
-                }, 500);
-            }, 1500);
-        }
-        
-        // Helper functions
         function showLoading() {
             document.getElementById('loadingSpinner').style.display = 'flex';
         }
@@ -1963,6 +1439,37 @@
             setTimeout(() => {
                 alertDiv.remove();
             }, 5000);
+        }
+        
+        // Global functions for onclick handlers
+        window.activateModule = function(moduleId) {
+            activatePlugin(moduleId);
+        };
+        
+        window.deactivateModule = function(moduleId) {
+            deactivatePlugin(moduleId);
+        };
+        
+        window.showDeleteConfirmation = function(moduleId) {
+            if (confirm('Êtes-vous sûr de vouloir désinstaller ce module ? Cette action est irréversible.')) {
+                deletePlugin(moduleId);
+            }
+        };
+        
+        window.openModuleSettings = function(moduleId) {
+            loadModuleSettings(moduleId);
+        };
+        
+        window.installMarketplaceItem = function(moduleName) {
+            showAlert('info', `Installation de ${moduleName} en cours...`);
+        };
+        
+        function confirmDelete() {
+            if (currentModuleToDelete) {
+                deletePlugin(currentModuleToDelete);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
+                if (modal) modal.hide();
+            }
         }
     </script>
 
@@ -2134,22 +1641,6 @@
             color: #666;
             font-size: 0.8rem;
             margin-left: 6px;
-        }
-        
-        .update-available {
-            background: #fff3cd;
-            color: #856404;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        
-        .update-available i {
-            color: #f59e0b;
         }
         
         .module-card-footer {
@@ -2436,11 +1927,6 @@
             font-weight: 500;
         }
         
-        .update-indicator {
-            color: #f59e0b;
-            cursor: pointer;
-        }
-        
         .list-actions {
             display: flex;
             gap: 6px;
@@ -2502,6 +1988,10 @@
             color: #999;
             font-size: 0.8rem;
             margin-top: 15px;
+        }
+        
+        .upload-progress {
+            margin-top: 20px;
         }
         
         .separator {
@@ -2638,38 +2128,28 @@
             text-decoration: underline;
         }
         
-        /* Module info in delete modal */
-        .module-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
+        /* Empty State */
+        .empty-state-modern {
+            text-align: center;
+            padding: 60px 20px;
         }
         
-        .module-info-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
+        .empty-icon-modern {
+            font-size: 4rem;
+            color: #d1d5db;
+            margin-bottom: 20px;
+        }
+        
+        .empty-title-modern {
             font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-        
-        .module-info-name {
             font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 5px;
+            color: #333;
+            margin-bottom: 10px;
         }
         
-        .module-info-details {
-            font-size: 0.9rem;
+        .empty-text-modern {
             color: #666;
+            margin-bottom: 20px;
         }
         
         /* Pagination */
@@ -2688,6 +2168,7 @@
             border: 1px solid #eaeaea;
             margin: 0 3px;
             border-radius: 8px !important;
+            cursor: pointer;
         }
         
         .page-link:hover {
@@ -2879,59 +2360,21 @@
             height: 50px;
         }
         
-        /* Empty State */
-        .empty-state-modern {
-            text-align: center;
-            padding: 60px 20px;
-        }
-        
-        .empty-icon-modern {
-            font-size: 4rem;
-            color: #d1d5db;
+        /* Info Group */
+        .info-group {
             margin-bottom: 20px;
         }
         
-        .empty-title-modern {
-            font-size: 1.2rem;
+        .info-group label {
             font-weight: 600;
             color: #333;
-            margin-bottom: 10px;
+            display: block;
+            margin-bottom: 8px;
         }
         
-        .empty-text-modern {
+        .info-group p {
             color: #666;
-            margin-bottom: 20px;
-        }
-        
-        /* Delete Modal */
-        .delete-confirm-modal .modal-content {
-            border: none;
-            border-radius: 16px;
-        }
-        
-        .delete-icon {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: #fee2e2;
-            color: #ef4444;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            margin: 0 auto 20px;
-        }
-        
-        .delete-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .delete-message {
-            color: #666;
-            margin-bottom: 20px;
+            line-height: 1.5;
         }
         
         /* Responsive */
