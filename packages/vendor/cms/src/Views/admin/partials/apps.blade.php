@@ -1,5 +1,6 @@
 {{-- ============================================================
      APPS LAUNCHER - Floating Button + Right Panel
+     Dynamique depuis la base de données
      ============================================================ --}}
 
 <!-- Floating Apps Button -->
@@ -42,107 +43,21 @@
     <div class="apps-section-label">Installées</div>
 
     <div class="apps-grid" id="appsGrid">
-
-        <div class="app-card" data-name="geo map marker" onclick="openApp('geo-map')">
-            <div class="app-card-icon" style="background: linear-gradient(135deg, #1e3a5f, #2563eb);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            </div>
-            <div class="app-card-info">
-                <span class="app-name">Geo Map</span>
-                <span class="app-desc">Cartographie & zones</span>
-            </div>
+        <!-- Les applications seront chargées dynamiquement via JavaScript -->
+        <div class="apps-loading">
+            <div class="loading-spinner"></div>
+            <span>Chargement des applications...</span>
         </div>
-
-        <div class="app-card" data-name="ecommerce suite boutique" onclick="openApp('ecommerce')">
-            <div class="app-card-icon" style="background: linear-gradient(135deg, #064e3b, #10b981);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-            </div>
-            <div class="app-card-info">
-                <span class="app-name">Ecommerce Suite</span>
-                <span class="app-desc">Boutique en ligne</span>
-            </div>
-        </div>
-
-        <div class="app-card" data-name="analytics pro statistiques" onclick="openApp('analytics')">
-            <div class="app-card-icon" style="background: linear-gradient(135deg, #1e1b4b, #7c3aed);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            </div>
-            <div class="app-card-info">
-                <span class="app-name">Analytics Pro</span>
-                <span class="app-desc">Statistiques avancées</span>
-            </div>
-        </div>
-
-        <div class="app-card" data-name="seo optimizer référencement" onclick="openApp('seo')">
-            <div class="app-card-icon" style="background: linear-gradient(135deg, #7c2d12, #ea580c);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v3l2 2"/></svg>
-            </div>
-            <div class="app-card-info">
-                <span class="app-name">SEO Optimizer</span>
-                <span class="app-desc">Référencement naturel</span>
-            </div>
-        </div>
-
-        <div class="app-card" data-name="crm contacts clients" onclick="openApp('crm')">
-            <div class="app-card-icon" style="background: linear-gradient(135deg, #0f172a, #334155);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            <div class="app-card-info">
-                <span class="app-name">CRM</span>
-                <span class="app-desc">Gestion des contacts</span>
-            </div>
-        </div>
-
-        <div class="app-card" data-name="email marketing campagne" onclick="openApp('email')">
-            <div class="app-card-icon" style="background: linear-gradient(135deg, #0c4a6e, #0ea5e9);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            </div>
-            <div class="app-card-info">
-                <span class="app-name">Email Marketing</span>
-                <span class="app-desc">Campagnes ciblées</span>
-            </div>
-        </div>
-
-        <div class="app-card" data-name="booking réservation agenda" onclick="openApp('booking')">
-            <div class="app-card-icon" style="background: linear-gradient(135deg, #134e4a, #14b8a6);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <div class="app-card-info">
-                <span class="app-name">Booking</span>
-                <span class="app-desc">Réservations en ligne</span>
-            </div>
-        </div>
-
-        <div class="app-card" data-name="chat support client live" onclick="openApp('chat')">
-            <div class="app-card-icon" style="background: linear-gradient(135deg, #450a0a, #dc2626);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            </div>
-            <div class="app-card-info">
-                <span class="app-name">Live Chat</span>
-                <span class="app-desc">Support en temps réel</span>
-            </div>
-        </div>
-
-        <div class="app-card" data-name="forms formulaire survey" onclick="openApp('forms')">
-            <div class="app-card-icon" style="background: linear-gradient(135deg, #3b0764, #a855f7);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            </div>
-            <div class="app-card-info">
-                <span class="app-name">Smart Forms</span>
-                <span class="app-desc">Formulaires & surveys</span>
-            </div>
-        </div>
-
     </div>
 
-
     <div class="apps-panel-footer">
-        <a href="#" class="apps-explore-btn">
+        <a href="{{ route('modules.index') }}" class="apps-explore-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             Explorer la marketplace
         </a>
     </div>
 </div>
+
 <style>
 /* ── Floating Button ──────────────────────────────────── */
 #appsLauncherBtn {
@@ -198,10 +113,29 @@
     opacity: 0;
 }
 
+/* Loading state */
+.apps-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px 20px;
+    color: #64748b;
+    font-size: 0.8rem;
+}
 
-@keyframes pulseDot {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
-    50%       { box-shadow: 0 0 0 4px rgba(16,185,129,0); }
+.loading-spinner {
+    width: 30px;
+    height: 30px;
+    border: 2px solid rgba(99,102,241,0.1);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 /* ── Overlay ──────────────────────────────────────────── */
@@ -227,7 +161,7 @@
     right: 0;
     bottom: 0;
     z-index: 1070;
-    width: 360px;
+    width: 380px;
     max-width: 95vw;
     background: #0f172a;
     display: flex;
@@ -414,6 +348,7 @@
     justify-content: center;
     flex-shrink: 0;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    font-size: 1.1rem;
 }
 
 .app-card-info {
@@ -472,7 +407,6 @@
     text-transform: uppercase;
 }
 
-
 /* Footer */
 .apps-panel-footer {
     padding: 14px 16px;
@@ -527,66 +461,187 @@
     transform: translateY(0);
     opacity: 1;
 }
+
+/* Empty state */
+.apps-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 60px 20px;
+    color: #475569;
+    text-align: center;
+}
+
+.apps-empty svg {
+    opacity: 0.5;
+}
+
+.apps-empty p {
+    font-size: 0.8rem;
+    margin: 0;
+}
 </style>
 
 <script>
-function toggleAppsPanel() {
-    const btn = document.getElementById('appsLauncherBtn');
-    const panel = document.getElementById('appsPanel');
-    const overlay = document.getElementById('appsPanelOverlay');
-    const isOpen = panel.classList.contains('open');
+// Configuration des routes
+const APPS_API = {
+    getPlugins: '{{ route("modules.get-plugins") }}',
+    getCategories: '{{ route("modules.categories") }}',
+};
+
+let appsData = [];
+
+// Charger les applications depuis la base de données
+async function loadAppsFromDatabase() {
+    const grid = document.getElementById('appsGrid');
     
-    if (isOpen) {
-        closeAppsPanel();
-    } else {
-        panel.classList.add('open');
-        overlay.classList.add('visible');
-        btn.classList.add('open');
-        // Animate cards in
-        document.querySelectorAll('.app-card').forEach((card, i) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateX(20px)';
-            setTimeout(() => {
-                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateX(0)';
-            }, 80 + i * 40);
-        });
+    try {
+        const response = await fetch(`${APPS_API.getPlugins}?per_page=100&status=active`);
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+            appsData = result.data;
+            renderApps(appsData);
+        } else {
+            showEmptyState();
+        }
+    } catch (error) {
+        console.error('Error loading apps:', error);
+        showEmptyState();
     }
 }
 
-function closeAppsPanel() {
-    document.getElementById('appsPanel').classList.remove('open');
-    document.getElementById('appsPanelOverlay').classList.remove('visible');
-    document.getElementById('appsLauncherBtn').classList.remove('open');
+// Rendre les applications dans la grille
+function renderApps(plugins) {
+    const grid = document.getElementById('appsGrid');
+    
+    if (!plugins || plugins.length === 0) {
+        showEmptyState();
+        return;
+    }
+    
+    // Filtrer seulement les plugins actifs
+    const activePlugins = plugins.filter(p => p.status === 'active');
+    
+    if (activePlugins.length === 0) {
+        showEmptyState();
+        return;
+    }
+    
+    grid.innerHTML = activePlugins.map(plugin => `
+        <div class="app-card" data-name="${escapeHtml(plugin.name).toLowerCase()}" data-id="${plugin.id}" onclick="openApp(${plugin.id})">
+            <div class="app-card-icon" style="background: ${getGradientForApp(plugin.type)};">
+                <i class="${plugin.icon || 'fas fa-puzzle-piece'}" style="color: white; font-size: 1.1rem;"></i>
+            </div>
+            <div class="app-card-info">
+                <span class="app-name">${escapeHtml(plugin.name)}</span>
+                <span class="app-desc">${escapeHtml(plugin.description.substring(0, 50))}${plugin.description.length > 50 ? '...' : ''}</span>
+            </div>
+            ${getAppBadge(plugin)}
+        </div>
+    `).join('');
 }
 
+// Obtenir le gradient en fonction du type
+function getGradientForApp(type) {
+    const gradients = {
+        'core': 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+        'official': 'linear-gradient(135deg, #10b981, #059669)',
+        'third-party': 'linear-gradient(135deg, #f59e0b, #d97706)',
+        'custom': 'linear-gradient(135deg, #3b82f6, #2563eb)'
+    };
+    return gradients[type] || 'linear-gradient(135deg, #6b7280, #4b5563)';
+}
+
+// Obtenir le badge approprié
+function getAppBadge(plugin) {
+    if (plugin.type === 'core') {
+        return '<div class="app-card-badge pro">Cœur</div>';
+    }
+    if (plugin.type === 'official') {
+        return '<div class="app-card-badge new">Officiel</div>';
+    }
+    if (plugin.price_type === 'paid') {
+        return '<div class="app-card-badge pro">PRO</div>';
+    }
+    return '';
+}
+
+// Afficher l'état vide
+function showEmptyState() {
+    const grid = document.getElementById('appsGrid');
+    grid.innerHTML = `
+        <div class="apps-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+            </svg>
+            <p>Aucune application installée</p>
+            <a href="{{ route('modules.index') }}" class="apps-explore-btn" style="margin-top: 10px;">
+                Explorer la marketplace
+            </a>
+        </div>
+    `;
+}
+
+// Filtrer les applications
 function filterApps(query) {
     const cards = document.querySelectorAll('.app-card');
     const q = query.toLowerCase().trim();
+    let visibleCount = 0;
+    
     cards.forEach(card => {
         const name = card.dataset.name || '';
-        card.classList.toggle('hidden', q !== '' && !name.includes(q));
+        const isVisible = q === '' || name.includes(q);
+        card.classList.toggle('hidden', !isVisible);
+        if (isVisible) visibleCount++;
     });
+    
+    // Afficher un message si aucun résultat
+    const grid = document.getElementById('appsGrid');
+    const existingEmpty = grid.querySelector('.apps-no-results');
+    
+    if (visibleCount === 0 && q !== '') {
+        if (!existingEmpty) {
+            const noResults = document.createElement('div');
+            noResults.className = 'apps-empty apps-no-results';
+            noResults.innerHTML = `
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                </svg>
+                <p>Aucun résultat pour "${escapeHtml(q)}"</p>
+            `;
+            grid.appendChild(noResults);
+        }
+    } else if (existingEmpty) {
+        existingEmpty.remove();
+    }
 }
 
-function openApp(appId) {
-    const names = {
-        'geo-map': 'Geo Map',
-        'ecommerce': 'Ecommerce Suite',
-        'analytics': 'Analytics Pro',
-        'seo': 'SEO Optimizer',
-        'crm': 'CRM',
-        'email': 'Email Marketing',
-        'booking': 'Booking',
-        'chat': 'Live Chat',
-        'forms': 'Smart Forms'
-    };
+// Ouvrir une application
+function openApp(pluginId) {
+    const plugin = appsData.find(p => p.id == pluginId);
+    if (!plugin) return;
     
-    showAppToast('Ouverture de ' + (names[appId] || appId) + '…');
+    showAppToast(`Ouverture de ${plugin.name}...`);
+    
+    // Rediriger vers l'URL de l'application si définie
+    if (plugin.demo_url) {
+        window.open(plugin.demo_url, '_blank');
+    } else {
+        // Rediriger vers la page de gestion du module
+        window.location.href = '{{ route("modules.index") }}';
+    }
+    
     closeAppsPanel();
 }
 
+// Afficher un toast
 function showAppToast(msg) {
     let toast = document.querySelector('.app-toast');
     if (!toast) {
@@ -599,7 +654,53 @@ function showAppToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
-// Close on Escape
+// Toggle le panneau
+function toggleAppsPanel() {
+    const btn = document.getElementById('appsLauncherBtn');
+    const panel = document.getElementById('appsPanel');
+    const overlay = document.getElementById('appsPanelOverlay');
+    const isOpen = panel.classList.contains('open');
+    
+    if (isOpen) {
+        closeAppsPanel();
+    } else {
+        panel.classList.add('open');
+        overlay.classList.add('visible');
+        btn.classList.add('open');
+        
+        // Animer les cartes
+        document.querySelectorAll('.app-card').forEach((card, i) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateX(0)';
+            }, 80 + i * 40);
+        });
+    }
+}
+
+// Fermer le panneau
+function closeAppsPanel() {
+    document.getElementById('appsPanel').classList.remove('open');
+    document.getElementById('appsPanelOverlay').classList.remove('visible');
+    document.getElementById('appsLauncherBtn').classList.remove('open');
+}
+
+// Fonction d'échappement HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialisation au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    loadAppsFromDatabase();
+});
+
+// Fermer avec Echap
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeAppsPanel();
 });

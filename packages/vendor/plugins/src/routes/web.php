@@ -28,6 +28,9 @@ Route::middleware(['web','auth'])->group(function () {
     // Plugin settings
     Route::get('/settings/{id}', [PluginController::class, 'getSettings'])->name('settings.get');
     Route::put('/settings/{id}', [PluginController::class, 'updateSettings'])->name('settings.update');
+
+    // Dans routes/web.php
+    Route::get('/get-active-plugins', [PluginController::class, 'getActivePlugins'])->name('modules.get-active');
 });
 });
 

@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Plugin;
 use App\Models\PluginCategory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use ZipArchive;
 
 class PluginController extends Controller
 {
@@ -18,13 +16,13 @@ class PluginController extends Controller
     public function index()
     {
         $plugins = Plugin::with('category')->get();
-        $categories = PluginCategory::all();
+        $categories = PluginCategory::orderBy('order')->get();
         
         $stats = [
             'total' => Plugin::count(),
             'active' => Plugin::where('status', 'active')->count(),
             'inactive' => Plugin::where('status', 'inactive')->count(),
-            'updates' => Plugin::where('status', 'active')->where('version', '<', 'latest')->count(),
+            'updates' => 0, // À implémenter selon votre logique de mise à jour
             'free' => Plugin::where('price_type', 'free')->count(),
         ];
         
@@ -39,27 +37,27 @@ class PluginController extends Controller
         $query = Plugin::with('category');
         
         // Filter by category
-        if ($request->has('category') && $request->category) {
+        if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
         
         // Filter by status
-        if ($request->has('status') && $request->status) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
         
         // Filter by type
-        if ($request->has('type') && $request->type) {
+        if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
         
         // Filter by price
-        if ($request->has('price') && $request->price) {
+        if ($request->filled('price')) {
             $query->where('price_type', $request->price);
         }
         
         // Search
-        if ($request->has('search') && $request->search) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -71,19 +69,31 @@ class PluginController extends Controller
         // Sort
         $sortBy = $request->get('sort_by', 'name');
         $sortOrder = $request->get('sort_order', 'asc');
+        
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['name', 'version', 'author', 'installed_at', 'downloads', 'rating', 'price', 'status'];
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'name';
+        }
+        
         $query->orderBy($sortBy, $sortOrder);
         
-        $plugins = $query->get();
+        // Pagination
+        $perPage = $request->get('per_page', 9);
+        $plugins = $query->paginate($perPage);
         
         return response()->json([
             'success' => true,
-            'data' => $plugins,
-            'total' => $plugins->count()
+            'data' => $plugins->items(),
+            'total' => $plugins->total(),
+            'current_page' => $plugins->currentPage(),
+            'last_page' => $plugins->lastPage(),
+            'per_page' => $plugins->perPage(),
         ]);
     }
 
     /**
-     * Store a newly created plugin.
+     * Store a newly created plugin (manual addition).
      */
     public function store(Request $request)
     {
@@ -95,127 +105,34 @@ class PluginController extends Controller
             'author_website' => 'nullable|url',
             'price_type' => 'required|in:free,paid',
             'price' => 'required_if:price_type,paid|nullable|numeric|min:0',
-            'type' => 'required|in:core,official,third-party,custom',
-            'category_id' => 'nullable|exists:plugin_categories,id',
-            'icon' => 'nullable|string',
+            'type' => 'required|in:official,third-party,custom',
+            'category_id' => 'required|exists:plugin_categories,id',
+            'icon' => 'nullable|string|max:100',
             'documentation_url' => 'nullable|url',
             'demo_url' => 'nullable|url',
         ]);
         
         $validated['slug'] = Str::slug($validated['name']);
-        $validated['status'] = 'pending';
+        $validated['status'] = 'inactive';
         $validated['installed_at'] = now();
+        $validated['rating'] = 0;
+        $validated['rating_count'] = 0;
+        $validated['downloads'] = 0;
+        $validated['can_be_disabled'] = true;
+        $validated['can_be_uninstalled'] = true;
+        
+        // Set default icon if not provided
+        if (empty($validated['icon'])) {
+            $validated['icon'] = 'fas fa-puzzle-piece';
+        }
         
         $plugin = Plugin::create($validated);
         
         return response()->json([
             'success' => true,
-            'message' => 'Module installé avec succès',
+            'message' => 'Module ajouté avec succès',
             'data' => $plugin->load('category')
         ]);
-    }
-
-    /**
-     * Upload and install plugin from ZIP file.
-     */
-    public function uploadPlugin(Request $request)
-    {
-        $request->validate([
-            'plugin_file' => 'required|file|mimes:zip|max:51200' // Max 50MB
-        ]);
-        
-        $file = $request->file('plugin_file');
-        $filename = $file->getClientOriginalName();
-        
-        // Store the file temporarily
-        $path = $file->store('temp/plugins');
-        
-        // Extract and read manifest
-        $zip = new ZipArchive();
-        $zipPath = storage_path('app/' . $path);
-        
-        if ($zip->open($zipPath) === true) {
-            // Look for manifest.json or plugin.json
-            $manifest = null;
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $filename = $zip->getNameIndex($i);
-                if (basename($filename) === 'manifest.json' || basename($filename) === 'plugin.json') {
-                    $manifestContent = $zip->getFromName($filename);
-                    $manifest = json_decode($manifestContent, true);
-                    break;
-                }
-            }
-            $zip->close();
-            
-            if (!$manifest) {
-                Storage::delete($path);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Fichier manifest.json ou plugin.json introuvable dans l\'archive'
-                ], 400);
-            }
-            
-            // Validate manifest
-            $requiredFields = ['name', 'version', 'description', 'author'];
-            foreach ($requiredFields as $field) {
-                if (!isset($manifest[$field])) {
-                    Storage::delete($path);
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Champ '{$field}' manquant dans le manifest"
-                    ], 400);
-                }
-            }
-            
-            // Check if plugin already exists
-            $existingPlugin = Plugin::where('slug', Str::slug($manifest['name']))->first();
-            if ($existingPlugin) {
-                Storage::delete($path);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Un module avec ce nom existe déjà'
-                ], 400);
-            }
-            
-            // Create plugin record
-            $plugin = Plugin::create([
-                'name' => $manifest['name'],
-                'slug' => Str::slug($manifest['name']),
-                'description' => $manifest['description'],
-                'version' => $manifest['version'],
-                'author' => $manifest['author'],
-                'author_website' => $manifest['author_website'] ?? null,
-                'price_type' => $manifest['price_type'] ?? 'free',
-                'price' => $manifest['price'] ?? null,
-                'type' => $manifest['type'] ?? 'third-party',
-                'status' => 'inactive',
-                'category_id' => $manifest['category_id'] ?? null,
-                'icon' => $manifest['icon'] ?? 'fas fa-puzzle-piece',
-                'documentation_url' => $manifest['documentation_url'] ?? null,
-                'demo_url' => $manifest['demo_url'] ?? null,
-                'installed_at' => now(),
-            ]);
-            
-            // Move file to plugins directory
-            $pluginPath = storage_path('app/plugins/' . $plugin->slug);
-            if (!is_dir($pluginPath)) {
-                mkdir($pluginPath, 0755, true);
-            }
-            rename($zipPath, $pluginPath . '/plugin.zip');
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Module uploadé et installé avec succès',
-                'data' => $plugin->load('category')
-            ]);
-        }
-        
-        Storage::delete($path);
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Impossible d\'extraire le fichier ZIP'
-        ], 400);
     }
 
     /**
@@ -225,6 +142,14 @@ class PluginController extends Controller
     {
         $plugin = Plugin::findOrFail($id);
         
+        // Check if core module
+        if ($plugin->type === 'core') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Le module système ne peut pas être modifié'
+            ], 403);
+        }
+        
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:plugins,name,' . $id,
             'description' => 'required|string',
@@ -233,9 +158,9 @@ class PluginController extends Controller
             'author_website' => 'nullable|url',
             'price_type' => 'required|in:free,paid',
             'price' => 'required_if:price_type,paid|nullable|numeric|min:0',
-            'type' => 'required|in:core,official,third-party,custom',
-            'category_id' => 'nullable|exists:plugin_categories,id',
-            'icon' => 'nullable|string',
+            'type' => 'required|in:official,third-party,custom',
+            'category_id' => 'required|exists:plugin_categories,id',
+            'icon' => 'nullable|string|max:100',
             'documentation_url' => 'nullable|url',
             'demo_url' => 'nullable|url',
         ]);
@@ -262,13 +187,10 @@ class PluginController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Ce module ne peut pas être activé'
-            ], 400);
+            ], 403);
         }
         
         $plugin->update(['status' => 'active']);
-        
-        // Trigger any activation hooks here
-        event(new \App\Events\PluginActivated($plugin));
         
         return response()->json([
             'success' => true,
@@ -288,13 +210,10 @@ class PluginController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Ce module ne peut pas être désactivé'
-            ], 400);
+            ], 403);
         }
         
         $plugin->update(['status' => 'inactive']);
-        
-        // Trigger any deactivation hooks here
-        event(new \App\Events\PluginDeactivated($plugin));
         
         return response()->json([
             'success' => true,
@@ -313,21 +232,22 @@ class PluginController extends Controller
         if (!$plugin->can_be_uninstalled) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ce module ne peut pas être désinstallé'
-            ], 400);
+                'message' => 'Ce module ne peut pas être supprimé'
+            ], 403);
         }
         
-        // Delete plugin files if they exist
-        $pluginPath = storage_path('app/plugins/' . $plugin->slug);
-        if (is_dir($pluginPath)) {
-            $this->deleteDirectory($pluginPath);
+        if ($plugin->type === 'core') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Le module système ne peut pas être supprimé'
+            ], 403);
         }
         
         $plugin->delete();
         
         return response()->json([
             'success' => true,
-            'message' => 'Module désinstallé avec succès'
+            'message' => 'Module supprimé avec succès'
         ]);
     }
 
@@ -378,12 +298,7 @@ class PluginController extends Controller
                 'pending' => Plugin::where('status', 'pending')->count(),
                 'free' => Plugin::where('price_type', 'free')->count(),
                 'paid' => Plugin::where('price_type', 'paid')->count(),
-                'core' => Plugin::where('type', 'core')->count(),
-                'official' => Plugin::where('type', 'official')->count(),
-                'third_party' => Plugin::where('type', 'third-party')->count(),
-                'custom' => Plugin::where('type', 'custom')->count(),
-                'updates_available' => Plugin::where('status', 'active')
-                    ->whereRaw('version < ?', ['latest'])->count(),
+                'updates_available' => 0, // À implémenter
             ]
         ]);
     }
@@ -402,28 +317,30 @@ class PluginController extends Controller
     }
 
     /**
-     * Helper method to delete directory recursively.
-     */
-    private function deleteDirectory($dir)
-    {
-        if (!file_exists($dir)) {
-            return true;
-        }
-        
-        if (!is_dir($dir)) {
-            return unlink($dir);
-        }
-        
-        foreach (scandir($dir) as $item) {
-            if ($item == '.' || $item == '..') {
-                continue;
-            }
-            
-            if (!$this->deleteDirectory($dir . DIRECTORY_SEPARATOR . $item)) {
-                return false;
-            }
-        }
-        
-        return rmdir($dir);
+ * Get active plugins for apps launcher.
+ */
+public function getActivePlugins(Request $request)
+{
+    $query = Plugin::with('category')
+        ->where('status', 'active')
+        ->where('type', '!=', 'core'); // Exclure les modules core si nécessaire
+    
+    // Search
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('description', 'like', "%{$search}%");
+        });
     }
+    
+    $perPage = $request->get('per_page', 100);
+    $plugins = $query->orderBy('name')->paginate($perPage);
+    
+    return response()->json([
+        'success' => true,
+        'data' => $plugins->items(),
+        'total' => $plugins->total(),
+    ]);
+}
 }
