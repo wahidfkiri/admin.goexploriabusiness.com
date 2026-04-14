@@ -113,8 +113,8 @@
                                         <input class="form-check-input" type="checkbox" id="selectAllCheckbox">
                                     </div>
                                 </th>
-                                <th>Activité</th>
                                 <th>Catégorie</th>
+                                <th>Activité</th>
                                 <th>Statut</th>
                                 <th style="text-align: center;">Actions</th>
                             </tr>
@@ -184,18 +184,19 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-// Configuration pour les activités
+/// Configuration pour les catégories
 let currentPage = 1;
 let currentFilters = {};
-let allActivities = [];
-let selectedActivities = new Set();
-let activityToDelete = null;
-let editingActivityId = null;
+let allCategories = [];
+let selectedCategories = new Set();
+let categoryToDelete = null;
+let isSubmitting = false;
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
     setupAjax();
-    loadActivities();
+    loadCategories();
+    loadStatistics();
     setupEventListeners();
 });
 
@@ -211,14 +212,46 @@ const setupAjax = () => {
     });
 };
 
-// Load activities
-const loadActivities = (page = 1, filters = {}) => {
+// ==================== FONCTIONS DE NETTOYAGE DES MODALS ====================
+const cleanupModals = () => {
+    // Supprimer tous les backdrops
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    
+    // Restaurer le body
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+};
+
+const safelyHideModal = (modalElement) => {
+    if (!modalElement) return;
+    
+    try {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+    } catch (e) {
+        console.warn('Error hiding modal:', e);
+    }
+    
+    setTimeout(() => {
+        cleanupModals();
+    }, 150);
+};
+
+// Load categories
+const loadCategories = (page = 1, filters = {}) => {
     showLoading();
     
     const searchTerm = document.getElementById('searchInput')?.value || '';
     
     $.ajax({
-        url: '{{ route("activities.index") }}',
+        url: '{{ route("categories.index") }}',
         type: 'GET',
         data: {
             page: page,
@@ -228,12 +261,12 @@ const loadActivities = (page = 1, filters = {}) => {
         },
         success: function(response) {
             if (response.success) {
-                allActivities = response.data || [];
-                renderActivities(allActivities);
+                allCategories = response.data || [];
+                renderCategories(allCategories);
                 renderPagination(response);
                 hideLoading();
             } else {
-                showError('Erreur lors du chargement des activités');
+                showError('Erreur lors du chargement des catégories');
             }
         },
         error: function(xhr) {
@@ -244,68 +277,114 @@ const loadActivities = (page = 1, filters = {}) => {
     });
 };
 
-// Render activities - Version simplifiée
-const renderActivities = (activities) => {
-    const tbody = document.getElementById('activitiesTableBody');
+// Load statistics
+const loadStatistics = () => {
+    $.ajax({
+        url: '{{ route("categories.statistics") }}',
+        type: 'GET',
+        success: function(response) {
+            if (response.success) {
+                const stats = response.data;
+                const totalCategoriesElem = document.getElementById('totalCategories');
+                const activeCategoriesElem = document.getElementById('activeCategories');
+                const totalWebsitesElem = document.getElementById('totalWebsites');
+                const totalTemplatesElem = document.getElementById('totalTemplates');
+                const advancedStatsSection = document.getElementById('advancedStatsSection');
+                
+                if (totalCategoriesElem) totalCategoriesElem.textContent = stats.total_categories || 0;
+                if (activeCategoriesElem) activeCategoriesElem.textContent = stats.active_categories || 0;
+                if (totalWebsitesElem) totalWebsitesElem.textContent = stats.total_websites_in_categories || 0;
+                if (totalTemplatesElem) totalTemplatesElem.textContent = stats.total_templates_in_categories || 0;
+                
+                if (advancedStatsSection) advancedStatsSection.style.display = 'block';
+                updateAdvancedStats(stats);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Statistics AJAX error:', xhr.responseText, status, error);
+        }
+    });
+};
+
+// Render categories
+const renderCategories = (categories) => {
+    const tbody = document.getElementById('categoriesTableBody');
+    const emptyState = document.getElementById('emptyState');
+    const tableContainer = document.getElementById('tableContainer');
+    const paginationContainer = document.getElementById('paginationContainer');
+    const bulkActions = document.getElementById('bulkActions');
+    
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
-    if (!activities || !Array.isArray(activities) || activities.length === 0) {
-        document.getElementById('emptyState').style.display = 'block';
-        document.getElementById('tableContainer').style.display = 'none';
-        document.getElementById('paginationContainer').style.display = 'none';
-        document.getElementById('bulkActions').style.display = 'none';
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+        if (emptyState) emptyState.style.display = 'block';
+        if (tableContainer) tableContainer.style.display = 'none';
+        if (paginationContainer) paginationContainer.style.display = 'none';
+        if (bulkActions) bulkActions.style.display = 'none';
         return;
     }
     
-    activities.forEach((activity, index) => {
+    if (emptyState) emptyState.style.display = 'none';
+    if (tableContainer) tableContainer.style.display = 'block';
+    if (paginationContainer) paginationContainer.style.display = 'flex';
+    
+    categories.forEach((category, index) => {
         const row = document.createElement('tr');
-        row.id = `activity-row-${activity.id}`;
-        row.setAttribute('style', `animation-delay: ${index * 0.05}s`);
+        row.id = `category-row-${category.id}`;
+        row.style.animationDelay = `${index * 0.05}s`;
         
-        const isSelected = selectedActivities.has(activity.id);
-        const statusClass = activity.is_active ? 'status-active' : 'status-inactive';
-        const statusText = activity.is_active ? 'Actif' : 'Inactif';
+        const isSelected = selectedCategories.has(category.id);
+        const statusClass = category.is_active ? 'status-active' : 'status-inactive';
+        const statusText = category.is_active ? 'Actif' : 'Inactif';
+        const typeName = category?.type?.name ?? 'Non défini';
         
         row.innerHTML = `
             <td>
                 <div class="form-check">
                     <input class="form-check-input row-checkbox" type="checkbox" 
-                           value="${activity.id}" ${isSelected ? 'checked' : ''}
-                           onchange="toggleActivitySelection(${activity.id}, this.checked)">
+                           value="${category.id}" ${isSelected ? 'checked' : ''}
+                           onchange="toggleCategorySelection(${category.id}, this.checked)">
                 </div>
             </td>
-            <td class="activity-name-cell">
-                <div class="activity-name-modern">
-                    <div class="activity-icon-modern">
-                        <i class="fas fa-running"></i>
+            <td class="category-name-cell">
+                <div class="category-name-modern">
+                    <div class="category-icon-modern">
+                        <i class="fas fa-tag"></i>
                     </div>
                     <div>
-                        <div class="activity-name-text">${activity.name}</div>
-                        <div class="activity-slug-text text-muted small">${activity.slug || 'Pas de slug'}</div>
+                        <div class="category-name-text">${escapeHtml(category.name)}</div>
+                        <small class="text-muted">${escapeHtml(category.slug || '')}</small>
                     </div>
                 </div>
             </td>
-            <td>
-                <div class="categorie-badge">
-                    <i class="fas fa-tag me-1"></i>
-                    ${activity.categorie?.name || 'Non catégorisé'}
+            <td class="category-name-cell">
+                <div class="category-name-modern">
+                    <div>
+                        <div class="category-name-text">${escapeHtml(typeName)}</div>
+                    </div>
                 </div>
             </td>
             <td>
                 <span class="status-badge ${statusClass}">${statusText}</span>
             </td>
-            <td>
-                <div class="activity-actions-modern">
+            <td style="text-align: center;">
+                <div class="category-actions-modern">
                     <button class="action-btn-modern status-btn-modern" title="Changer le statut" 
-                            onclick="toggleActivityStatus(${activity.id})">
+                            onclick="toggleCategoryStatus(${category.id})">
                         <i class="fas fa-power-off"></i>
                     </button>
+                    <a href="{{ route('categories.show', '') }}/${category.id}" 
+                       class="action-btn-modern view-btn-modern" title="Voir détails">
+                        <i class="fas fa-eye"></i>
+                    </a>
                     <button class="action-btn-modern edit-btn-modern" title="Modifier" 
-                            onclick="openEditModal(${activity.id})">
+                            onclick="openEditModal(${category.id})">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button class="action-btn-modern delete-btn-modern" title="Supprimer" 
-                            onclick="showDeleteConfirmation(${activity.id})">
+                            onclick="showDeleteConfirmation(${category.id})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -315,12 +394,7 @@ const renderActivities = (activities) => {
         tbody.appendChild(row);
     });
     
-    // Update bulk actions
     updateBulkActions();
-    
-    document.getElementById('emptyState').style.display = 'none';
-    document.getElementById('tableContainer').style.display = 'block';
-    document.getElementById('paginationContainer').style.display = 'flex';
 };
 
 // Render pagination
@@ -328,32 +402,20 @@ const renderPagination = (response) => {
     const pagination = document.getElementById('pagination');
     const paginationInfo = document.getElementById('paginationInfo');
     
-    // Update pagination info
+    if (!pagination || !paginationInfo) return;
+    
     const start = (response.current_page - 1) * response.per_page + 1;
     const end = Math.min(response.current_page * response.per_page, response.total);
-    paginationInfo.textContent = `Affichage de ${start} à ${end} sur ${response.total} activités`;
+    paginationInfo.textContent = `Affichage de ${start} à ${end} sur ${response.total} catégories`;
     
-    // Render pagination links
     let paginationHtml = '';
     
-    // Previous button
     if (response.prev_page_url) {
-        paginationHtml += `
-            <li class="page-item">
-                <a class="page-link-modern" href="#" onclick="changePage(${response.current_page - 1})">
-                    <i class="fas fa-chevron-left"></i>
-                </a>
-            </li>
-        `;
+        paginationHtml += `<li class="page-item"><a class="page-link-modern" href="#" onclick="changePage(${response.current_page - 1})"><i class="fas fa-chevron-left"></i></a></li>`;
     } else {
-        paginationHtml += `
-            <li class="page-item disabled">
-                <span class="page-link-modern"><i class="fas fa-chevron-left"></i></span>
-            </li>
-        `;
+        paginationHtml += `<li class="page-item disabled"><span class="page-link-modern"><i class="fas fa-chevron-left"></i></span></li>`;
     }
     
-    // Page numbers
     const maxPages = 5;
     let startPage = Math.max(1, response.current_page - Math.floor(maxPages / 2));
     let endPage = Math.min(response.last_page, startPage + maxPages - 1);
@@ -364,35 +426,16 @@ const renderPagination = (response) => {
     
     for (let i = startPage; i <= endPage; i++) {
         if (i === response.current_page) {
-            paginationHtml += `
-                <li class="page-item active">
-                    <span class="page-link-modern">${i}</span>
-                </li>
-            `;
+            paginationHtml += `<li class="page-item active"><span class="page-link-modern">${i}</span></li>`;
         } else {
-            paginationHtml += `
-                <li class="page-item">
-                    <a class="page-link-modern" href="#" onclick="changePage(${i})">${i}</a>
-                </li>
-            `;
+            paginationHtml += `<li class="page-item"><a class="page-link-modern" href="#" onclick="changePage(${i})">${i}</a></li>`;
         }
     }
     
-    // Next button
     if (response.next_page_url) {
-        paginationHtml += `
-            <li class="page-item">
-                <a class="page-link-modern" href="#" onclick="changePage(${response.current_page + 1})">
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-            </li>
-        `;
+        paginationHtml += `<li class="page-item"><a class="page-link-modern" href="#" onclick="changePage(${response.current_page + 1})"><i class="fas fa-chevron-right"></i></a></li>`;
     } else {
-        paginationHtml += `
-            <li class="page-item disabled">
-                <span class="page-link-modern"><i class="fas fa-chevron-right"></i></span>
-            </li>
-        `;
+        paginationHtml += `<li class="page-item disabled"><span class="page-link-modern"><i class="fas fa-chevron-right"></i></span></li>`;
     }
     
     pagination.innerHTML = paginationHtml;
@@ -401,15 +444,15 @@ const renderPagination = (response) => {
 // Change page
 const changePage = (page) => {
     currentPage = page;
-    loadActivities(page, currentFilters);
+    loadCategories(page, currentFilters);
 };
 
-// Toggle activity selection
-const toggleActivitySelection = (activityId, isChecked) => {
+// Toggle category selection
+const toggleCategorySelection = (categoryId, isChecked) => {
     if (isChecked) {
-        selectedActivities.add(activityId);
+        selectedCategories.add(categoryId);
     } else {
-        selectedActivities.delete(activityId);
+        selectedCategories.delete(categoryId);
     }
     
     updateSelectAllCheckbox();
@@ -424,7 +467,7 @@ const updateSelectAllCheckbox = () => {
         const allChecked = allCheckboxes.length > 0 && 
             Array.from(allCheckboxes).every(cb => cb.checked);
         selectAllCheckbox.checked = allChecked;
-        selectAllCheckbox.indeterminate = !allChecked && selectedActivities.size > 0;
+        selectAllCheckbox.indeterminate = !allChecked && selectedCategories.size > 0;
     }
 };
 
@@ -433,26 +476,26 @@ const updateBulkActions = () => {
     const bulkActions = document.getElementById('bulkActions');
     const selectedCount = document.getElementById('selectedCount');
     
-    if (selectedActivities.size > 0) {
+    if (selectedCategories.size > 0 && bulkActions) {
         bulkActions.style.display = 'block';
-        selectedCount.textContent = `${selectedActivities.size} activité(s) sélectionnée(s)`;
-    } else {
+        if (selectedCount) selectedCount.textContent = `${selectedCategories.size} catégorie(s) sélectionnée(s)`;
+    } else if (bulkActions) {
         bulkActions.style.display = 'none';
     }
 };
 
-// Select all activities
-const selectAllActivities = (isChecked) => {
+// Select all categories
+const selectAllCategories = (isChecked) => {
     const checkboxes = document.querySelectorAll('.row-checkbox');
     
     checkboxes.forEach(checkbox => {
-        const activityId = parseInt(checkbox.value);
+        const categoryId = parseInt(checkbox.value);
         checkbox.checked = isChecked;
         
         if (isChecked) {
-            selectedActivities.add(activityId);
+            selectedCategories.add(categoryId);
         } else {
-            selectedActivities.delete(activityId);
+            selectedCategories.delete(categoryId);
         }
     });
     
@@ -461,190 +504,167 @@ const selectAllActivities = (isChecked) => {
 
 // Apply bulk action
 const applyBulkAction = () => {
-    const action = document.getElementById('bulkActionSelect').value;
+    const action = document.getElementById('bulkActionSelect')?.value;
     
-    if (!action || selectedActivities.size === 0) {
-        showAlert('warning', 'Veuillez sélectionner une action et des activités');
+    if (!action || selectedCategories.size === 0) {
+        showAlert('warning', 'Veuillez sélectionner une action et des catégories');
         return;
     }
     
     if (action === 'delete') {
-        if (!confirm(`Êtes-vous sûr de vouloir supprimer ${selectedActivities.size} activité(s) ?`)) {
+        if (!confirm(`Êtes-vous sûr de vouloir supprimer ${selectedCategories.size} catégorie(s) ?`)) {
             return;
         }
     }
     
     const data = {
-        ids: Array.from(selectedActivities),
+        ids: Array.from(selectedCategories),
         action: action
     };
     
     $.ajax({
-        url: '{{ route("activities.bulk-update") }}',
+        url: '{{ route("categories.bulk-update") }}',
         type: 'POST',
         data: data,
         dataType: 'json',
         success: function(response) {
             if (response.success) {
                 showAlert('success', response.message);
-                selectedActivities.clear();
-                loadActivities(currentPage, currentFilters);
+                selectedCategories.clear();
+                loadCategories(currentPage, currentFilters);
+                loadStatistics();
             } else {
                 showAlert('danger', response.message);
             }
         },
-        error: function(xhr, status, error) {
-            if (xhr.status === 422) {
-                const errors = xhr.responseJSON.errors;
-                let errorMessage = 'Veuillez corriger les erreurs suivantes:<br>';
-                for (const field in errors) {
-                    errorMessage += `- ${errors[field].join('<br>')}<br>`;
-                }
-                showAlert('danger', errorMessage);
-            } else {
-                showAlert('danger', 'Erreur lors de l\'opération: ' + error);
-            }
+        error: function(xhr) {
+            showAlert('danger', xhr.responseJSON?.message || 'Erreur lors de l\'opération');
         }
     });
 };
 
-// Toggle activity status
-const toggleActivityStatus = (activityId) => {
-    if (!confirm('Êtes-vous sûr de vouloir changer le statut de cette activité ?')) {
+// Toggle category status
+const toggleCategoryStatus = (categoryId) => {
+    if (!confirm('Êtes-vous sûr de vouloir changer le statut de cette catégorie ?')) {
         return;
     }
     
     $.ajax({
-        url: `/activities/${activityId}/toggle-status`,
+        url: `/categories/${categoryId}/toggle-status`,
         type: 'POST',
         dataType: 'json',
         success: function(response) {
             if (response.success) {
                 showAlert('success', response.message);
-                loadActivities(currentPage, currentFilters);
+                loadCategories(currentPage, currentFilters);
+                loadStatistics();
             } else {
                 showAlert('danger', response.message);
             }
         },
-        error: function(xhr, status, error) {
-            showAlert('danger', 'Erreur lors du changement de statut: ' + error);
+        error: function(xhr) {
+            showAlert('danger', xhr.responseJSON?.message || 'Erreur lors du changement de statut');
         }
     });
 };
 
 // Show delete confirmation modal
-const showDeleteConfirmation = (activityId) => {
-    const activity = allActivities.find(a => a.id === activityId);
+const showDeleteConfirmation = (categoryId) => {
+    const category = allCategories.find(c => c.id === categoryId);
     
-    if (!activity) {
-        showAlert('danger', 'Activité non trouvée');
+    if (!category) {
+        showAlert('danger', 'Catégorie non trouvée');
         return;
     }
     
-    activityToDelete = activity;
+    categoryToDelete = category;
     
-    document.getElementById('activityToDeleteInfo').innerHTML = `
-        <div class="activity-info">
-            <div class="activity-info-icon">
-                <i class="fas fa-running fa-2x"></i>
+    const infoContainer = document.getElementById('categoryToDeleteInfo');
+    if (infoContainer) {
+        infoContainer.innerHTML = `
+            <div class="category-info">
+                <div class="category-info-icon">
+                    <i class="fas fa-tag fa-2x"></i>
+                </div>
+                <div>
+                    <div class="category-info-name">${escapeHtml(category.name)}</div>
+                    <div class="category-info-slug">${category.slug ? 'Slug: ' + escapeHtml(category.slug) : ''}</div>
+                </div>
             </div>
-            <div>
-                <div class="activity-info-name">${activity.name}</div>
-                <div class="activity-info-categorie">Catégorie: ${activity.categorie?.name || 'Non catégorisé'}</div>
-                <div class="activity-info-slug">${activity.slug ? 'Slug: ' + activity.slug : ''}</div>
+            <div class="row small text-muted">
+                <div class="col-6">
+                    <div><strong>Sites web:</strong> ${category.websites_count || 0}</div>
+                    <div><strong>Statut:</strong> ${category.is_active ? 'Actif' : 'Inactif'}</div>
+                </div>
+                <div class="col-6">
+                    <div><strong>Templates:</strong> ${category.templates_count || 0}</div>
+                    <div><strong>Total:</strong> ${(category.websites_count || 0) + (category.templates_count || 0)}</div>
+                </div>
             </div>
-        </div>
-        <div class="row small text-muted">
-            <div class="col-6">
-                <div><strong>Participants:</strong> ${activity.participants_count || 0}</div>
-                <div><strong>Réservations:</strong> ${activity.bookings_count || 0}</div>
-                <div><strong>Durée:</strong> ${activity.duration || 'N/A'} min</div>
-            </div>
-            <div class="col-6">
-                <div><strong>Prix:</strong> ${activity.price ? activity.price + ' €' : 'Gratuit'}</div>
-                <div><strong>Statut:</strong> ${activity.is_active ? 'Actif' : 'Inactif'}</div>
-                <div><strong>Lieu:</strong> ${activity.location || 'N/A'}</div>
-            </div>
-        </div>
-    `;
+        `;
+    }
     
-    // Reset delete button state
     const deleteBtn = document.getElementById('confirmDeleteBtn');
-    deleteBtn.innerHTML = `
-        <span class="btn-text">
-            <i class="fas fa-trash me-2"></i>Supprimer définitivement
-        </span>
-    `;
-    deleteBtn.disabled = false;
+    if (deleteBtn) {
+        deleteBtn.innerHTML = `<i class="fas fa-trash me-2"></i>Supprimer définitivement`;
+        deleteBtn.disabled = false;
+    }
     
-    // Show modal
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
     deleteModal.show();
 };
 
-// Delete activity
-const deleteActivity = () => {
-    if (!activityToDelete) {
-        showAlert('danger', 'Aucune activité à supprimer');
+// Delete category
+const deleteCategory = () => {
+    if (!categoryToDelete) {
+        showAlert('danger', 'Aucune catégorie à supprimer');
         return;
     }
     
-    const activityId = activityToDelete.id;
+    const categoryId = categoryToDelete.id;
     const deleteBtn = document.getElementById('confirmDeleteBtn');
     
-    // Show processing animation
-    deleteBtn.innerHTML = `
-        <span class="btn-text" style="display: none;">
-            <i class="fas fa-trash me-2"></i>Supprimer définitivement
-        </span>
-        <div class="spinner-border spinner-border-sm text-light" role="status">
-            <span class="visually-hidden">Suppression...</span>
-        </div>
-        Suppression en cours...
-    `;
-    deleteBtn.disabled = true;
+    if (deleteBtn) {
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Suppression en cours...`;
+    }
     
-    // Add deleting animation to table row
-    const row = document.getElementById(`activity-row-${activityId}`);
+    const row = document.getElementById(`category-row-${categoryId}`);
     if (row) {
         row.classList.add('deleting-row');
     }
     
-    // Send DELETE request
     $.ajax({
-        url: `/activities/${activityId}`,
+        url: `/categories/${categoryId}`,
         type: 'DELETE',
         dataType: 'json',
         success: function(response) {
-            // Hide modal
-            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
-            deleteModal.hide();
+            const modalElement = document.getElementById('deleteConfirmationModal');
+            safelyHideModal(modalElement);
             
             if (response.success) {
-                // Remove activity from array
-                allActivities = allActivities.filter(a => a.id !== activityId);
-                selectedActivities.delete(activityId);
+                allCategories = allCategories.filter(c => c.id !== categoryId);
+                selectedCategories.delete(categoryId);
+                loadStatistics();
+                showAlert('success', response.message || 'Catégorie supprimée avec succès !');
                 
-                // Show success message
-                showAlert('success', response.message || 'Activité supprimée avec succès !');
-                
-                // Remove row after animation
                 if (row) {
                     setTimeout(() => {
                         row.remove();
-                        
-                        // Check if table is now empty
-                        const tbody = document.getElementById('activitiesTableBody');
-                        if (tbody.children.length === 0) {
-                            document.getElementById('emptyState').style.display = 'block';
-                            document.getElementById('tableContainer').style.display = 'none';
-                            document.getElementById('paginationContainer').style.display = 'none';
+                        const tbody = document.getElementById('categoriesTableBody');
+                        if (tbody && tbody.children.length === 0) {
+                            const emptyState = document.getElementById('emptyState');
+                            const tableContainer = document.getElementById('tableContainer');
+                            const paginationContainer = document.getElementById('paginationContainer');
+                            
+                            if (emptyState) emptyState.style.display = 'block';
+                            if (tableContainer) tableContainer.style.display = 'none';
+                            if (paginationContainer) paginationContainer.style.display = 'none';
                         }
                     }, 300);
                 } else {
-                    // Reload table
                     setTimeout(() => {
-                        loadActivities(currentPage, currentFilters);
+                        loadCategories(currentPage, currentFilters);
                     }, 500);
                 }
             } else {
@@ -652,370 +672,96 @@ const deleteActivity = () => {
                 showAlert('danger', response.message || 'Erreur lors de la suppression');
             }
         },
-        error: function(xhr, status, error) {
-            // Hide modal
-            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
-            deleteModal.hide();
+        error: function(xhr) {
+            const modalElement = document.getElementById('deleteConfirmationModal');
+            safelyHideModal(modalElement);
             
-            // Remove deleting animation
-            const row = document.getElementById(`activity-row-${activityId}`);
-            if (row) {
-                row.classList.remove('deleting-row');
-            }
+            if (row) row.classList.remove('deleting-row');
             
             if (xhr.status === 404) {
-                showAlert('danger', 'Activité non trouvée.');
-                loadActivities(currentPage, currentFilters);
+                showAlert('danger', 'Catégorie non trouvée.');
+                loadCategories(currentPage, currentFilters);
             } else {
-                showAlert('danger', 'Erreur lors de la suppression: ' + error);
+                showAlert('danger', xhr.responseJSON?.message || 'Erreur lors de la suppression');
             }
         },
         complete: function() {
-            activityToDelete = null;
+            categoryToDelete = null;
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash me-2"></i>Supprimer définitivement';
+            }
         }
     });
 };
 
-// GENERATION ET VERIFICATION DU SLUG (CREATE)
-
-// Générer le slug à partir du nom
-const generateSlugFromName = () => {
-    const nameInput = document.getElementById('createActivityName');
-    const slugInput = document.getElementById('createActivitySlug');
+// Open edit modal
+const openEditModal = (categoryId) => {
+    const category = allCategories.find(c => c.id === categoryId);
     
-    if (nameInput && slugInput) {
-        const name = nameInput.value.trim();
-        let slug = name
-            .toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Supprimer les accents
-            .replace(/[^\w\s]/gi, '') // Supprimer les caractères spéciaux
-            .replace(/\s+/g, '-') // Remplacer les espaces par des tirets
-            .replace(/--+/g, '-') // Supprimer les tirets multiples
-            .replace(/^-|-$/g, ''); // Supprimer les tirets au début et à la fin
-        
-        slugInput.value = slug;
-        
-        // Vérifier la disponibilité du slug si non vide
-        if (slug.length > 0) {
-            checkSlugAvailability();
-        } else {
-            resetSlugStatus();
-            document.getElementById('submitActivityBtn').disabled = true;
-        }
-    }
+    if (!category) return;
+    
+    const idInput = document.getElementById('editCategoryId');
+    const nameInput = document.getElementById('editCategoryName');
+    const descriptionInput = document.getElementById('editCategoryDescription');
+    const activeCheckbox = document.getElementById('editCategoryIsActive');
+    
+    if (idInput) idInput.value = category.id;
+    if (nameInput) nameInput.value = category.name;
+    if (descriptionInput) descriptionInput.value = category.description || '';
+    if (activeCheckbox) activeCheckbox.checked = category.is_active;
+    
+    const editModal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
+    editModal.show();
 };
 
-// Vérifier la disponibilité du slug (CREATE)
-const checkSlugAvailability = () => {
-    const slugInput = document.getElementById('createActivitySlug');
-    const slug = slugInput ? slugInput.value.trim() : '';
-    
-    if (!slug) {
-        resetSlugStatus();
+// Store category
+const storeCategory = () => {
+    if (isSubmitting) {
+        showAlert('warning', 'Création en cours, veuillez patienter...');
         return;
     }
     
-    // Afficher le statut de vérification
-    showSlugStatus('checking');
-    
-    $.ajax({
-        url: '{{ route("activities.check-slug") }}',
-        type: 'GET',
-        data: { slug: slug },
-        dataType: 'json',
-        success: function(response) {
-            if (response.available) {
-                showSlugStatus('available');
-                document.getElementById('submitActivityBtn').disabled = false;
-            } else {
-                showSlugStatus('unavailable');
-                document.getElementById('submitActivityBtn').disabled = true;
-            }
-        },
-        error: function(xhr) {
-            console.error('Error checking slug:', xhr.responseText);
-            showSlugStatus('unavailable');
-            document.getElementById('submitActivityBtn').disabled = true;
-        }
-    });
-};
-
-// Afficher le statut du slug (CREATE)
-const showSlugStatus = (status) => {
-    // Cacher tous les messages
-    document.getElementById('slugCheckingText')?.classList.add('d-none');
-    document.getElementById('slugAvailableText')?.classList.add('d-none');
-    document.getElementById('slugUnavailableText')?.classList.add('d-none');
-    
-    // Afficher le message approprié
-    switch(status) {
-        case 'checking':
-            document.getElementById('slugCheckingText')?.classList.remove('d-none');
-            break;
-        case 'available':
-            document.getElementById('slugAvailableText')?.classList.remove('d-none');
-            break;
-        case 'unavailable':
-            document.getElementById('slugUnavailableText')?.classList.remove('d-none');
-            break;
-    }
-};
-
-// Réinitialiser le statut du slug (CREATE)
-const resetSlugStatus = () => {
-    showSlugStatus('checking');
-    document.getElementById('slugCheckingText')?.classList.add('d-none');
-    document.getElementById('slugAvailableText')?.classList.add('d-none');
-    document.getElementById('slugUnavailableText')?.classList.add('d-none');
-};
-
-// GENERATION ET VERIFICATION DU SLUG (EDIT)
-
-// Générer le slug à partir du nom pour l'édition
-const generateEditSlugFromName = () => {
-    const nameInput = document.getElementById('editActivityName');
-    const slugInput = document.getElementById('editActivitySlug');
-    
-    if (nameInput && slugInput) {
-        const name = nameInput.value.trim();
-        let slug = name
-            .toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Supprimer les accents
-            .replace(/[^\w\s]/gi, '') // Supprimer les caractères spéciaux
-            .replace(/\s+/g, '-') // Remplacer les espaces par des tirets
-            .replace(/--+/g, '-') // Supprimer les tirets multiples
-            .replace(/^-|-$/g, ''); // Supprimer les tirets au début et à la fin
-        
-        slugInput.value = slug;
-        
-        // Vérifier la disponibilité du slug si non vide
-        if (slug.length > 0) {
-            checkEditSlugAvailability();
-        } else {
-            resetEditSlugStatus();
-        }
-    }
-};
-
-// Vérifier la disponibilité du slug (EDIT)
-const checkEditSlugAvailability = () => {
-    const slugInput = document.getElementById('editActivitySlug');
-    const slug = slugInput ? slugInput.value.trim() : '';
-    const activityId = document.getElementById('editActivityId')?.value || null;
-    
-    if (!slug) {
-        resetEditSlugStatus();
-        return;
-    }
-    
-    // Afficher le statut de vérification
-    showEditSlugStatus('checking');
-    
-    $.ajax({
-        url: '{{ route("activities.check-slug") }}',
-        type: 'GET',
-        data: { 
-            slug: slug,
-            activity_id: activityId // Envoyer l'ID de l'activité en cours d'édition
-        },
-        dataType: 'json',
-        success: function(response) {
-            if (response.available) {
-                showEditSlugStatus('available');
-            } else {
-                showEditSlugStatus('unavailable');
-            }
-        },
-        error: function(xhr) {
-            console.error('Error checking edit slug:', xhr.responseText);
-            showEditSlugStatus('unavailable');
-        }
-    });
-};
-
-// Afficher le statut du slug (EDIT)
-const showEditSlugStatus = (status) => {
-    // Cacher tous les messages
-    document.getElementById('editSlugCheckingText')?.classList.add('d-none');
-    document.getElementById('editSlugAvailableText')?.classList.add('d-none');
-    document.getElementById('editSlugUnavailableText')?.classList.add('d-none');
-    
-    // Afficher le message approprié
-    switch(status) {
-        case 'checking':
-            document.getElementById('editSlugCheckingText')?.classList.remove('d-none');
-            break;
-        case 'available':
-            document.getElementById('editSlugAvailableText')?.classList.remove('d-none');
-            break;
-        case 'unavailable':
-            document.getElementById('editSlugUnavailableText')?.classList.remove('d-none');
-            break;
-    }
-};
-
-// Réinitialiser le statut du slug (EDIT)
-const resetEditSlugStatus = () => {
-    showEditSlugStatus('checking');
-    document.getElementById('editSlugCheckingText')?.classList.add('d-none');
-    document.getElementById('editSlugAvailableText')?.classList.add('d-none');
-    document.getElementById('editSlugUnavailableText')?.classList.add('d-none');
-};
-
-// Réinitialiser le formulaire de création
-const resetCreateForm = () => {
-    const form = document.getElementById('createActivityForm');
-    if (form) {
-        form.reset();
-    }
-    
-    // Réinitialiser le statut du slug
-    resetSlugStatus();
-    
-    // Réactiver le bouton de soumission
-    const submitBtn = document.getElementById('submitActivityBtn');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.classList.remove('btn-processing');
-        submitBtn.innerHTML = `
-            <span class="btn-text">
-                <i class="fas fa-save me-2"></i>Créer l'activité
-            </span>
-        `;
-    }
-};
-
-// Réinitialiser le formulaire d'édition
-const resetEditForm = () => {
-    const form = document.getElementById('editActivityForm');
-    if (form) {
-        form.reset();
-    }
-    
-    // Réinitialiser le statut du slug
-    resetEditSlugStatus();
-    
-    // Réactiver le bouton de soumission
-    const updateBtn = document.getElementById('updateActivityBtn');
-    if (updateBtn) {
-        updateBtn.classList.remove('btn-processing');
-        updateBtn.innerHTML = `
-            <span class="btn-text">
-                <i class="fas fa-save me-2"></i>Enregistrer les modifications
-            </span>
-        `;
-        updateBtn.disabled = false;
-    }
-    
-    editingActivityId = null;
-};
-
-// Open edit modal - Version simplifiée
-const openEditModal = (activityId) => {
-    const activity = allActivities.find(a => a.id === activityId);
-    
-    if (activity) {
-        editingActivityId = activityId;
-        
-        // Remplir les champs du formulaire (seulement nom, catégorie, slug, statut)
-        document.getElementById('editActivityId').value = activity.id;
-        document.getElementById('editActivityName').value = activity.name;
-        document.getElementById('editActivityCategorieId').value = activity.categorie_id;
-        document.getElementById('editActivitySlug').value = activity.slug || '';
-        document.getElementById('editActivityIsActive').checked = activity.is_active;
-        
-        // Réinitialiser le statut du slug
-        resetEditSlugStatus();
-        
-        // Afficher la modal
-        new bootstrap.Modal(document.getElementById('editActivityModal')).show();
-    }
-};
-
-// Store activity
-const storeActivity = () => {
-    const form = document.getElementById('createActivityForm');
-    const submitBtn = document.getElementById('submitActivityBtn');
+    const form = document.getElementById('createCategoryForm');
+    const submitBtn = document.getElementById('submitCategoryBtn');
     
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
     }
     
-    // Vérifier que le slug est disponible
-    const slugAvailable = !document.getElementById('slugUnavailableText')?.classList.contains('d-none');
-    if (!slugAvailable) {
-        showAlert('warning', 'Veuillez vérifier la disponibilité du slug avant de continuer.');
-        return;
-    }
-    
-    // Show processing animation
-    submitBtn.classList.add('btn-processing');
-    submitBtn.innerHTML = `
-        <span class="btn-text" style="display: none;">
-            <i class="fas fa-save me-2"></i>Créer l'activité
-        </span>
-        <div class="spinner-border spinner-border-sm text-light" role="status">
-            <span class="visually-hidden">Chargement...</span>
-        </div>
-        Création en cours...
-    `;
+    isSubmitting = true;
+    const originalButtonHtml = submitBtn.innerHTML;
     submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Création en cours...`;
     
     const formData = new FormData(form);
-    
-    // Convert FormData to object
     const data = {};
     for (let [key, value] of formData.entries()) {
         data[key] = value;
     }
-    
-    // Convert checkbox value to boolean
-    data.is_active = form.querySelector('#createActivityIsActive').checked;
+    data.is_active = form.querySelector('#createCategoryIsActive')?.checked || false;
     
     $.ajax({
-        url: '{{ route("activities.store") }}',
+        url: '{{ route("categories.store") }}',
         type: 'POST',
         data: data,
         dataType: 'json',
         success: function(response) {
-            // Reset button state
-            submitBtn.classList.remove('btn-processing');
-            submitBtn.innerHTML = `
-                <span class="btn-text">
-                    <i class="fas fa-save me-2"></i>Créer l'activité
-                </span>
-            `;
-            submitBtn.disabled = false;
-            
             if (response.success) {
-                // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('createActivityModal'));
-                modal.hide();
+                const modalElement = document.getElementById('createCategoryModal');
+                safelyHideModal(modalElement);
                 
-                // Reset form
-                resetCreateForm();
-                
-                // Reload activities
-                loadActivities(1, currentFilters);
-                
-                // Show success message
-                showAlert('success', 'Activité créée avec succès !');
+                form.reset();
+                loadCategories(1, currentFilters);
+                loadStatistics();
+                showAlert('success', response.message || 'Catégorie créée avec succès !');
             } else {
                 showAlert('danger', response.message || 'Erreur lors de la création');
             }
         },
-        error: function(xhr, status, error) {
-            // Reset button state
-            submitBtn.classList.remove('btn-processing');
-            submitBtn.innerHTML = `
-                <span class="btn-text">
-                    <i class="fas fa-save me-2"></i>Créer l'activité
-                </span>
-            `;
-            submitBtn.disabled = false;
-            
-            if (xhr.status === 422) {
+        error: function(xhr) {
+            if (xhr.status === 422 && xhr.responseJSON?.errors) {
                 const errors = xhr.responseJSON.errors;
                 let errorMessage = 'Veuillez corriger les erreurs suivantes:<br>';
                 for (const field in errors) {
@@ -1023,90 +769,71 @@ const storeActivity = () => {
                 }
                 showAlert('danger', errorMessage);
             } else {
-                showAlert('danger', 'Erreur lors de la création: ' + error);
+                showAlert('danger', xhr.responseJSON?.message || 'Erreur lors de la création');
+            }
+        },
+        complete: function() {
+            isSubmitting = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalButtonHtml;
             }
         }
     });
 };
 
-// Update activity
-const updateActivity = () => {
-    const form = document.getElementById('editActivityForm');
-    const submitBtn = document.getElementById('updateActivityBtn');
-    const activityId = document.getElementById('editActivityId').value;
+// Update category
+const updateCategory = () => {
+    const form = document.getElementById('editCategoryForm');
+    const submitBtn = document.getElementById('updateCategoryBtn');
+    const categoryId = document.getElementById('editCategoryId')?.value;
     
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
     }
     
-    // Show processing animation
-    submitBtn.classList.add('btn-processing');
-    submitBtn.innerHTML = `
-        <span class="btn-text" style="display: none;">
-            <i class="fas fa-save me-2"></i>Enregistrer les modifications
-        </span>
-        <div class="spinner-border spinner-border-sm text-light" role="status">
-            <span class="visually-hidden">Chargement...</span>
-        </div>
-        Enregistrement...
-    `;
-    submitBtn.disabled = true;
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement en cours...`;
+    }
     
     const formData = new FormData(form);
-    
-    // Convert FormData to object
     const data = {};
     for (let [key, value] of formData.entries()) {
         data[key] = value;
     }
-    
     data._method = 'PUT';
-    data.is_active = form.querySelector('#editActivityIsActive').checked;
+    data.is_active = form.querySelector('#editCategoryIsActive')?.checked || false;
     
     $.ajax({
-        url: `/activities/${activityId}`,
+        url: `/categories/${categoryId}`,
         type: 'POST',
         data: data,
         dataType: 'json',
         success: function(response) {
-            // Reset button state
-            submitBtn.classList.remove('btn-processing');
-            submitBtn.innerHTML = `
-                <span class="btn-text">
-                    <i class="fas fa-save me-2"></i>Enregistrer les modifications
-                </span>
-            `;
-            submitBtn.disabled = false;
-            
             if (response.success) {
-                // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editActivityModal'));
-                modal.hide();
+                const modalElement = document.getElementById('editCategoryModal');
+                safelyHideModal(modalElement);
                 
-                // Reset form
-                resetEditForm();
-                
-                // Reload activities
-                loadActivities(currentPage, currentFilters);
-                
-                // Show success message
-                showAlert('success', 'Activité mise à jour avec succès !');
+                loadCategories(currentPage, currentFilters);
+                loadStatistics();
+                showAlert('success', response.message || 'Catégorie mise à jour avec succès !');
             } else {
                 showAlert('danger', response.message || 'Erreur lors de la mise à jour');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
+                }
             }
         },
-        error: function(xhr, status, error) {
-            // Reset button state
-            submitBtn.classList.remove('btn-processing');
-            submitBtn.innerHTML = `
-                <span class="btn-text">
-                    <i class="fas fa-save me-2"></i>Enregistrer les modifications
-                </span>
-            `;
-            submitBtn.disabled = false;
+        error: function(xhr) {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
+            }
             
-            if (xhr.status === 422) {
+            if (xhr.status === 422 && xhr.responseJSON?.errors) {
                 const errors = xhr.responseJSON.errors;
                 let errorMessage = 'Veuillez corriger les erreurs suivantes:<br>';
                 for (const field in errors) {
@@ -1114,7 +841,7 @@ const updateActivity = () => {
                 }
                 showAlert('danger', errorMessage);
             } else {
-                showAlert('danger', 'Erreur lors de la mise à jour: ' + error);
+                showAlert('danger', xhr.responseJSON?.message || 'Erreur lors de la mise à jour');
             }
         }
     });
@@ -1123,57 +850,58 @@ const updateActivity = () => {
 // Update advanced stats
 const updateAdvancedStats = (stats) => {
     const advancedStatsContainer = document.getElementById('advancedStats');
+    if (!advancedStatsContainer) return;
     
     const html = `
         <div class="advanced-stat-card">
             <div class="advanced-stat-title">
                 <i class="fas fa-star"></i>
-                Activité la plus populaire
+                Catégorie la plus utilisée
             </div>
             <div class="advanced-stat-value">
-                ${stats.most_popular ? stats.most_popular.name : 'N/A'}
+                ${stats.most_used ? escapeHtml(stats.most_used.name) : 'N/A'}
             </div>
             <div class="advanced-stat-subtext">
-                ${stats.most_popular ? stats.most_popular.participants_count + ' participants' : ''}
+                ${stats.most_used ? stats.most_used.websites_count + ' sites + ' + stats.most_used.templates_count + ' templates' : ''}
             </div>
         </div>
         
         <div class="advanced-stat-card">
             <div class="advanced-stat-title">
                 <i class="fas fa-chart-line"></i>
-                Répartition par catégorie
+                Utilisation des catégories
             </div>
             <div class="advanced-stat-value">
-                ${stats.activities_by_categorie?.length || 0}
+                ${stats.categories_with_websites || 0} / ${stats.total_categories || 0}
             </div>
             <div class="advanced-stat-subtext">
-                Catégories différentes
+                Catégories avec sites web
             </div>
         </div>
         
         <div class="advanced-stat-card">
             <div class="advanced-stat-title">
-                <i class="fas fa-euro-sign"></i>
-                Chiffre d'affaires
+                <i class="fas fa-paint-brush"></i>
+                Templates par catégorie
             </div>
             <div class="advanced-stat-value">
-                ${formatNumber(stats.total_revenue || 0)} €
+                ${stats.total_templates_in_categories || 0}
             </div>
             <div class="advanced-stat-subtext">
-                Total généré
+                Templates dans toutes les catégories
             </div>
         </div>
         
         <div class="advanced-stat-card">
             <div class="advanced-stat-title">
                 <i class="fas fa-exclamation-circle"></i>
-                Activités sans participants
+                Catégories inutilisées
             </div>
             <div class="advanced-stat-value">
-                ${stats.activities_without_participants || 0}
+                ${stats.categories_without_items || 0}
             </div>
             <div class="advanced-stat-subtext">
-                Aucun participant
+                Sans sites ni templates
             </div>
         </div>
     `;
@@ -1183,24 +911,31 @@ const updateAdvancedStats = (stats) => {
 
 // Show loading state
 const showLoading = () => {
-    document.getElementById('loadingSpinner').style.display = 'flex';
-    document.getElementById('tableContainer').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'none';
-    document.getElementById('paginationContainer').style.display = 'none';
-    document.getElementById('bulkActions').style.display = 'none';
+    const spinner = document.getElementById('loadingSpinner');
+    const tableContainer = document.getElementById('tableContainer');
+    const emptyState = document.getElementById('emptyState');
+    const paginationContainer = document.getElementById('paginationContainer');
+    const bulkActions = document.getElementById('bulkActions');
+    
+    if (spinner) spinner.style.display = 'flex';
+    if (tableContainer) tableContainer.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
+    if (paginationContainer) paginationContainer.style.display = 'none';
+    if (bulkActions) bulkActions.style.display = 'none';
 };
 
 // Hide loading state
 const hideLoading = () => {
-    document.getElementById('loadingSpinner').style.display = 'none';
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) spinner.style.display = 'none';
 };
 
-// Format number
-const formatNumber = (num) => {
-    if (num === null || num === undefined) return 'N/A';
-    const number = typeof num === 'string' ? parseFloat(num) : num;
-    if (isNaN(number)) return 'N/A';
-    return new Intl.NumberFormat('fr-FR').format(number);
+// Escape HTML
+const escapeHtml = (text) => {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 };
 
 // Show alert
@@ -1210,6 +945,7 @@ const showAlert = (type, message) => {
     
     const alert = document.createElement('div');
     alert.className = `alert alert-${type} alert-custom-modern alert-dismissible fade show`;
+    alert.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
     alert.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -1237,7 +973,7 @@ const setupEventListeners = () => {
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                loadActivities(1, currentFilters);
+                loadCategories(1, currentFilters);
             }, 500);
         });
     }
@@ -1246,7 +982,7 @@ const setupEventListeners = () => {
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', function() {
-            selectAllActivities(this.checked);
+            selectAllCategories(this.checked);
         });
     }
     
@@ -1260,41 +996,79 @@ const setupEventListeners = () => {
     const clearSelectionBtn = document.getElementById('clearSelectionBtn');
     if (clearSelectionBtn) {
         clearSelectionBtn.addEventListener('click', () => {
-            selectedActivities.clear();
-            loadActivities(currentPage, currentFilters);
+            selectedCategories.clear();
+            loadCategories(currentPage, currentFilters);
         });
     }
     
-    // Submit activity form
-    const submitActivityBtn = document.getElementById('submitActivityBtn');
-    if (submitActivityBtn) {
-        submitActivityBtn.addEventListener('click', storeActivity);
+    // Submit category form
+    const submitCategoryBtn = document.getElementById('submitCategoryBtn');
+    if (submitCategoryBtn) {
+        submitCategoryBtn.addEventListener('click', storeCategory);
     }
     
-    // Update activity form
-    const updateActivityBtn = document.getElementById('updateActivityBtn');
-    if (updateActivityBtn) {
-        updateActivityBtn.addEventListener('click', updateActivity);
+    // Update category form
+    const updateCategoryBtn = document.getElementById('updateCategoryBtn');
+    if (updateCategoryBtn) {
+        updateCategoryBtn.addEventListener('click', updateCategory);
     }
     
     // Confirm delete button
     const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
     if (confirmDeleteBtn) {
-        confirmDeleteBtn.addEventListener('click', deleteActivity);
+        confirmDeleteBtn.addEventListener('click', deleteCategory);
     }
     
-    // Reset delete modal when hidden
+    // Reset modals when hidden - IMPORTANT
+    const createModal = document.getElementById('createCategoryModal');
+    if (createModal) {
+        createModal.addEventListener('hidden.bs.modal', function() {
+            cleanupModals();
+            const form = document.getElementById('createCategoryForm');
+            if (form) form.reset();
+            const submitBtn = document.getElementById('submitCategoryBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Créer la catégorie';
+            }
+            isSubmitting = false;
+        });
+        
+        createModal.addEventListener('show.bs.modal', function() {
+            cleanupModals();
+        });
+    }
+    
+    const editModal = document.getElementById('editCategoryModal');
+    if (editModal) {
+        editModal.addEventListener('hidden.bs.modal', function() {
+            cleanupModals();
+            const submitBtn = document.getElementById('updateCategoryBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
+            }
+        });
+        
+        editModal.addEventListener('show.bs.modal', function() {
+            cleanupModals();
+        });
+    }
+    
     const deleteModal = document.getElementById('deleteConfirmationModal');
     if (deleteModal) {
         deleteModal.addEventListener('hidden.bs.modal', function() {
-            activityToDelete = null;
+            categoryToDelete = null;
+            cleanupModals();
             const deleteBtn = document.getElementById('confirmDeleteBtn');
-            deleteBtn.innerHTML = `
-                <span class="btn-text">
-                    <i class="fas fa-trash me-2"></i>Supprimer définitivement
-                </span>
-            `;
-            deleteBtn.disabled = false;
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash me-2"></i>Supprimer définitivement';
+            }
+        });
+        
+        deleteModal.addEventListener('show.bs.modal', function() {
+            cleanupModals();
         });
     }
     
@@ -1308,28 +1082,12 @@ const setupEventListeners = () => {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Chargement...';
             btn.disabled = true;
             
-            // Ici vous pourriez ajouter un appel AJAX pour recharger les stats
+            loadStatistics();
             
             setTimeout(() => {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }, 1000);
-        });
-    }
-    
-    // Reset create form when modal is hidden
-    const createModal = document.getElementById('createActivityModal');
-    if (createModal) {
-        createModal.addEventListener('hidden.bs.modal', function() {
-            resetCreateForm();
-        });
-    }
-    
-    // Reset edit form when modal is hidden
-    const editModal = document.getElementById('editActivityModal');
-    if (editModal) {
-        editModal.addEventListener('hidden.bs.modal', function() {
-            resetEditForm();
         });
     }
     
@@ -1352,35 +1110,30 @@ const setupEventListeners = () => {
     if (applyFiltersBtn) {
         applyFiltersBtn.addEventListener('click', () => {
             currentFilters = {
-                categorie_id: document.getElementById('filterCategory').value,
-                status: document.getElementById('filterStatus').value,
-                sort_by: document.getElementById('filterSortBy').value,
+                status: document.getElementById('filterStatus')?.value || '',
+                sort_by: document.getElementById('filterSortBy')?.value || 'name',
                 sort_direction: document.getElementById('filterSortDirection')?.value || 'asc'
             };
-            loadActivities(1, currentFilters);
+            loadCategories(1, currentFilters);
         });
     }
     
     // Clear filters
-   // Clear filters
-const clearFiltersBtn = document.getElementById('clearFiltersBtn');
-if (clearFiltersBtn) {
-    clearFiltersBtn.addEventListener('click', () => {
-        // CORRECTION : Utiliser une vérification conditionnelle standard
-        const filterCategory = document.getElementById('filterCategory');
-        const filterStatus = document.getElementById('filterStatus');
-        const filterSortBy = document.getElementById('filterSortBy');
-        const filterSortDirection = document.getElementById('filterSortDirection');
-        
-        if (filterCategory) filterCategory.value = '';
-        if (filterStatus) filterStatus.value = '';
-        if (filterSortBy) filterSortBy.value = 'name';
-        if (filterSortDirection) filterSortDirection.value = 'asc';
-        
-        currentFilters = {};
-        loadActivities(1);
-    });
-}
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', () => {
+            const filterStatus = document.getElementById('filterStatus');
+            const filterSortBy = document.getElementById('filterSortBy');
+            const filterSortDirection = document.getElementById('filterSortDirection');
+            
+            if (filterStatus) filterStatus.value = '';
+            if (filterSortBy) filterSortBy.value = 'name';
+            if (filterSortDirection) filterSortDirection.value = 'asc';
+            
+            currentFilters = {};
+            loadCategories(1);
+        });
+    }
 };
     </script>
     
