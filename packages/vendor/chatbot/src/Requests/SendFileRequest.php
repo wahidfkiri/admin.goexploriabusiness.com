@@ -13,12 +13,12 @@ class SendFileRequest extends FormRequest
 
     public function rules(): array
     {
-        $maxKb   = config('internal_chat.max_file_size', 100240);  // 10 Mo par défaut
-        // $allowed = implode(',', config('internal_chat.allowed_file_types', [
-        //     'jpg', 'jpeg', 'png', 'gif', 'webp',
-        //     'pdf', 'doc', 'docx', 'xls', 'xlsx',
-        //     'txt', 'zip', 'mp4', 'mp3',
-        // ]));
+        $maxKb   = config('internal_chat.max_file_size', 10240);  // 10 Mo par défaut
+        $allowed = implode(',', config('internal_chat.allowed_file_types', [
+            'jpg', 'jpeg', 'png', 'gif', 'webp',
+            'pdf', 'doc', 'docx', 'xls', 'xlsx',
+            'txt', 'zip', 'mp4', 'mp3',
+        ]));
 
         return [
             'file' => "required|file|max:{$maxKb}",
