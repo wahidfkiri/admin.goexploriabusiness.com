@@ -7,7 +7,7 @@ use Vendor\Plugins\Controllers\PluginController;
 Auth::routes();
 
 Route::middleware(['web','auth'])->group(function () {
-Route::prefix('modules')->name('modules.')->group(function () {
+  Route::prefix('modules')->name('modules.')->group(function () {
     // Main view
     Route::get('/', [PluginController::class, 'index'])->name('index');
     
@@ -16,9 +16,8 @@ Route::prefix('modules')->name('modules.')->group(function () {
     Route::get('/stats', [PluginController::class, 'getStats'])->name('stats');
     Route::get('/categories', [PluginController::class, 'getCategories'])->name('categories');
     
-    // Plugin CRUD
+    // Plugin CRUD (manuel)
     Route::post('/store', [PluginController::class, 'store'])->name('store');
-    Route::post('/upload', [PluginController::class, 'uploadPlugin'])->name('upload');
     Route::put('/update/{id}', [PluginController::class, 'update'])->name('update');
     Route::delete('/destroy/{id}', [PluginController::class, 'destroy'])->name('destroy');
     
@@ -31,6 +30,7 @@ Route::prefix('modules')->name('modules.')->group(function () {
     Route::put('/settings/{id}', [PluginController::class, 'updateSettings'])->name('settings.update');
 });
 });
+
 
 
 

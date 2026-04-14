@@ -23,3 +23,5 @@ yarn-error.log
 /.zed
 /electron
 /dist
+rr
+.rr.yaml
