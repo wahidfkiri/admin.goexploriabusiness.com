@@ -475,7 +475,7 @@ class InternalChatController extends Controller
      * POST /api/internal-chat/rooms/{roomId}/files
      * Multipart: file
      */
-    public function sendFile(int $roomId): JsonResponse
+    public function sendFile(Request $request, int $roomId): JsonResponse
     {
         try {
             $file = $request->file('file');
