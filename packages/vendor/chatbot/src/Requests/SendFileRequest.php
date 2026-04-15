@@ -21,7 +21,7 @@ class SendFileRequest extends FormRequest
         ]));
 
         return [
-            'file' => "required|file|max:{$maxKb}",
+            'file' => "required|file|mimes:{$allowed}|max:{$maxKb}",
         ];
     }
 
