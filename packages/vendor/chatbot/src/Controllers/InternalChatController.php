@@ -475,47 +475,66 @@ class InternalChatController extends Controller
      * POST /api/internal-chat/rooms/{roomId}/files
      * Multipart: file
      */
-    public function sendFile(Request $request, int $roomId): JsonResponse
-    {
-        try {
-            $file = $request->file('file');
+    public function sendFile(SendFileRequest $request, int $roomId): JsonResponse
+{
+    try {
+        $file = $request->file('file');
+        
+        // Add validation before processing
+        if (!$file || !$file->isValid()) {
+            $errorCode = $file ? $file->getError() : 'no_file';
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'Le fichier dépasse la taille maximale autorisée par le serveur.',
+                UPLOAD_ERR_FORM_SIZE => 'Le fichier dépasse la taille maximale autorisée par le formulaire.',
+                UPLOAD_ERR_PARTIAL => 'Le fichier n\'a été que partiellement téléchargé.',
+                UPLOAD_ERR_NO_FILE => 'Aucun fichier n\'a été téléchargé.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Dossier temporaire manquant sur le serveur.',
+                UPLOAD_ERR_CANT_WRITE => 'Échec de l\'écriture du fichier sur le disque.',
+                UPLOAD_ERR_EXTENSION => 'Une extension PHP a arrêté l\'envoi du fichier.',
+            ];
             
-            Log::info('Envoi d\'un fichier', [
-                'user_id' => auth()->id(),
-                'room_id' => $roomId,
-                'file_name' => $file->getClientOriginalName(),
-                'file_size' => $file->getSize()
-            ]);
-            
-            $room    = $this->resolveRoomForUser($roomId);
-            $message = $this->chatService->sendFile($room, auth()->user(), $file);
-            
-            Log::info('Fichier envoyé avec succès', [
-                'user_id' => auth()->id(),
-                'room_id' => $roomId,
-                'message_id' => $message->id,
-                'file_name' => $file->getClientOriginalName()
-            ]);
-            
-            return response()->json(['message' => $message->toApiArray()], 201);
-        } catch (ModelNotFoundException $e) {
-            Log::warning('Conversation non trouvée pour l\'envoi de fichier', [
-                'user_id' => auth()->id(),
-                'room_id' => $roomId
-            ]);
-            
-            return response()->json(['error' => 'Conversation non trouvée.'], 404);
-        } catch (Exception $e) {
-            Log::error('Erreur lors de l\'envoi du fichier', [
-                'user_id' => auth()->id(),
-                'room_id' => $roomId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json(['error' => 'Erreur lors de l\'envoi du fichier.'], 500);
+            $errorMsg = $errorMessages[$errorCode] ?? 'Erreur inconnue lors du téléchargement.';
+            Log::error('File upload error', ['user_id' => auth()->id(), 'error_code' => $errorCode]);
+            return response()->json(['error' => $errorMsg], 422);
         }
+        
+        Log::info('Envoi d\'un fichier', [
+            'user_id' => auth()->id(),
+            'room_id' => $roomId,
+            'file_name' => $file->getClientOriginalName(),
+            'file_size' => $file->getSize(),
+            'tmp_path' => $file->getRealPath(),
+            'mime_type' => $file->getMimeType()
+        ]);
+        
+        $room = $this->resolveRoomForUser($roomId);
+        $message = $this->chatService->sendFile($room, auth()->user(), $file);
+        
+        Log::info('Fichier envoyé avec succès', [
+            'user_id' => auth()->id(),
+            'room_id' => $roomId,
+            'message_id' => $message->id
+        ]);
+        
+        return response()->json(['message' => $message->toApiArray()], 201);
+        
+    } catch (ModelNotFoundException $e) {
+        Log::warning('Conversation non trouvée pour l\'envoi de fichier', [
+            'user_id' => auth()->id(),
+            'room_id' => $roomId
+        ]);
+        return response()->json(['error' => 'Conversation non trouvée.'], 404);
+    } catch (Exception $e) {
+        Log::error('Erreur lors de l\'envoi du fichier', [
+            'user_id' => auth()->id(),
+            'room_id' => $roomId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json(['error' => 'Erreur lors de l\'envoi du fichier: ' . $e->getMessage()], 500);
     }
+}
 
     /**
      * API: Supprime un message (soft delete, auteur uniquement).

@@ -179,52 +179,91 @@ class InternalChatService
     /**
      * Envoie un fichier attaché et crée le message associé.
      */
-    public function sendFile(InternalChatRoom $room, User $sender, UploadedFile $file): InternalChatMessage
-    {
-        $disk     = config('internal_chat.storage_disk', 'public');
-        $basePath = config('internal_chat.storage_path', 'internal-chat/files');
-        $ext      = strtolower($file->getClientOriginalExtension());
-        $filename = Str::uuid() . '.' . $ext;
-        $subPath  = $basePath . '/' . now()->format('Y/m');
-        $isImage  = str_starts_with($file->getMimeType(), 'image/');
-
-        $path = $file->storeAs($subPath, $filename, $disk);
-
-        $width = $height = null;
-        if ($isImage) {
-            try { [$width, $height] = getimagesize($file->getRealPath()); } catch (\Throwable) {}
-        }
-
-        return DB::transaction(function () use ($room, $sender, $file, $path, $filename, $ext, $isImage, $width, $height, $disk) {
-            $message = InternalChatMessage::create([
-                'room_id'  => $room->id,
-                'user_id'  => $sender->id,
-                'body'     => null,
-                'type'     => 'file',
-                'metadata' => ['original_name' => $file->getClientOriginalName()],
-            ]);
-
-            InternalChatFile::create([
-                'message_id'    => $message->id,
-                'room_id'       => $room->id,
-                'uploaded_by'   => $sender->id,
-                'filename'      => $filename,
-                'original_name' => $file->getClientOriginalName(),
-                'path'          => $path,
-                'mime_type'     => $file->getMimeType(),
-                'extension'     => $ext,
-                'size'          => $file->getSize(),
-                'width'         => $width,
-                'height'        => $height,
-                'is_image'      => $isImage,
-            ]);
-
-            $room->touchLastMessage();
-            $this->cache->notifyNewMessage($room->id, $message->id);
-
-            return $message->load('files');
-        });
+    /**
+ * Envoie un fichier attaché et crée le message associé.
+ */
+public function sendFile(InternalChatRoom $room, User $sender, UploadedFile $file): InternalChatMessage
+{
+    // Validate file exists and is readable
+    if (!$file->isValid()) {
+        throw new \Exception('Le fichier téléchargé est invalide. Error code: ' . $file->getError());
     }
+    
+    $realPath = $file->getRealPath();
+    if (!$realPath || !file_exists($realPath) || !is_readable($realPath)) {
+        throw new \Exception('Le fichier temporaire n\'est pas accessible. Path: ' . $realPath);
+    }
+    
+    $disk     = config('internal_chat.storage_disk', 'public');
+    $basePath = config('internal_chat.storage_path', 'internal-chat/files');
+    $ext      = strtolower($file->getClientOriginalExtension());
+    $filename = Str::uuid() . '.' . $ext;
+    $subPath  = $basePath . '/' . now()->format('Y/m');
+    
+    // Get MIME type safely with fallback
+    $mimeType = null;
+    try {
+        $mimeType = $file->getMimeType();
+    } catch (\Exception $e) {
+        Log::warning('Could not get MIME type from file, using fallback', [
+            'error' => $e->getMessage(),
+            'file' => $file->getClientOriginalName()
+        ]);
+        
+        // Fallback: use finfo
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $realPath);
+        finfo_close($finfo);
+    }
+    
+    $isImage = $mimeType && str_starts_with($mimeType, 'image/');
+    
+    // Store the file
+    $path = $file->storeAs($subPath, $filename, $disk);
+    
+    if (!$path) {
+        throw new \Exception('Impossible de stocker le fichier.');
+    }
+    
+    $width = $height = null;
+    if ($isImage) {
+        try { 
+            [$width, $height] = getimagesize($realPath); 
+        } catch (\Throwable $e) {
+            Log::warning('Could not get image size', ['error' => $e->getMessage()]);
+        }
+    }
+    
+    return DB::transaction(function () use ($room, $sender, $file, $path, $filename, $ext, $isImage, $width, $height, $disk, $mimeType) {
+        $message = InternalChatMessage::create([
+            'room_id'  => $room->id,
+            'user_id'  => $sender->id,
+            'body'     => null,
+            'type'     => 'file',
+            'metadata' => ['original_name' => $file->getClientOriginalName()],
+        ]);
+        
+        InternalChatFile::create([
+            'message_id'    => $message->id,
+            'room_id'       => $room->id,
+            'uploaded_by'   => $sender->id,
+            'filename'      => $filename,
+            'original_name' => $file->getClientOriginalName(),
+            'path'          => $path,
+            'mime_type'     => $mimeType,
+            'extension'     => $ext,
+            'size'          => $file->getSize(),
+            'width'         => $width,
+            'height'        => $height,
+            'is_image'      => $isImage,
+        ]);
+        
+        $room->touchLastMessage();
+        $this->cache->notifyNewMessage($room->id, $message->id);
+        
+        return $message->load('files');
+    });
+}
 
     /**
      * Supprime un message (soft delete — l'auteur ou un admin uniquement).
