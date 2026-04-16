@@ -52,7 +52,7 @@ class Helper
         ][$model] ?? $model;
     }
 
-    public static function formatCurrency(float $amount, string $currency = 'TND'): string
+    public static function formatCurrency(float $amount, string $currency = '$'): string
     {
         return number_format($amount, 3, ',', ' ') . ' ' . $currency;
     }
