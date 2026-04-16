@@ -23,4 +23,5 @@ return [
     Vendor\Users\UsersServiceProvider::class,
     Vendor\Website\WebsiteServiceProvider::class,
     Vendor\Chatbot\InternalChatServiceProvider::class,
+    Vendor\AdsManager\AdsManagerServiceProvider::class,
 ];

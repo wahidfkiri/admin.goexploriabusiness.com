@@ -68,11 +68,13 @@
             "Vendor\\Plugins\\": "packages/vendor/plugins/src",
             "Vendor\\MailMarketing\\": "packages/vendor/mail-marketing/src",
             "Vendor\\Cms\\": "packages/vendor/cms/src",
-            "Vendor\\Chatbot\\": "packages/vendor/chatbot/src/"
+            "Vendor\\Chatbot\\": "packages/vendor/chatbot/src/",
+            "Vendor\\AdsManager\\": "packages/vendor/ads-manager/src/"
         },
         "files": [
             "packages/vendor/cms/src/Helpers/helpers.php",
-            "packages/vendor/chatbot/src/Helpers/InternalChatHelper.php"
+            "packages/vendor/chatbot/src/Helpers/InternalChatHelper.php",
+            "packages/vendor/ads-manager/src/Helpers/Helper.php"
         ]
     },
     "autoload-dev": {

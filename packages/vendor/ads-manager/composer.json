@@ -1,0 +1,22 @@
+{
+    "name": "vendor/ads-manager",
+    "description": "A Laravel package for managing advertisements on establishment pages (like Google AdSense)",
+    "type": "library",
+    "autoload": {
+      "psr-4": {
+        "Vendor\\AdsManager\\": "src/"
+      }
+    },
+    "require": {
+      "php": "^8.0",
+      "illuminate/support": "^10.0",
+      "intervention/image": "^2.7"
+    },
+    "extra": {
+      "laravel": {
+        "providers": [
+          "Vendor\\AdsManager\\AdsManagerServiceProvider"
+        ]
+      }
+    }
+  }
