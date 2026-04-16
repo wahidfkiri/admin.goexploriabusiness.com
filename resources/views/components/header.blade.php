@@ -43,7 +43,7 @@
             {{-- Notification Button --}}
             <button class="notification-btn">
                 <i class="far fa-bell"></i>
-                <span class="notification-badge">3</span>
+                <!-- <span class="notification-badge">0</span> -->
             </button>
 
             {{-- Chat Message Button --}}
