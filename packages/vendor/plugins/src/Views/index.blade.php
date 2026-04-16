@@ -288,7 +288,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label-modern">URL de démo</label>
-                            <input type="url" class="form-control-modern" name="demo_url" placeholder="https://demo.example.com">
+                            <input type="url" class="form-control-modern" name="documentation_url" placeholder="https://demo.example.com">
                         </div>
                     </div>
                 </form>
@@ -468,20 +468,18 @@ function getActionButtons(plugin, view = 'grid') {
     const isCore = plugin.type === 'core';
     
     if (isCore) {
-        const viewLink = plugin.demo_url ? plugin.demo_url : '#';
-        const viewTarget = plugin.demo_url ? '_blank' : '_self';
-        return `<a href="${viewLink}" class="${btnClass} view-btn" target="${viewTarget}" title="Voir"><i class="fas fa-eye"></i></a>`;
+        const viewLink = plugin.documentation_url ? plugin.documentation_url : '#';
+        return `<a href="${viewLink}" class="${btnClass} view-btn" title="Voir"><i class="fas fa-eye"></i></a>`;
     }
     
     const actionBtn = plugin.status === 'active' 
         ? `<button class="${btnClass} deactivate-btn" data-id="${plugin.id}" title="Désactiver"><i class="fas fa-pause"></i></button>`
         : `<button class="${btnClass} activate-btn" data-id="${plugin.id}" title="Activer"><i class="fas fa-play"></i></button>`;
     
-    const viewLink = plugin.demo_url ? plugin.demo_url : '#';
-    const viewTarget = plugin.demo_url ? '_blank' : '_self';
+    const viewLink = plugin.documentation_url ? plugin.documentation_url : '#';
     
     return `${actionBtn}
-            <a href="${viewLink}" class="${btnClass} view-btn" target="${viewTarget}" title="Voir"><i class="fas fa-eye"></i></a>
+            <a href="${viewLink}" class="${btnClass} view-btn" title="Voir"><i class="fas fa-eye"></i></a>
             <button class="${btnClass} delete-btn" data-id="${plugin.id}" title="Supprimer"><i class="fas fa-trash"></i></button>`;
 }
 
