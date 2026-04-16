@@ -16,6 +16,7 @@ use App\Http\Controllers\TemplateScraperController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\GlobalSearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -123,6 +124,9 @@ Route::post('/batch-scrape', [TemplateScraperController::class, 'batchScrape'])-
 // routes/web.php
 Route::get('/gemini/generate', [GeminiController::class, 'generate'])->name('gemini.generate');
 Route::get('/gemini/test', [GeminiController::class, 'test'])->name('gemini.test');
+
+// Dans votre fichier routes/web.php, ajoutez cette route dans le groupe auth
+Route::get('/api/global-search', [App\Http\Controllers\GlobalSearchController::class, 'search'])->name('global.search');
 });
 
 // API Routes (protégées par Sanctum)
@@ -224,3 +228,4 @@ Route::get('/test-email', function () {
 
     return "Email envoyé avec succès";
 });
+

@@ -14,9 +14,30 @@
         </div>
         
         <div class="header-right">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" placeholder="Rechercher...">
+            <!-- Dynamic Search Container -->
+            <div class="search-container-modern" id="globalSearchContainer">
+                <i class="fas fa-search search-icon-modern"></i>
+                <input type="text" 
+                       class="search-input-modern" 
+                       id="globalSearchInput" 
+                       placeholder="Rechercher un continent, pays, région, activité, projet..." 
+                       autocomplete="off">
+                <div class="search-results-modern" id="searchResults" style="display: none;">
+                    <div class="search-results-header">
+                        <span class="results-title">Résultats récents</span>
+                        <button class="clear-results-btn" id="clearSearchResults">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="search-results-list" id="searchResultsList">
+                        <!-- Results will be injected here -->
+                    </div>
+                    <div class="search-results-footer" id="searchResultsFooter" style="display: none;">
+                        <a href="#" id="viewAllResultsLink" class="view-all-link">
+                            Voir tous les résultats <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
             </div>
             
             {{-- Notification Button --}}
@@ -25,16 +46,12 @@
                 <span class="notification-badge">3</span>
             </button>
 
-            {{-- ══════════════════════════════════
-                 CHAT MESSAGE BUTTON + DROPDOWN
-            ══════════════════════════════════ --}}
+            {{-- Chat Message Button --}}
             <div class="hdr-chat-wrap" id="hdrChatWrap">
                 <button class="hdr-chat-btn" id="hdrChatBtn" title="Messages internes">
                     <i class="far fa-comment-dots"></i>
                     <span class="hdr-chat-badge" id="hdrChatBadge" style="display:none">0</span>
                 </button>
-
-                {{-- Dropdown panel --}}
                 <div class="hdr-chat-dropdown" id="hdrChatDropdown">
                     <div class="hdr-chat-dd-head">
                         <span class="hdr-chat-dd-title">
@@ -44,21 +61,16 @@
                             Tout voir <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
-
                     <div class="hdr-chat-dd-body" id="hdrChatDdBody">
-                        {{-- Loading state --}}
                         <div class="hdr-chat-loading" id="hdrChatLoading">
                             <div class="hdr-chat-spinner"></div>
                         </div>
-                        {{-- Rooms injected by JS --}}
                         <ul class="hdr-chat-dd-list" id="hdrChatDdList" style="display:none"></ul>
-                        {{-- Empty state --}}
                         <div class="hdr-chat-dd-empty" id="hdrChatDdEmpty" style="display:none">
                             <i class="far fa-comment-dots"></i>
                             <p>Aucune conversation</p>
                         </div>
                     </div>
-
                     <div class="hdr-chat-dd-foot">
                         <a href="{{ route('internal.chat.new') }}" class="hdr-chat-dd-new">
                             <i class="fas fa-plus"></i> Nouvelle conversation
@@ -66,7 +78,6 @@
                     </div>
                 </div>
             </div>
-            {{-- ══ END CHAT BUTTON ══ --}}
             
             <div class="user-profile">
                 <div class="user-avatar">{{ substr(auth()->user()->name, 0, 2) }}</div>
@@ -80,9 +91,567 @@
     </div>
 </header>
 
-{{-- ══════════════════════════════════════════════
-     HEADER CHAT STYLES
-══════════════════════════════════════════════ --}}
+{{-- Search Styles --}}
+<style>
+/* Modern Search Container */
+.search-container-modern {
+    position: relative;
+    width: 380px;
+    margin-right: 1rem;
+}
+
+.search-icon-modern {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 0.9rem;
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.search-input-modern {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    background: #fff;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.search-input-modern:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.search-input-modern:focus + .search-icon-modern {
+    color: var(--primary-color);
+}
+
+/* Search Results Dropdown */
+.search-results-modern {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+    z-index: 10000;
+    overflow: hidden;
+    animation: searchDropdownFadeIn 0.2s ease;
+}
+
+@keyframes searchDropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.search-results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+
+.results-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+}
+
+.clear-results-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    font-size: 0.75rem;
+}
+
+.clear-results-btn:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.search-results-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.search-results-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.search-results-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.search-results-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+/* Result Item */
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s ease;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.search-result-item:hover {
+    background: #f8fafc;
+}
+
+.result-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.result-icon.globe { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+.result-icon.map { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+.result-icon.flag { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+.result-icon.city { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
+.result-icon.activity { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+.result-icon.project { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; }
+.result-icon.task { background: linear-gradient(135deg, #ec4899, #db2777); color: #fff; }
+.result-icon.building { background: linear-gradient(135deg, #14b8a6, #0d9488); color: #fff; }
+
+.result-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.result-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.result-type {
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.result-subtitle {
+    font-size: 0.75rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.result-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.search-results-footer {
+    padding: 10px 16px;
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
+    text-align: center;
+}
+
+.view-all-link {
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--primary-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: gap 0.2s;
+}
+
+.view-all-link:hover {
+    gap: 10px;
+}
+
+/* Loading State */
+.search-loading {
+    padding: 32px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.search-loading .spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #e2e8f0;
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 8px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.search-empty {
+    padding: 48px 24px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.search-empty i {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.search-empty p {
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* Recent Searches */
+.recent-search-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    color: #64748b;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.recent-search-item:hover {
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+.recent-search-item i {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .search-container-modern {
+        width: 250px;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-container-modern {
+        display: none;
+    }
+}
+</style>
+
+{{-- Search Script --}}
+<script>
+(function() {
+    'use strict';
+
+    const searchInput = document.getElementById('globalSearchInput');
+    const resultsContainer = document.getElementById('searchResults');
+    const resultsList = document.getElementById('searchResultsList');
+    const resultsFooter = document.getElementById('searchResultsFooter');
+    const clearBtn = document.getElementById('clearSearchResults');
+    const viewAllLink = document.getElementById('viewAllResultsLink');
+
+    let searchTimeout = null;
+    let currentQuery = '';
+    let allResults = [];
+
+    // Debounced search function
+    function debounceSearch() {
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const query = searchInput.value.trim();
+            if (query.length >= 2) {
+                performSearch(query);
+            } else if (query.length === 0) {
+                showRecentSearches();
+            } else {
+                hideResults();
+            }
+        }, 300);
+    }
+
+    // Perform search
+    async function performSearch(query) {
+        currentQuery = query;
+        showLoading();
+        
+        try {
+            const response = await fetch(`/api/global-search?q=${encodeURIComponent(query)}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                credentials: 'same-origin'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                allResults = data.results;
+                renderResults(allResults);
+                saveToRecentSearches(query);
+            } else {
+                showEmpty();
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            showEmpty();
+        }
+    }
+
+    // Render search results
+    function renderResults(results) {
+        if (!results || results.length === 0) {
+            showEmpty();
+            return;
+        }
+
+        const limitedResults = results.slice(0, 8);
+        
+        resultsList.innerHTML = limitedResults.map(item => `
+            <a href="${item.url}" class="search-result-item" data-type="${item.type}">
+                <div class="result-icon ${getIconClass(item.type)}">
+                    <i class="${getIcon(item.type)}"></i>
+                </div>
+                <div class="result-content">
+                    <div class="result-title">
+                        ${escapeHtml(item.title)}
+                        <span class="result-type">${getTypeLabel(item.type)}</span>
+                    </div>
+                    <div class="result-subtitle">
+                        ${item.subtitle ? escapeHtml(item.subtitle) : ''}
+                    </div>
+                </div>
+                ${item.badge ? `<div class="result-badge">${escapeHtml(item.badge)}</div>` : ''}
+            </a>
+        `).join('');
+
+        if (results.length > 8) {
+            resultsFooter.style.display = 'block';
+            viewAllLink.href = `/search?q=${encodeURIComponent(currentQuery)}`;
+        } else {
+            resultsFooter.style.display = 'none';
+        }
+
+        resultsContainer.style.display = 'block';
+    }
+
+    // Show recent searches
+    function showRecentSearches() {
+        const recent = getRecentSearches();
+        
+        if (recent.length === 0) {
+            hideResults();
+            return;
+        }
+
+        resultsList.innerHTML = `
+            <div class="search-recents">
+                ${recent.map(query => `
+                    <div class="recent-search-item" data-query="${escapeHtml(query)}">
+                        <i class="fas fa-history"></i>
+                        <span>${escapeHtml(query)}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        resultsFooter.style.display = 'none';
+        resultsContainer.style.display = 'block';
+        
+        // Add click handlers for recent searches
+        document.querySelectorAll('.recent-search-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const query = el.dataset.query;
+                searchInput.value = query;
+                performSearch(query);
+            });
+        });
+    }
+
+    // Show loading state
+    function showLoading() {
+        resultsList.innerHTML = `
+            <div class="search-loading">
+                <div class="spinner"></div>
+                <p>Recherche en cours...</p>
+            </div>
+        `;
+        resultsFooter.style.display = 'none';
+        resultsContainer.style.display = 'block';
+    }
+
+    // Show empty state
+    function showEmpty() {
+        resultsList.innerHTML = `
+            <div class="search-empty">
+                <i class="fas fa-search"></i>
+                <p>Aucun résultat trouvé pour "${escapeHtml(currentQuery)}"</p>
+            </div>
+        `;
+        resultsFooter.style.display = 'none';
+        resultsContainer.style.display = 'block';
+    }
+
+    // Hide results
+    function hideResults() {
+        resultsContainer.style.display = 'none';
+    }
+
+    // Helper: Get icon class
+    function getIconClass(type) {
+        const classes = {
+            continent: 'globe',
+            country: 'flag',
+            province: 'map',
+            region: 'map',
+            secteur: 'map',
+            ville: 'city',
+            activity: 'activity',
+            project: 'project',
+            task: 'task',
+            etablissement: 'building'
+        };
+        return classes[type] || 'globe';
+    }
+
+    // Helper: Get icon
+    function getIcon(type) {
+        const icons = {
+            continent: 'fas fa-globe-americas',
+            country: 'fas fa-flag',
+            province: 'fas fa-map-marker-alt',
+            region: 'fas fa-map',
+            secteur: 'fas fa-building',
+            ville: 'fas fa-city',
+            activity: 'fas fa-puzzle-piece',
+            project: 'fas fa-project-diagram',
+            task: 'fas fa-tasks',
+            etablissement: 'fas fa-store'
+        };
+        return icons[type] || 'fas fa-search';
+    }
+
+    // Helper: Get type label
+    function getTypeLabel(type) {
+        const labels = {
+            continent: 'Continent',
+            country: 'Pays',
+            province: 'Province',
+            region: 'Région',
+            secteur: 'Secteur',
+            ville: 'Ville',
+            activity: 'Activité',
+            project: 'Projet',
+            task: 'Tâche',
+            etablissement: 'Établissement'
+        };
+        return labels[type] || type;
+    }
+
+    // Helper: Escape HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Recent searches storage
+    function getRecentSearches() {
+        try {
+            const recent = localStorage.getItem('global_search_recent');
+            return recent ? JSON.parse(recent).slice(0, 5) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function saveToRecentSearches(query) {
+        if (!query || query.length < 2) return;
+        
+        try {
+            let recent = getRecentSearches();
+            recent = [query, ...recent.filter(q => q !== query)];
+            recent = recent.slice(0, 5);
+            localStorage.setItem('global_search_recent', JSON.stringify(recent));
+        } catch (e) {}
+    }
+
+    function clearRecentSearches() {
+        localStorage.removeItem('global_search_recent');
+        showRecentSearches();
+    }
+
+    // Event listeners
+    searchInput.addEventListener('input', debounceSearch);
+    searchInput.addEventListener('focus', () => {
+        if (searchInput.value.trim().length === 0) {
+            showRecentSearches();
+        }
+    });
+    
+    clearBtn.addEventListener('click', clearRecentSearches);
+    
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+            hideResults();
+        }
+    });
+    
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hideResults();
+            searchInput.blur();
+        }
+    });
+})();
+</script>
+
+{{-- Chat Styles (keep existing) --}}
 <style>
 /* ── Chat button ── */
 .hdr-chat-wrap {
@@ -137,7 +706,7 @@
     to   { transform: scale(1); }
 }
 
-/* ── Dropdown panel ── */
+/* Dropdown panel */
 .hdr-chat-dropdown {
     position: absolute;
     top: calc(100% + 12px);
@@ -162,7 +731,6 @@
     pointer-events: all;
 }
 
-/* Arrow pointer */
 .hdr-chat-dropdown::before {
     content: '';
     position: absolute;
@@ -177,7 +745,6 @@
     z-index: 1;
 }
 
-/* Head */
 .hdr-chat-dd-head {
     display: flex;
     align-items: center;
@@ -206,7 +773,6 @@
 }
 .hdr-chat-dd-all:hover { opacity: .75; }
 
-/* Body */
 .hdr-chat-dd-body {
     max-height: 340px;
     overflow-y: auto;
@@ -214,7 +780,6 @@
 .hdr-chat-dd-body::-webkit-scrollbar { width: 4px; }
 .hdr-chat-dd-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
 
-/* Loading spinner */
 .hdr-chat-loading {
     display: flex;
     align-items: center;
@@ -231,7 +796,6 @@
 }
 @keyframes hdrSpin { to { transform: rotate(360deg); } }
 
-/* Room list */
 .hdr-chat-dd-list {
     list-style: none;
     margin: 0;
@@ -315,7 +879,6 @@
     flex-shrink: 0;
 }
 
-/* Empty state */
 .hdr-chat-dd-empty {
     display: flex;
     flex-direction: column;
@@ -328,7 +891,6 @@
 .hdr-chat-dd-empty i { font-size: 28px; opacity: .4; }
 .hdr-chat-dd-empty p { font-size: 13px; margin: 0; }
 
-/* Footer */
 .hdr-chat-dd-foot {
     border-top: 1px solid #f1f5f9;
     padding: 12px 18px;
@@ -351,9 +913,7 @@
 .hdr-chat-dd-new:hover { background: #dde3fb; color: var(--primary-color); }
 </style>
 
-{{-- ══════════════════════════════════════════════
-     HEADER CHAT SCRIPT
-══════════════════════════════════════════════ --}}
+{{-- Chat Script (keep existing) --}}
 <script>
 (function () {
     'use strict';
@@ -373,7 +933,6 @@
     let loaded    = false;
     let totalUnread = 0;
 
-    /* ── Toggle dropdown ── */
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
         isOpen = !isOpen;
@@ -385,7 +944,6 @@
         }
     });
 
-    /* ── Close on outside click ── */
     document.addEventListener('click', (e) => {
         if (!document.getElementById('hdrChatWrap').contains(e.target)) {
             isOpen = false;
@@ -394,7 +952,6 @@
         }
     });
 
-    /* ── Fetch rooms ── */
     async function fetchRooms() {
         loading.style.display = 'flex';
         list.style.display    = 'none';
@@ -406,7 +963,7 @@
                 credentials: 'same-origin',
             });
             const data = await res.json();
-            const rooms = (data.rooms || []).slice(0, 6); // Show max 6 recent
+            const rooms = (data.rooms || []).slice(0, 6);
 
             totalUnread = data.total_unread || 0;
             updateBadge(totalUnread);
@@ -429,7 +986,6 @@
         }
     }
 
-    /* ── Render a room row ── */
     function renderRoomItem(r) {
         const last    = r.last_message;
         const preview = last
@@ -460,7 +1016,6 @@
             </li>`;
     }
 
-    /* ── Badge update ── */
     function updateBadge(count) {
         if (count > 0) {
             badge.textContent = count > 99 ? '99+' : count;
@@ -470,7 +1025,6 @@
         }
     }
 
-    /* ── Heartbeat — poll total unread every 30s ── */
     async function heartbeat() {
         try {
             const res  = await fetch(heartbeatUrl, {
@@ -482,7 +1036,6 @@
             const count = data.total_unread || 0;
             updateBadge(count);
 
-            // If dropdown is open and count changed, refresh list
             if (isOpen && count !== totalUnread) {
                 totalUnread = count;
                 loaded = false;
@@ -493,7 +1046,6 @@
         } catch (e) { /* silent */ }
     }
 
-    /* ── Helpers ── */
     function esc(str) {
         return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
@@ -507,7 +1059,6 @@
         return Math.floor(diff / 86400) + 'j';
     }
 
-    /* ── Init ── */
     heartbeat();
     setInterval(() => {
         if (!document.hidden) {
