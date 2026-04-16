@@ -291,7 +291,7 @@
                             <div class="input-group">
                                 <input type="number" name="rate" class="form-control" step="0.001" min="0"
                                        value="{{ old('rate', 5) }}" required>
-                                <span class="input-group-text">TND</span>
+                                <span class="input-group-text">$</span>
                             </div>
                         </div>
 
@@ -461,7 +461,7 @@ function calcEstimate() {
     if (pricing === 'cpc')  cost = clicks * rate;
     if (pricing === 'flat') cost = rate;
 
-    document.getElementById('estCost').textContent   = cost.toFixed(3) + ' TND';
+    document.getElementById('estCost').textContent   = cost.toFixed(3) + ' $';
     document.getElementById('estClicks').textContent = clicks.toLocaleString();
 }
 
