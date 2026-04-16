@@ -286,6 +286,10 @@
                             <label class="form-label-modern">Documentation</label>
                             <input type="url" class="form-control-modern" name="documentation_url" placeholder="https://docs.example.com">
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern">URL de démo</label>
+                            <input type="url" class="form-control-modern" name="demo_url" placeholder="https://demo.example.com">
+                        </div>
                     </div>
                 </form>
             </div>
@@ -319,39 +323,6 @@
     </div>
 </div>
 
-<!-- VIEW MODULE MODAL -->
-<div class="modal fade" id="viewModuleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content modern-modal">
-            <div class="modal-header border-0">
-                <h5 class="modal-title"><i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>Détails du module</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="viewModuleContent"></div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- SETTINGS MODAL -->
-<div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content modern-modal">
-            <div class="modal-header border-0">
-                <h5 class="modal-title"><i class="fas fa-cog me-2" style="color: var(--primary-color);"></i>Paramètres</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="settingsModalContent"></div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary" id="saveSettingsBtn"><i class="fas fa-save me-2"></i>Enregistrer</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
 // ============================================
 // CONFIGURATION
@@ -361,7 +332,6 @@ let currentPage = 1;
 let itemsPerPage = 9;
 let totalPlugins = 0;
 let currentPluginData = [];
-let currentModuleSettings = null;
 
 const API = {
     getPlugins: '{{ route("modules.get-plugins") }}',
@@ -371,8 +341,6 @@ const API = {
     deletePlugin: '{{ route("modules.destroy", "") }}',
     activatePlugin: '{{ route("modules.activate", "") }}',
     deactivatePlugin: '{{ route("modules.deactivate", "") }}',
-    getSettings: '{{ route("modules.settings.get", "") }}',
-    updateSettings: '{{ route("modules.settings.update", "") }}',
 };
 
 let currentFilters = {
@@ -397,7 +365,6 @@ function setupEventListeners() {
     document.getElementById('resetFiltersBtn').addEventListener('click', () => { clearFilters(); document.getElementById('emptyState').style.display = 'none'; });
     document.getElementById('toggleFilterBtn').addEventListener('click', toggleFilterSection);
     document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
-    document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
     document.getElementById('submitAddModuleBtn').addEventListener('click', submitModule);
     document.getElementById('priceType').addEventListener('change', togglePriceField);
     
@@ -501,17 +468,20 @@ function getActionButtons(plugin, view = 'grid') {
     const isCore = plugin.type === 'core';
     
     if (isCore) {
-        return `<button class="${btnClass} view-btn" data-id="${plugin.id}" title="Voir"><i class="fas fa-eye"></i></button>
-                <button class="${btnClass} settings-btn" data-id="${plugin.id}" title="Paramètres"><i class="fas fa-cog"></i></button>`;
+        const viewLink = plugin.demo_url ? plugin.demo_url : '#';
+        const viewTarget = plugin.demo_url ? '_blank' : '_self';
+        return `<a href="${viewLink}" class="${btnClass} view-btn" target="${viewTarget}" title="Voir"><i class="fas fa-eye"></i></a>`;
     }
     
     const actionBtn = plugin.status === 'active' 
         ? `<button class="${btnClass} deactivate-btn" data-id="${plugin.id}" title="Désactiver"><i class="fas fa-pause"></i></button>`
         : `<button class="${btnClass} activate-btn" data-id="${plugin.id}" title="Activer"><i class="fas fa-play"></i></button>`;
     
+    const viewLink = plugin.demo_url ? plugin.demo_url : '#';
+    const viewTarget = plugin.demo_url ? '_blank' : '_self';
+    
     return `${actionBtn}
-            <button class="${btnClass} view-btn" data-id="${plugin.id}" title="Voir"><i class="fas fa-eye"></i></button>
-            <button class="${btnClass} settings-btn" data-id="${plugin.id}" title="Paramètres"><i class="fas fa-cog"></i></button>
+            <a href="${viewLink}" class="${btnClass} view-btn" target="${viewTarget}" title="Voir"><i class="fas fa-eye"></i></a>
             <button class="${btnClass} delete-btn" data-id="${plugin.id}" title="Supprimer"><i class="fas fa-trash"></i></button>`;
 }
 
@@ -651,61 +621,6 @@ async function submitModule() {
     }
 }
 
-async function viewModuleDetails(id) {
-    const plugin = currentPluginData.find(p => p.id == id);
-    if (!plugin) return;
-    
-    document.getElementById('viewModuleContent').innerHTML = `
-        <div class="text-center mb-4"><div class="module-icon-lg" style="background: ${getGradient(plugin.type)}; width: 80px; height: 80px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center;"><i class="${plugin.icon || 'fas fa-puzzle-piece'}" style="font-size: 2rem; color: white;"></i></div><h3 class="mt-3">${escapeHtml(plugin.name)}</h3><p class="text-muted">Version ${plugin.version} par ${escapeHtml(plugin.author)}</p></div>
-        <div class="row"><div class="col-md-6"><div class="info-group"><label>Description</label><p>${escapeHtml(plugin.description)}</p></div></div><div class="col-md-6"><div class="info-group"><label>Informations</label><ul class="list-unstyled"><li><strong>Type:</strong> ${plugin.type}</li><li><strong>Prix:</strong> ${plugin.price_type === 'paid' ? '€' + plugin.price : 'Gratuit'}</li><li><strong>Installé le:</strong> ${formatDate(plugin.installed_at)}</li></ul></div></div></div>
-        ${plugin.documentation_url ? `<div class="text-center mt-3"><a href="${plugin.documentation_url}" target="_blank" class="btn btn-outline-primary"><i class="fas fa-book me-2"></i>Documentation</a></div>` : ''}
-    `;
-    new bootstrap.Modal(document.getElementById('viewModuleModal')).show();
-}
-
-async function loadModuleSettings(id) {
-    showLoading();
-    try {
-        const response = await fetch(`${API.getSettings}/${id}`);
-        const result = await response.json();
-        if (result.success) {
-            currentModuleSettings = { id, settings: result.data };
-            document.getElementById('settingsModalContent').innerHTML = `<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>Configuration du module</div><div class="mb-3"><label class="form-label">Configuration JSON</label><textarea class="form-control" id="settingsJson" rows="10">${JSON.stringify(result.data, null, 2)}</textarea></div>`;
-            new bootstrap.Modal(document.getElementById('settingsModal')).show();
-        }
-    } catch (error) {
-        showAlert('danger', 'Erreur de chargement');
-    } finally {
-        hideLoading();
-    }
-}
-
-async function saveSettings() {
-    const settingsJson = document.getElementById('settingsJson')?.value;
-    if (!settingsJson || !currentModuleSettings) return;
-    
-    try {
-        const settings = JSON.parse(settingsJson);
-        showLoading();
-        const response = await fetch(`${API.updateSettings}/${currentModuleSettings.id}`, {
-            method: 'PUT',
-            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ settings })
-        });
-        const result = await response.json();
-        if (result.success) {
-            showAlert('success', 'Paramètres enregistrés');
-            bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
-        } else {
-            showAlert('danger', result.message);
-        }
-    } catch (e) {
-        showAlert('danger', 'JSON invalide');
-    } finally {
-        hideLoading();
-    }
-}
-
 // ============================================
 // UI CONTROLS
 // ============================================
@@ -771,8 +686,6 @@ function attachEventListeners() {
     document.querySelectorAll('.activate-btn').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); activatePlugin(btn.dataset.id); }));
     document.querySelectorAll('.deactivate-btn').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); deactivatePlugin(btn.dataset.id); }));
     document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); window.currentDeleteId = btn.dataset.id; new bootstrap.Modal(document.getElementById('deleteConfirmationModal')).show(); }));
-    document.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); viewModuleDetails(btn.dataset.id); }));
-    document.querySelectorAll('.settings-btn').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); loadModuleSettings(btn.dataset.id); }));
 }
 
 // ============================================
