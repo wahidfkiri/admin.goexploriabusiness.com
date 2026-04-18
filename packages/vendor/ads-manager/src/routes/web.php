@@ -88,3 +88,14 @@ Route::middleware(['auth', 'web'])->group(function () {
         Route::get('/api/ad/{id}',   [AdReportController::class, 'apiAdStats'] )->name('api.ad');
     });
 });
+
+Route::middleware('web')->group(function () {
+    // Route de test pour vérifier que le module est chargé
+    Route::get('/ads-manager/test', function () {
+        return view('ads-manager::etablissement-detail-with-ads', ['ads' => \Vendor\AdsManager\Services\AdTargetingService::getTargetedAds([
+            'etablissement_id' => 1,
+            'page'             => 'detail',
+            'audience'         => 'students',
+        ])]);
+    });
+});
