@@ -32,6 +32,10 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
+Route::get('ads-test', function(){
+    return view('ads');
+});
+
 // Page de login
 Route::get('/login', function () {
     return view('auth.login');

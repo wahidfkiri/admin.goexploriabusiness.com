@@ -10,7 +10,6 @@ use Vendor\AdsManager\Services\AdReportService;
 use Vendor\AdsManager\Services\AdExpiryService;
 use Vendor\AdsManager\Services\AdBudgetService;
 use Vendor\AdsManager\Services\AdTargetingService;
-use Vendor\AdsManager\Console\AggregateAdReports;
 
 class AdsManagerServiceProvider extends ServiceProvider
 {
@@ -42,32 +41,42 @@ class AdsManagerServiceProvider extends ServiceProvider
 
         // Register artisan commands
         if ($this->app->runningInConsole()) {
+            // Commande chargée dynamiquement pour éviter l'erreur "class does not exist"
+            // si illuminate/console n'est pas encore résolu lors du boot.
             $this->commands([
-                AggregateAdReports::class,
+                \Vendor\AdsManager\Console\AggregateAdReports::class,
             ]);
 
-            // Schedule daily aggregation
             $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
                 $schedule->command('ads:aggregate')
                          ->dailyAt('02:00')
                          ->withoutOverlapping()
-                         ->runInBackground()
-                         ->appendOutputTo(storage_path('logs/ads-aggregate.log'));
+                         ->runInBackground();
             });
         }
 
-        // Blade directives
-        Blade::directive('adZone', function ($expression) {
-            return "<?php echo app(\Vendor\AdsManager\Services\AdDisplayService::class)->renderZone($expression); ?>";
+        // ----------------------------------------------------------------
+        // Blade directives — CORRECTION : $expression est déjà compilé par
+        // Blade sous forme de valeur PHP (ex: "'sidebar_right'").
+        // On passe donc $expression directement, sans re-quoter.
+        // ----------------------------------------------------------------
+
+        // @adZone('code')
+        // @adZone('code', ['key' => 'val'])
+        Blade::directive('adZone', function (string $expression) {
+            // $expression peut être : "'sidebar_right'"  OU  "'sidebar_right', ['k'=>'v']"
+            // On enveloppe dans un appel PHP direct.
+            return "<?php echo app(\\Vendor\\AdsManager\\Services\\AdDisplayService::class)->renderZone({$expression}); ?>";
         });
 
-        Blade::directive('adBanner', function ($expression) {
-            return "<?php echo app(\Vendor\AdsManager\Services\AdDisplayService::class)->renderBanner($expression); ?>";
+        // @adBanner(42)
+        Blade::directive('adBanner', function (string $expression) {
+            return "<?php echo app(\\Vendor\\AdsManager\\Services\\AdDisplayService::class)->renderBanner({$expression}); ?>";
         });
 
-        // @adZoneTargeted('placement_code', ['etablissement_id' => 1, 'page' => 'detail'])
-        Blade::directive('adZoneTargeted', function ($expression) {
-            return "<?php echo app(\Vendor\AdsManager\Services\AdDisplayService::class)->renderZoneTargeted($expression); ?>";
+        // @adZoneTargeted('code', ['etablissement_id' => 1, 'page' => 'detail'])
+        Blade::directive('adZoneTargeted', function (string $expression) {
+            return "<?php echo app(\\Vendor\\AdsManager\\Services\\AdDisplayService::class)->renderZoneTargeted({$expression}); ?>";
         });
     }
 
@@ -75,10 +84,12 @@ class AdsManagerServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/ads-manager.php', 'ads-manager');
 
-        $this->app->singleton(AdDisplayService::class, fn() => new AdDisplayService());
-        $this->app->singleton(AdReportService::class,  fn() => new AdReportService());
-        $this->app->singleton(AdExpiryService::class,  fn() => new AdExpiryService());
-        $this->app->singleton(AdBudgetService::class,  fn() => new AdBudgetService());
-        $this->app->singleton(AdTargetingService::class, fn() => new AdTargetingService());
+        $this->app->singleton(AdDisplayService::class, fn ($app) =>
+            new AdDisplayService($app->make(AdTargetingService::class))
+        );
+        $this->app->singleton(AdReportService::class,    fn () => new AdReportService());
+        $this->app->singleton(AdExpiryService::class,    fn () => new AdExpiryService());
+        $this->app->singleton(AdBudgetService::class,    fn () => new AdBudgetService());
+        $this->app->singleton(AdTargetingService::class, fn () => new AdTargetingService());
     }
 }

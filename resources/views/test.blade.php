@@ -403,9 +403,10 @@
         </nav>
     </header>
 
+
     <!-- Le reste du code reste inchangé -->
     <!-- Hero Slider avec SOLUTION DE CONTOURNEMENT -->
-    <section class="hero-slider" id="home">
+    <section class="hero-slider" id="home" style="display:none;">
         <div class="video-slider-container">
             <!-- Slide 1: Vidéo YouTube avec SOLUTION SPÉCIALE -->
             <div class="video-slide active" id="videoSlide1">
@@ -461,9 +462,12 @@
         </div>
     </section>
 
+    
+
     <!-- Le reste du code HTML reste exactement le même... -->
     <!-- Section Menu Map -->
     <section class="section-map" id="menu-map">
+        
         <div class="container">
             <h2 class="section-title text-center">Carte Interactive de Notre Menu</h2>
             <p class="text-center mb-5" style="max-width: 700px; margin: 0 auto; color: var(--gray-color);">
