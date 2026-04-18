@@ -15,6 +15,7 @@
         
         <div class="header-right">
             <!-- Dynamic Search Container -->
+             @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('super_admin'))
             <div class="search-container-modern" id="globalSearchContainer">
                 <i class="fas fa-search search-icon-modern"></i>
                 <input type="text" 
@@ -39,6 +40,7 @@
                     </div>
                 </div>
             </div>
+            @endif
             
             {{-- Notification Button --}}
             <button class="notification-btn">
