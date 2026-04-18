@@ -32,9 +32,9 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
-Route::get('ads-test', function(){
-    return view('ads');
-});
+Route::middleware(['auth'])->get('/ads-demo', function () {
+    return view('ads-manager::ads-demo');
+})->name('ads');
 
 // Page de login
 Route::get('/login', function () {

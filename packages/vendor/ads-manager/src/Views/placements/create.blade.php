@@ -162,17 +162,50 @@
                 <div class="card-modern">
                     <div class="card-header-modern">
                         <div class="card-header-icon"><i class="fas fa-lightbulb"></i></div>
-                        <h3 class="card-title-modern">Conseils</h3>
+                        <h3 class="card-title-modern">Conseils d'intégration</h3>
                     </div>
                     <div class="card-body-modern">
                         <ul class="tips-list">
                             <li><i class="fas fa-check-circle text-success"></i> Choisissez un code descriptif et unique</li>
                             <li><i class="fas fa-check-circle text-success"></i> Le format doit correspondre aux annonces attribuées</li>
                             <li><i class="fas fa-check-circle text-success"></i> Limitez le nombre d'annonces pour une meilleure UX</li>
-                            <li><i class="fas fa-check-circle text-success"></i> Utilisez la directive <code>@adZone</code> dans vos vues</li>
+                            <li>
+                                <i class="fas fa-check-circle text-success"></i>
+                                {{-- ⚠️ IMPORTANT: utiliser @{{ }} pour afficher @ sans que Blade l'interprète --}}
+                                Utilisez la directive <code>@{{ adZone('votre_code') }}</code> dans vos vues Blade
+                            </li>
+                            <li>
+                                <i class="fas fa-info-circle text-primary"></i>
+                                Ou via le widget JS :
+                                <code>&lt;div class="am-zone" data-zone="votre_code"&gt;&lt;/div&gt;</code>
+                            </li>
                         </ul>
                     </div>
                 </div>
+
+                {{-- Snippet preview --}}
+                <div class="card-modern">
+                    <div class="card-header-modern">
+                        <div class="card-header-icon"><i class="fas fa-code"></i></div>
+                        <h3 class="card-title-modern">Code d'intégration</h3>
+                    </div>
+                    <div class="card-body-modern">
+                        <p class="text-muted" style="font-size:12px;margin-bottom:10px;">
+                            Après création, copiez ce code dans vos vues :
+                        </p>
+                        <div class="snippet-preview" id="snippetPreview">
+                            <div class="snippet-line blade-line">
+                                <span class="snippet-tag">Blade</span>
+                                <span id="bladeSnippetPreview">@{{ adZone('votre_code') }}</span>
+                            </div>
+                            <div class="snippet-line js-line mt-2">
+                                <span class="snippet-tag">JS</span>
+                                <span id="jsSnippetPreview">&lt;div class="am-zone" data-zone="votre_code"&gt;&lt;/div&gt;</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -188,15 +221,27 @@
 </main>
 
 <script>
-document.getElementById('formatSel').addEventListener('change', function() {
+const formatSel = document.getElementById('formatSel');
+const codeInput = document.querySelector('input[name=code]');
+
+// Update preview dimensions
+formatSel.addEventListener('change', function() {
     const opt = this.options[this.selectedIndex];
     const w = opt.dataset.w || 300;
     const h = opt.dataset.h || 250;
-    const scale = Math.min(1, 240 / w);
+    const scale = Math.min(1, 240 / parseInt(w));
     const box = document.getElementById('zonePreview');
-    box.style.width  = (w * scale) + 'px';
-    box.style.height = (h * scale) + 'px';
+    box.style.width  = (parseInt(w) * scale) + 'px';
+    box.style.height = (parseInt(h) * scale) + 'px';
     document.getElementById('dimLabel').textContent = w + ' × ' + h + ' px';
+});
+
+// Update snippet preview when code changes
+codeInput.addEventListener('input', function() {
+    const code = this.value || 'votre_code';
+    document.getElementById('bladeSnippetPreview').textContent = "@adZone('" + code + "')";
+    document.getElementById('jsSnippetPreview').innerHTML =
+        '&lt;div class="am-zone" data-zone="' + code + '"&gt;&lt;/div&gt;';
 });
 </script>
 
@@ -222,9 +267,17 @@ document.getElementById('formatSel').addEventListener('change', function() {
 .form-text-modern{font-size:12px;color:#64748b;margin-top:4px;display:block;}
 .zone-preview-box{width:240px;height:140px;background:linear-gradient(135deg,#667eea30,#764ba230);border:2px dashed #667eea;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:13px;font-weight:600;color:#667eea;transition:all .4s;}
 .tips-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
-.tips-list li{display:flex;align-items:center;gap:10px;font-size:13px;color:#475569;}
+.tips-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#475569;}
+.tips-list code{font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;color:#667eea;}
+
+/* Snippet preview */
+.snippet-preview{background:#1e293b;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;}
+.snippet-line{display:flex;align-items:flex-start;gap:8px;font-size:12px;font-family:monospace;color:#7dd3fc;word-break:break-all;}
+.snippet-tag{background:rgba(102,126,234,.3);color:#a5b4fc;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px;}
+
 .form-actions-modern{display:flex;justify-content:space-between;align-items:center;margin-top:32px;padding:20px 24px;background:#fff;border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,.05);}
 .btn-cancel{padding:12px 20px;background:#f1f5f9;border:none;border-radius:12px;color:#475569;font-weight:500;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
+.btn-cancel:hover{background:#e2e8f0;}
 .btn-submit{padding:12px 28px;background:linear-gradient(135deg,#667eea,#764ba2);border:none;border-radius:12px;color:#fff;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
 .btn-submit:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(102,126,234,.35);}
 </style>
