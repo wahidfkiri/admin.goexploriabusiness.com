@@ -349,4 +349,35 @@ class Etablissement extends Model
         
         return $config[$key] ?? $default;
     }
+
+
+public function abonnements()
+{
+    return $this->hasMany(Abonnement::class);
+}
+
+public function currentAbonnement()
+{
+    return $this->belongsTo(Abonnement::class, 'current_abonnement_id');
+}
+
+public function paiements()
+{
+    return $this->hasMany(Paiement::class);
+}
+
+public function hasActiveSubscription()
+{
+    return $this->currentAbonnement && $this->currentAbonnement->isActive();
+}
+
+public function getSubscriptionStatusLabelAttribute()
+{
+    $labels = [
+        'active' => 'Actif',
+        'expired' => 'Expiré',
+        'none' => 'Aucun'
+    ];
+    return $labels[$this->subscription_status] ?? 'Inconnu';
+}
 }

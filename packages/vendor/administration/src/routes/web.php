@@ -8,6 +8,8 @@ use Vendor\Administration\Controllers\PublicPageController;
 use Vendor\Administration\Controllers\BlockController;
 use Vendor\Administration\Controllers\TemplateController;
 use Vendor\Administration\Controllers\LocationController;
+use Vendor\Administration\Controllers\PlanController;
+use Vendor\Administration\Controllers\AbonnementController;
 
 
 
@@ -81,6 +83,27 @@ Route::prefix('sliders')->group(function () {
         Route::post('/templates/save', [TemplateController::class, 'store'])->name('menus.templates.save');
 
     });
+
+
+
+// Plans routes
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    Route::resource('plans', PlanController::class);
+    Route::post('/plans/{id}/toggle-status', [PlanController::class, 'toggleStatus'])->name('plans.toggle-status');
+    Route::post('/plans/reorder', [PlanController::class, 'reorder'])->name('plans.reorder');
+    
+    // Abonnements routes - Ordre important ! Les routes spécifiques doivent venir avant resource
+    Route::get('/abonnements/export', [AbonnementController::class, 'export'])->name('abonnements.export');
+    Route::get('/abonnements/export-etablissements', [AbonnementController::class, 'exportEtablissements'])->name('abonnements.export-etablissements');
+    Route::get('/abonnements/etablissements', [AbonnementController::class, 'etablissements'])->name('abonnements.etablissements');
+    Route::get('/abonnements/historique/{id}', [AbonnementController::class, 'historique'])->name('abonnements.historique');
+    Route::post('/abonnements/{id}/cancel', [AbonnementController::class, 'cancel'])->name('abonnements.cancel');
+    Route::post('/abonnements/{id}/renew', [AbonnementController::class, 'renew'])->name('abonnements.renew');
+    Route::get('/abonnements/{id}/print', [AbonnementController::class, 'print'])->name('abonnements.print');
+    
+    // Resource doit être après les routes spécifiques
+    Route::resource('abonnements', AbonnementController::class);
+});
 
 
 // Route publique pour afficher les pages
