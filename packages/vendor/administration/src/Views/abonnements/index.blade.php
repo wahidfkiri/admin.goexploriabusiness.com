@@ -1264,6 +1264,7 @@ $(document).ready(function() {
 }
 
 .modal-body-modern {
+    background:white;
     padding: 24px;
 }
 
@@ -1273,6 +1274,7 @@ $(document).ready(function() {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+    background:white;
 }
 
 .delete-icon, .cancel-icon {

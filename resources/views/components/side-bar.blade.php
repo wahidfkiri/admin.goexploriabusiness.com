@@ -183,6 +183,8 @@
             <ul class="submenu">
                 <li><a href="{{ route('menus.index') }}" class="submenu-item"><i class="fas fa-bars submenu-icon"></i>Gestion de menus</a></li>
                 <li><a href="{{ route('sliders.index') }}" class="submenu-item"><i class="fas fa-images submenu-icon"></i>Sliders</a></li>
+                <li><a href="{{ route('plans.index') }}" class="submenu-item"><i class="fas fa-crown submenu-icon"></i>Plans</a></li>
+                <li><a href="{{ route('abonnements.index') }}" class="submenu-item"><i class="fas fa-calendar-check submenu-icon"></i>Abonnements</a></li>
             </ul>
         </li>
         @endif
