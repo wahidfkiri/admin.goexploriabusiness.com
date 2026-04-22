@@ -16,7 +16,7 @@ class Plan extends Model
         'name',
         'slug',
         'description',
-        'services',
+        'services',         // Rich HTML from WYSIWYG editor
         'price',
         'currency',
         'duration_days',
@@ -29,16 +29,18 @@ class Plan extends Model
     ];
 
     protected $casts = [
-        'features' => 'array',
-        'limits' => 'array',
-        'services' => 'array',
-        'price' => 'decimal:2',
-        'is_active' => 'boolean',
-        'is_popular' => 'boolean',
-        'sort_order' => 'integer',
-        'duration_days' => 'integer'
+        'features'     => 'array',
+        'limits'       => 'array',
+        'price'        => 'decimal:2',
+        'is_active'    => 'boolean',
+        'is_popular'   => 'boolean',
+        'sort_order'   => 'integer',
+        'duration_days'=> 'integer'
     ];
 
+    // =====================
+    // BOOT — Auto-slug
+    // =====================
     protected static function boot()
     {
         parent::boot();
@@ -56,6 +58,10 @@ class Plan extends Model
         });
     }
 
+    // =====================
+    // RELATIONS
+    // =====================
+
     public function abonnements()
     {
         return $this->hasMany(Abonnement::class);
@@ -66,6 +72,52 @@ class Plan extends Model
         return $this->hasMany(Abonnement::class)->where('status', 'active');
     }
 
+    /**
+     * Plugins attached to this plan (many-to-many)
+     */
+    public function plugins()
+    {
+        return $this->belongsToMany(Plugin::class, 'plan_plugin')
+                    ->withPivot('is_included')
+                    ->withTimestamps();
+    }
+
+    /**
+     * All media (images + videos) for this plan
+     */
+    public function media()
+    {
+        return $this->hasMany(PlanMedia::class)->orderBy('sort_order');
+    }
+
+    /**
+     * Only images
+     */
+    public function images()
+    {
+        return $this->hasMany(PlanMedia::class)->where('type', 'image')->orderBy('sort_order');
+    }
+
+    /**
+     * Only videos
+     */
+    public function videos()
+    {
+        return $this->hasMany(PlanMedia::class)->where('type', 'video')->orderBy('sort_order');
+    }
+
+    /**
+     * Primary media (featured image or hero video)
+     */
+    public function primaryMedia()
+    {
+        return $this->hasOne(PlanMedia::class)->where('is_primary', true);
+    }
+
+    // =====================
+    // SCOPES
+    // =====================
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -75,6 +127,10 @@ class Plan extends Model
     {
         return $query->orderBy('sort_order')->orderBy('price');
     }
+
+    // =====================
+    // ACCESSORS
+    // =====================
 
     public function getFormattedPriceAttribute()
     {
@@ -92,5 +148,13 @@ class Plan extends Model
     public function getFeaturesListAttribute()
     {
         return $this->features ?? [];
+    }
+
+    /**
+     * Get IDs of attached plugins (for pre-checking form checkboxes)
+     */
+    public function getPluginIdsAttribute(): array
+    {
+        return $this->plugins()->pluck('plugins.id')->toArray();
     }
 }

@@ -91,6 +91,10 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::resource('plans', PlanController::class);
     Route::post('/plans/{id}/toggle-status', [PlanController::class, 'toggleStatus'])->name('plans.toggle-status');
     Route::post('/plans/reorder', [PlanController::class, 'reorder'])->name('plans.reorder');
+ 
+    // Plan media management (AJAX endpoints called from edit page)
+    Route::delete('/plans/{planId}/media/{mediaId}',   [PlanController::class, 'deleteMedia'])->name('plans.media.delete');
+    Route::post('/plans/{planId}/media/{mediaId}/primary', [PlanController::class, 'setPrimaryMedia'])->name('plans.media.primary');
     
     // Abonnements routes - Ordre important ! Les routes spécifiques doivent venir avant resource
     Route::get('/abonnements/export', [AbonnementController::class, 'export'])->name('abonnements.export');

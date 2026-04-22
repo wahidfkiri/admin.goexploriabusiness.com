@@ -84,34 +84,13 @@
                     <i class="fas fa-play-circle text-success"></i> Rendu en direct (zone "sidebar_right") :
                 </div>
                 <div style="border:2px dashed #e2e8f0;border-radius:12px;padding:16px;min-height:60px;background:#fafafa;">
-                    @adZone('sidebar_right')
+                  
+
+                     @adZone('annonce_horizonatle')
 
                     {{-- Si vide, afficher un placeholder --}}
-                    @php
-                        $testPlacement = \Illuminate\Support\Facades\DB::table('ad_placements')
-                            ->where('code', 'sidebar_right')->where('is_active', true)->first();
-                        $hasAds = false;
-                        if ($testPlacement) {
-                            $hasAds = \Illuminate\Support\Facades\DB::table('ads')
-                                ->join('ad_placement', 'ads.id', '=', 'ad_placement.ad_id')
-                                ->where('ad_placement.placement_id', $testPlacement->id)
-                                ->where('ads.status', 'active')
-                                ->exists();
-                        }
-                    @endphp
-                    @if(!$testPlacement)
-                        <div style="text-align:center;color:#94a3b8;font-size:13px;padding:12px;">
-                            <i class="fas fa-exclamation-circle"></i>
-                            Emplacement <code>sidebar_right</code> non trouvé.
-                            <a href="{{ route('ads-manager.placements.create') }}">Créez-le d'abord →</a>
-                        </div>
-                    @elseif(!$hasAds)
-                        <div style="text-align:center;color:#94a3b8;font-size:13px;padding:12px;">
-                            <i class="fas fa-ad"></i>
-                            L'emplacement existe mais aucune annonce active n'y est associée.
-                            <a href="{{ route('ads-manager.ads.create') }}">Créer une annonce →</a>
-                        </div>
-                    @endif
+                   
+                    
                 </div>
             </div>
         </div>
