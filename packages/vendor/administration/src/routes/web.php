@@ -91,6 +91,20 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::resource('plans', PlanController::class);
     Route::post('/plans/{id}/toggle-status', [PlanController::class, 'toggleStatus'])->name('plans.toggle-status');
     Route::post('/plans/reorder', [PlanController::class, 'reorder'])->name('plans.reorder');
+
+
+// Plan media management
+Route::delete('/plans/{planId}/media/{mediaId}', [PlanController::class, 'deleteMedia'])->name('plans.media.delete');
+Route::post('/plans/{planId}/media/{mediaId}/primary', [PlanController::class, 'setPrimaryMedia'])->name('plans.media.primary');
+
+// Plan destinations management
+Route::prefix('plans/{planId}/destinations')->group(function () {
+    Route::get('/', [PlanController::class, 'getDestinations'])->name('plans.destinations.index');
+    Route::post('/', [PlanController::class, 'storeDestination'])->name('plans.destinations.store');
+    Route::put('/{destinationId}', [PlanController::class, 'updateDestination'])->name('plans.destinations.update');
+    Route::delete('/{destinationId}', [PlanController::class, 'deleteDestination'])->name('plans.destinations.delete');
+    Route::post('/reorder', [PlanController::class, 'reorderDestinations'])->name('plans.destinations.reorder');
+});
  
     // Plan media management (AJAX endpoints called from edit page)
     Route::delete('/plans/{planId}/media/{mediaId}',   [PlanController::class, 'deleteMedia'])->name('plans.media.delete');
@@ -107,6 +121,8 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     
     // Resource doit être après les routes spécifiques
     Route::resource('abonnements', AbonnementController::class);
+
+    
 });
 
 
@@ -136,3 +152,4 @@ Route::get('/menus/template/view/{id}', function ($id) {
         'meta' => $menu->page_meta,
     ]);
 })->name('menus.template.view');
+

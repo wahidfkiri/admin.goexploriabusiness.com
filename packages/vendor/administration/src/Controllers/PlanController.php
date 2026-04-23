@@ -5,6 +5,7 @@ namespace Vendor\Administration\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\PlanMedia;
+use App\Models\PlanDestination;
 use App\Models\Plugin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -17,8 +18,6 @@ class PlanController extends Controller
 {
     /**
      * Base URL for public storage (from .env APP_URL).
-     * Files are stored under storage/app/public/plans/...
-     * and served via /storage/plans/...
      */
     protected string $storageUrl;
 
@@ -89,9 +88,10 @@ class PlanController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            // Basic fields
             'name'          => 'required|string|max:255|unique:plans',
             'description'   => 'nullable|string',
-            'services'      => 'nullable|string',   // HTML from WYSIWYG
+            'services'      => 'nullable|string',
             'price'         => 'required|numeric|min:0',
             'currency'      => 'required|string|size:3',
             'duration_days' => 'required|integer|min:1',
@@ -101,6 +101,19 @@ class PlanController extends Controller
             'is_popular'    => 'boolean',
             'plugin_ids'    => 'nullable|array',
             'plugin_ids.*'  => 'exists:plugins,id',
+            
+            // Presentation fields
+            'vision_text'           => 'nullable|string',
+            'vision_quote'          => 'nullable|string',
+            'vision_quote_author'   => 'nullable|string',
+            'marketing_budget'      => 'nullable|numeric',
+            'marketing_features'    => 'nullable|string',
+            'markets'               => 'nullable|string',
+            'market_languages'      => 'nullable|string',
+            'marketing_tools'       => 'nullable|string',
+            'space_type'            => 'nullable|string|in:entreprise,destination,partenaire,perso',
+            'space_features'        => 'nullable|string',
+            'concrete_results'      => 'nullable|string',
 
             // Media validation
             'media'                    => 'nullable|array',
@@ -111,6 +124,9 @@ class PlanController extends Controller
             'media.*.thumbnail'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
             'media.*.is_primary'       => 'nullable|boolean',
             'media.*.sort_order'       => 'nullable|integer',
+            
+            // Destinations
+            'destinations'              => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -120,7 +136,15 @@ class PlanController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Create the plan
+            // Process JSON fields
+            $markets = $request->markets ? json_decode($request->markets, true) : null;
+            $marketLanguages = $request->market_languages ? json_decode($request->market_languages, true) : null;
+            $marketingTools = $request->marketing_tools ? json_decode($request->marketing_tools, true) : null;
+            $concreteResults = $request->concrete_results ? json_decode($request->concrete_results, true) : null;
+            $spaceFeatures = $request->space_features ? array_map('trim', explode(',', $request->space_features)) : null;
+            $marketingFeatures = $request->marketing_features ? array_map('trim', explode(',', $request->marketing_features)) : null;
+
+            // Create the plan
             $plan = Plan::create([
                 'name'          => $request->name,
                 'description'   => $request->description,
@@ -134,16 +158,35 @@ class PlanController extends Controller
                 'sort_order'    => $request->sort_order ?? 0,
                 'is_active'     => $request->boolean('is_active'),
                 'is_popular'    => $request->boolean('is_popular'),
+                
+                // Presentation fields
+                'vision_text'           => $request->vision_text,
+                'vision_quote'          => $request->vision_quote,
+                'vision_quote_author'   => $request->vision_quote_author,
+                'marketing_budget'      => $request->marketing_budget,
+                'marketing_features'    => $marketingFeatures,
+                'markets'               => $markets,
+                'market_languages'      => $marketLanguages,
+                'marketing_tools'       => $marketingTools,
+                'space_type'            => $request->space_type,
+                'space_features'        => $spaceFeatures,
+                'concrete_results'      => $concreteResults,
             ]);
 
-            // 2. Attach plugins (many-to-many)
+            // Attach plugins
             if ($request->filled('plugin_ids')) {
                 $plan->plugins()->sync($request->plugin_ids);
             }
 
-            // 3. Handle media uploads
+            // Handle media uploads
             if ($request->has('media')) {
                 $this->handleMediaUploads($plan, $request->media, $request->allFiles());
+            }
+
+            // Handle destinations
+            if ($request->filled('destinations')) {
+                $destinations = json_decode($request->destinations, true);
+                $this->handleDestinations($plan, $destinations, $request->allFiles());
             }
 
             DB::commit();
@@ -151,7 +194,7 @@ class PlanController extends Controller
             return response()->json([
                 'success'  => true,
                 'message'  => 'Plan créé avec succès',
-                'plan'     => $plan->load(['plugins', 'media']),
+                'plan'     => $plan->load(['plugins', 'media', 'destinations']),
                 'redirect' => route('plans.index'),
             ]);
 
@@ -175,7 +218,7 @@ class PlanController extends Controller
             ->withSum(['abonnements as total_revenue' => function ($q) {
                 $q->where('payment_status', 'paid');
             }], 'amount_paid')
-            ->with(['plugins', 'media'])
+            ->with(['plugins', 'media', 'destinations'])
             ->findOrFail($id);
 
         $plugins = Plugin::where('status', 'active')->orderBy('name')->get();
@@ -204,8 +247,21 @@ class PlanController extends Controller
             'is_popular'    => 'boolean',
             'plugin_ids'    => 'nullable|array',
             'plugin_ids.*'  => 'exists:plugins,id',
+            
+            // Presentation fields
+            'vision_text'           => 'nullable|string',
+            'vision_quote'          => 'nullable|string',
+            'vision_quote_author'   => 'nullable|string',
+            'marketing_budget'      => 'nullable|numeric',
+            'marketing_features'    => 'nullable|string',
+            'markets'               => 'nullable|string',
+            'market_languages'      => 'nullable|string',
+            'marketing_tools'       => 'nullable|string',
+            'space_type'            => 'nullable|string|in:entreprise,destination,partenaire,perso',
+            'space_features'        => 'nullable|string',
+            'concrete_results'      => 'nullable|string',
 
-            // New media to add
+            // Media
             'media'                    => 'nullable|array',
             'media.*.type'             => 'required_with:media|in:image,video',
             'media.*.file'             => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,mp4,avi,mov,wmv|max:102400',
@@ -215,12 +271,12 @@ class PlanController extends Controller
             'media.*.is_primary'       => 'nullable|boolean',
             'media.*.sort_order'       => 'nullable|integer',
 
-            // Media IDs to delete
             'delete_media_ids'   => 'nullable|array',
             'delete_media_ids.*' => 'exists:plan_media,id',
-
-            // Primary media designation
             'primary_media_id'   => 'nullable|exists:plan_media,id',
+            
+            // Destinations
+            'destinations'       => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -230,7 +286,15 @@ class PlanController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Update plan fields
+            // Process JSON fields
+            $markets = $request->markets ? json_decode($request->markets, true) : null;
+            $marketLanguages = $request->market_languages ? json_decode($request->market_languages, true) : null;
+            $marketingTools = $request->marketing_tools ? json_decode($request->marketing_tools, true) : null;
+            $concreteResults = $request->concrete_results ? json_decode($request->concrete_results, true) : null;
+            $spaceFeatures = $request->space_features ? array_map('trim', explode(',', $request->space_features)) : null;
+            $marketingFeatures = $request->marketing_features ? array_map('trim', explode(',', $request->marketing_features)) : null;
+
+            // Update plan fields
             $plan->update([
                 'name'          => $request->name,
                 'description'   => $request->description,
@@ -244,12 +308,24 @@ class PlanController extends Controller
                 'sort_order'    => $request->sort_order ?? 0,
                 'is_active'     => $request->boolean('is_active'),
                 'is_popular'    => $request->boolean('is_popular'),
+                
+                'vision_text'           => $request->vision_text,
+                'vision_quote'          => $request->vision_quote,
+                'vision_quote_author'   => $request->vision_quote_author,
+                'marketing_budget'      => $request->marketing_budget,
+                'marketing_features'    => $marketingFeatures,
+                'markets'               => $markets,
+                'market_languages'      => $marketLanguages,
+                'marketing_tools'       => $marketingTools,
+                'space_type'            => $request->space_type,
+                'space_features'        => $spaceFeatures,
+                'concrete_results'      => $concreteResults,
             ]);
 
-            // 2. Sync plugins
+            // Sync plugins
             $plan->plugins()->sync($request->plugin_ids ?? []);
 
-            // 3. Delete selected media
+            // Delete selected media
             if ($request->filled('delete_media_ids')) {
                 $toDelete = PlanMedia::whereIn('id', $request->delete_media_ids)
                                      ->where('plan_id', $plan->id)
@@ -260,7 +336,7 @@ class PlanController extends Controller
                 }
             }
 
-            // 4. Set primary media
+            // Set primary media
             if ($request->filled('primary_media_id')) {
                 PlanMedia::where('plan_id', $plan->id)->update(['is_primary' => false]);
                 PlanMedia::where('id', $request->primary_media_id)
@@ -268,9 +344,15 @@ class PlanController extends Controller
                          ->update(['is_primary' => true]);
             }
 
-            // 5. Add new media
+            // Add new media
             if ($request->has('media')) {
                 $this->handleMediaUploads($plan, $request->media, $request->allFiles());
+            }
+
+            // Handle destinations
+            if ($request->filled('destinations')) {
+                $destinations = json_decode($request->destinations, true);
+                $this->handleDestinations($plan, $destinations, $request->allFiles());
             }
 
             DB::commit();
@@ -303,9 +385,16 @@ class PlanController extends Controller
                 ], 400);
             }
 
-            // Delete all media files from storage
+            // Delete all media files
             foreach ($plan->media as $media) {
                 $this->deleteMediaFiles($media);
+            }
+            
+            // Delete destinations images
+            foreach ($plan->destinations as $destination) {
+                if ($destination->destination_image && file_exists(public_path($destination->destination_image))) {
+                    unlink(public_path($destination->destination_image));
+                }
             }
 
             $plan->delete();
@@ -318,7 +407,160 @@ class PlanController extends Controller
     }
 
     // ========================================================
-    // DELETE SINGLE MEDIA (AJAX endpoint)
+    // DESTINATIONS CRUD (AJAX endpoints)
+    // ========================================================
+
+    public function getDestinations($planId)
+    {
+        $plan = Plan::findOrFail($planId);
+        return response()->json([
+            'success' => true,
+            'destinations' => $plan->destinations
+        ]);
+    }
+
+    public function storeDestination(Request $request, $planId)
+    {
+        $validator = Validator::make($request->all(), [
+            'destination_name' => 'required|string|max:255',
+            'destination_slug' => 'nullable|string|max:255',
+            'destination_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'destination_description' => 'nullable|string',
+            'destination_country' => 'nullable|string|max:100',
+            'destination_city' => 'nullable|string|max:100',
+            'is_active' => 'boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $plan = Plan::findOrFail($planId);
+            
+            $data = $request->except('destination_image');
+            $data['plan_id'] = $planId;
+            $data['sort_order'] = $plan->destinations()->count();
+            $data['is_active'] = $request->boolean('is_active');
+            
+            if ($request->hasFile('destination_image')) {
+                $path = $request->file('destination_image')->store("plans/{$planId}/destinations", 'public');
+                $data['destination_image'] = '/storage/' . $path;
+            }
+            
+            if (empty($data['destination_slug'])) {
+                $data['destination_slug'] = Str::slug($data['destination_name']);
+            }
+            
+            $destination = $plan->destinations()->create($data);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Destination ajoutée avec succès',
+                'destination' => $destination
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateDestination(Request $request, $planId, $destinationId)
+    {
+        $destination = PlanDestination::where('plan_id', $planId)->findOrFail($destinationId);
+        
+        $validator = Validator::make($request->all(), [
+            'destination_name' => 'required|string|max:255',
+            'destination_description' => 'nullable|string',
+            'destination_country' => 'nullable|string|max:100',
+            'destination_city' => 'nullable|string|max:100',
+            'is_active' => 'boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $data = $request->except('destination_image');
+            $data['is_active'] = $request->boolean('is_active');
+            
+            if ($request->hasFile('destination_image')) {
+                // Delete old image
+                if ($destination->destination_image && file_exists(public_path($destination->destination_image))) {
+                    unlink(public_path($destination->destination_image));
+                }
+                $path = $request->file('destination_image')->store("plans/{$planId}/destinations", 'public');
+                $data['destination_image'] = '/storage/' . $path;
+            }
+            
+            if (empty($data['destination_slug']) && !empty($data['destination_name'])) {
+                $data['destination_slug'] = Str::slug($data['destination_name']);
+            }
+            
+            $destination->update($data);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Destination mise à jour avec succès',
+                'destination' => $destination
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteDestination($planId, $destinationId)
+    {
+        try {
+            $destination = PlanDestination::where('plan_id', $planId)->findOrFail($destinationId);
+            
+            // Delete image
+            if ($destination->destination_image && file_exists(public_path($destination->destination_image))) {
+                unlink(public_path($destination->destination_image));
+            }
+            
+            $destination->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Destination supprimée avec succès'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function reorderDestinations(Request $request, $planId)
+    {
+        $validator = Validator::make($request->all(), [
+            'orders' => 'required|array',
+            'orders.*.id' => 'required|exists:plan_destination,id',
+            'orders.*.order' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            foreach ($request->orders as $item) {
+                PlanDestination::where('plan_id', $planId)
+                    ->where('id', $item['id'])
+                    ->update(['sort_order' => $item['order']]);
+            }
+            
+            return response()->json(['success' => true, 'message' => 'Ordre mis à jour avec succès']);
+            
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // ========================================================
+    // MEDIA MANAGEMENT
     // ========================================================
 
     public function deleteMedia($planId, $mediaId)
@@ -333,10 +575,6 @@ class PlanController extends Controller
             return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()], 500);
         }
     }
-
-    // ========================================================
-    // SET PRIMARY MEDIA (AJAX endpoint)
-    // ========================================================
 
     public function setPrimaryMedia($planId, $mediaId)
     {
@@ -404,20 +642,67 @@ class PlanController extends Controller
     // ========================================================
 
     /**
+     * Handle destinations from the form submission
+     */
+    private function handleDestinations(Plan $plan, ?array $destinations, array $allFiles = []): void
+    {
+        if (!$destinations) return;
+        
+        // Get existing destination IDs to keep
+        $keepIds = [];
+        
+        foreach ($destinations as $index => $destData) {
+            if (isset($destData['id']) && !empty($destData['id'])) {
+                // Update existing
+                $destination = PlanDestination::where('plan_id', $plan->id)
+                    ->where('id', $destData['id'])
+                    ->first();
+                if ($destination) {
+                    $destination->update([
+                        'destination_name' => $destData['destination_name'],
+                        'destination_slug' => $destData['destination_slug'] ?? Str::slug($destData['destination_name']),
+                        'destination_description' => $destData['destination_description'] ?? null,
+                        'destination_country' => $destData['destination_country'] ?? null,
+                        'destination_city' => $destData['destination_city'] ?? null,
+                        'sort_order' => $destData['sort_order'] ?? $index,
+                        'is_active' => $destData['is_active'] ?? true,
+                    ]);
+                    $keepIds[] = $destination->id;
+                }
+            } else {
+                // Create new
+                $data = [
+                    'destination_name' => $destData['destination_name'],
+                    'destination_slug' => $destData['destination_slug'] ?? Str::slug($destData['destination_name']),
+                    'destination_description' => $destData['destination_description'] ?? null,
+                    'destination_country' => $destData['destination_country'] ?? null,
+                    'destination_city' => $destData['destination_city'] ?? null,
+                    'sort_order' => $destData['sort_order'] ?? $index,
+                    'is_active' => $destData['is_active'] ?? true,
+                ];
+                
+                // Handle image file if present
+                if (isset($destData['_image_file']) && $destData['_image_file']) {
+                    // This would need to be handled differently since files come from request
+                    // For now, skip file upload in this helper
+                }
+                
+                $destination = $plan->destinations()->create($data);
+                $keepIds[] = $destination->id;
+            }
+        }
+        
+        // Delete destinations not in keep list
+        PlanDestination::where('plan_id', $plan->id)
+            ->whereNotIn('id', $keepIds)
+            ->delete();
+    }
+
+    /**
      * Handle media[] array from multipart form.
-     *
-     * The form sends:
-     *   media[0][type]           = 'image'|'video'
-     *   media[0][file]           = UploadedFile (image or local video)
-     *   media[0][video_url]      = 'https://...'   (for youtube/vimeo/other)
-     *   media[0][video_platform] = 'youtube'|'vimeo'|'upload'|'other'
-     *   media[0][thumbnail]      = UploadedFile (video poster image)
-     *   media[0][is_primary]     = '1'|'0'
-     *   media[0][sort_order]     = integer
      */
     private function handleMediaUploads(Plan $plan, array $mediaItems, array $allFiles): void
     {
-        // If we're adding a new primary, clear existing primaries first
         $hasPrimary = collect($mediaItems)->contains(fn($m) => !empty($m['is_primary']));
         if ($hasPrimary) {
             PlanMedia::where('plan_id', $plan->id)->update(['is_primary' => false]);
@@ -428,12 +713,11 @@ class PlanController extends Controller
             $isPrimary = !empty($item['is_primary']);
             $sortOrder = (int) ($item['sort_order'] ?? $index);
 
-            // Get uploaded files by index from allFiles structure
             $uploadedFile    = $allFiles['media'][$index]['file']      ?? null;
             $thumbnailFile   = $allFiles['media'][$index]['thumbnail'] ?? null;
 
             if ($type === 'image') {
-                if (!$uploadedFile) continue; // No file = skip this entry
+                if (!$uploadedFile) continue;
 
                 $imagePath = $this->uploadFile($uploadedFile, "plans/{$plan->id}/images");
                 $imageUrl  = $this->storageUrl . $imagePath;
@@ -461,19 +745,16 @@ class PlanController extends Controller
                 $thumbnailPath = null;
 
                 if ($platform === 'upload' && $uploadedFile) {
-                    // Local video upload
                     $filePath    = $this->uploadFile($uploadedFile, "plans/{$plan->id}/videos");
                     $fileUrl     = $this->storageUrl . $filePath;
                     $originalName = $uploadedFile->getClientOriginalName();
                     $mimeType    = $uploadedFile->getMimeType();
                     $fileSize    = $uploadedFile->getSize();
                 } else {
-                    // External URL (YouTube / Vimeo / other)
                     $fileUrl  = $item['video_url'] ?? null;
-                    if (!$fileUrl) continue; // No URL = skip
+                    if (!$fileUrl) continue;
                 }
 
-                // Optional poster/thumbnail image
                 if ($thumbnailFile) {
                     $thumbnailPath = $this->uploadFile($thumbnailFile, "plans/{$plan->id}/thumbnails");
                     $thumbnailUrl  = $this->storageUrl . $thumbnailPath;
@@ -499,7 +780,6 @@ class PlanController extends Controller
 
     /**
      * Store file to local public disk, return relative path.
-     * Full URL = APP_URL/storage/{relative_path}
      */
     private function uploadFile($file, string $directory): string
     {
@@ -511,7 +791,7 @@ class PlanController extends Controller
             throw new \Exception('Failed to store file: ' . $directory . '/' . $filename);
         }
 
-        return $stored; // e.g. "plans/1/images/abc123.jpg"
+        return $stored;
     }
 
     /**
@@ -540,12 +820,10 @@ class PlanController extends Controller
     {
         if (!$url) return null;
 
-        // Already a relative path (no scheme)
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
             return $url;
         }
 
-        // Strip /storage/ prefix
         if (preg_match('#/storage/(.+)$#', $url, $m)) {
             return $m[1];
         }
