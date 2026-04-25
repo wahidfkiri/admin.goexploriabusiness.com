@@ -652,7 +652,70 @@ let marketingTools = [];
 let concreteResults = [];
 let destinations = [];
 
+const PLAN_FORM_TOOLTIPS = {
+    'name': 'Nom commercial du plan visible par les utilisateurs.',
+    'description': 'Resume court du plan pour la liste et les cartes.',
+    'price': 'Montant facture pour le cycle choisi.',
+    'currency': 'Devise utilisee pour le prix et la facturation.',
+    'duration_days': 'Duree de validite en jours (ex: 365).',
+    'billing_cycle': 'Frequence de facturation: mensuel, annuel ou personnalise.',
+    'services': 'Description detaillee des services inclus.',
+    'vision_text': 'Texte de vision strategique affiche sur la page plan.',
+    'vision_quote': 'Citation courte qui met en valeur le plan.',
+    'vision_quote_author': 'Auteur ou marque associee a la citation.',
+    'marketing_budget': 'Budget marketing indicatif annuel.',
+    'marketing_features': 'Fonctionnalites marketing separees par virgule.',
+    'space_type': 'Type d espace principal cible par ce plan.',
+    'space_features': 'Fonctionnalites de l espace separees par virgules.',
+    'sort_order': 'Ordre d affichage: plus petit = plus haut.',
+    'is_active': 'Active ou masque le plan dans l application.',
+    'is_popular': 'Marque ce plan comme recommande/vedette.',
+    'plugin_ids[]': 'Selectionnez les applications incluses dans ce plan.'
+};
+
+function initFieldTooltips(scope = document) {
+    if (!scope || !scope.querySelectorAll) return;
+
+    const applyTip = (selector, text) => {
+        scope.querySelectorAll(selector).forEach((el) => {
+            if (!el.getAttribute('title')) el.setAttribute('title', text);
+            if (!el.dataset.bsToggle) el.dataset.bsToggle = 'tooltip';
+        });
+    };
+
+    Object.entries(PLAN_FORM_TOOLTIPS).forEach(([name, text]) => {
+        applyTip(`[name="${name}"]`, text);
+    });
+
+    applyTip('.market-name', 'Nom du marche cible (ex: Canada).');
+    applyTip('.market-population', 'Population cible ou taille de marche.');
+    applyTip('.market-icon', 'Icone utilisee pour representer le marche.');
+    applyTip('.language-value', 'Langue ou capacite linguistique proposee.');
+    applyTip('.tool-name', 'Nom de l outil marketing inclus.');
+    applyTip('.tool-icon', 'Icone representant cet outil.');
+    applyTip('.tool-features', 'Une fonctionnalite par ligne.');
+    applyTip('.result-value', 'Valeur KPI (ex: +237%).');
+    applyTip('.result-label', 'Description du KPI.');
+    applyTip('.dest-name', 'Nom de la destination.');
+    applyTip('.dest-slug', 'Slug URL de la destination.');
+    applyTip('.dest-country', 'Pays de la destination.');
+    applyTip('.dest-city', 'Ville de la destination.');
+    applyTip('.dest-description', 'Description courte de la destination.');
+    applyTip('.dest-image-input', 'Image representative de la destination.');
+    applyTip('.video-platform-select', 'Choisissez la source video.');
+    applyTip('.video-url-section input[type="url"]', 'Lien de la video (YouTube, Vimeo, etc.).');
+
+    if (window.bootstrap && window.bootstrap.Tooltip) {
+        scope.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+            if (!window.bootstrap.Tooltip.getInstance(el)) {
+                new window.bootstrap.Tooltip(el, { container: 'body' });
+            }
+        });
+    }
+}
+
 $(function () {
+    initFieldTooltips();
 
     // ── Quill WYSIWYG ──
     const quill = new Quill('#servicesEditor', {
@@ -719,6 +782,7 @@ $(function () {
             $item.data('index', idx);
             container.append($item);
         });
+        initFieldTooltips(container[0]);
     }
     function renderLanguages() {
         const container = $('#languagesList'); container.empty();
@@ -729,6 +793,7 @@ $(function () {
             $item.data('index', idx);
             container.append($item);
         });
+        initFieldTooltips(container[0]);
     }
     $('#addMarketBtn').on('click', () => { markets.push({ name: '', population: '', icon: 'fa-globe-americas' }); renderMarkets(); });
     $('#addLanguageBtn').on('click', () => { languages.push(''); renderLanguages(); });
@@ -769,6 +834,7 @@ $(function () {
             $item.data('index', idx);
             container.append($item);
         });
+        initFieldTooltips(container[0]);
     }
     $('#addToolBtn').on('click', () => { marketingTools.push({ name: '', icon: 'fa-bullhorn', features: [] }); renderTools(); });
     $(document).on('click', '.remove-tool', function() { const idx = $(this).closest('.tool-item').data('index'); marketingTools.splice(idx, 1); renderTools(); });
@@ -806,6 +872,7 @@ $(function () {
             div.data('index', idx);
             container.append(div);
         });
+        initFieldTooltips(container[0]);
     }
     $('#addResultBtn').on('click', () => { concreteResults.push({ value: '', label: '' }); renderResults(); });
     $(document).on('click', '.remove-result', function() { const idx = $(this).closest('.concrete-result-item').data('index'); concreteResults.splice(idx, 1); renderResults(); });
@@ -836,6 +903,7 @@ $(function () {
             $item.data('index', idx);
             container.append($item);
         });
+        initFieldTooltips(container[0]);
     }
     $('#addDestinationBtn').on('click', () => {
         destinations.push({ id: null, destination_name: '', destination_slug: '', destination_country: '', destination_city: '', destination_description: '', destination_image: null, is_active: true, sort_order: destinations.length });
@@ -892,7 +960,9 @@ $(function () {
         el.innerHTML = el.innerHTML.replace(/INDEX/g, mediaIndex);
         el.dataset.index = mediaIndex;
         document.getElementById('mediaItems').appendChild(el);
-        wireMediaItem(document.getElementById('mediaItems').lastElementChild, type);
+        const addedItem = document.getElementById('mediaItems').lastElementChild;
+        wireMediaItem(addedItem, type);
+        initFieldTooltips(addedItem);
         mediaIndex++;
     }
     function wireMediaItem(el, type) {

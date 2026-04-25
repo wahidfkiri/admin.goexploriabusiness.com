@@ -13,58 +13,43 @@ class CategorieTypeSeeder extends Seeder
      */
     public function run(): void
     {
-        $types = [
-            [
-                'name' => 'Business',
-                'slug' => Str::slug('Business'),
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Local',
-                'slug' => Str::slug('Local'),
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Affaire',
-                'slug' => Str::slug('Affaire'),
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Prime Time',
-                'slug' => Str::slug('Prime Time'),
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Web TV',
-                'slug' => Str::slug('Web TV'),
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Photos',
-                'slug' => Str::slug('Photos'),
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Certificats Cadeaux Québec',
-                'slug' => Str::slug('Certificats Cadeaux Québec'),
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Marketplace',
-                'slug' => Str::slug('Marketplace'),
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Book Direct',
-                'slug' => Str::slug('Book Direct'),
-                'is_active' => true,
-            ],
+        $typeNames = [
+            'Business',
+            'Local',
+            'Affaire',
+            'Prime Time',
+            'Web TV',
+            'Photos',
+            'Certificats Cadeaux Quebec',
+            'Marketplace',
+            'Book Direct',
+            'Espace Entreprise',
+            'Billets Avion',
+            'Location Vehicule',
         ];
 
-        foreach ($types as $type) {
-            CategorieType::create($type);
+        foreach ($typeNames as $typeName) {
+            $slug = Str::slug($typeName);
+
+            $type = CategorieType::withTrashed()->firstOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => $typeName,
+                    'is_active' => true,
+                ]
+            );
+
+            if ($type->trashed()) {
+                $type->restore();
+            }
+
+            $type->update([
+                'name' => $typeName,
+                'is_active' => true,
+            ]);
         }
 
-        $this->command->info(count($types) . ' types de catégories ont été créés avec succès !');
+        $this->command?->info(count($typeNames) . ' types de categories ont ete traites avec succes.');
     }
 }
+
