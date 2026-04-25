@@ -18,7 +18,8 @@ class Plugin extends Model
         'icon', 'price_type', 'price', 'type', 'status', 'category_id',
         'rating', 'rating_count', 'downloads', 'settings', 'compatibility',
         'changelog', 'documentation_url', 'demo_url', 'is_core', 'can_be_disabled',
-        'can_be_uninstalled', 'installed_at', 'last_checked_at'
+        'can_be_uninstalled', 'installed_at', 'last_checked_at',
+        'main_media_type', 'main_image_path', 'main_video_path', 'gallery_images'
     ];
 
     protected $casts = [
@@ -31,6 +32,7 @@ class Plugin extends Model
         'rating' => 'float',
         'installed_at' => 'datetime',
         'last_checked_at' => 'datetime',
+        'gallery_images' => 'array',
     ];
 
     /**

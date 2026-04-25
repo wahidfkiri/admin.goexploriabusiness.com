@@ -56,7 +56,7 @@ class SliderController extends Controller
         $perPage = $request->input('per_page', 10);
 
         // Construire la requête
-        $query = Slider::withTrashed()
+        $query = Slider::query()
             ->with(['country', 'province', 'region', 'ville'])
             ->ordered();
 
@@ -350,7 +350,7 @@ class SliderController extends Controller
             'user_id' => auth()->id()
         ]);
         
-        $slider = Slider::withTrashed()
+        $slider = Slider::query()
             ->with(['country', 'province', 'region', 'ville'])
             ->findOrFail($id);
         
@@ -384,7 +384,7 @@ class SliderController extends Controller
             'type' => $request->input('type'),
         ]);
         
-        $slider = Slider::withTrashed()->findOrFail($id);
+        $slider = Slider::findOrFail($id);
 
         // Validation
         $validator = Validator::make($request->all(), [
@@ -615,8 +615,8 @@ class SliderController extends Controller
         ]);
     }
 
-    /**
- * Remove the specified resource from storage (soft delete with immediate file deletion)
+/**
+ * Remove the specified resource from storage (immediate permanent delete).
  */
 public function destroy($id)
 {
@@ -636,51 +636,12 @@ public function destroy($id)
     $this->deleteFile($slider->video_path, $requestId);
     $this->deleteFile($slider->thumbnail_path, $requestId);
     
-    // Soft delete l'enregistrement
-    $slider->delete();
-    
-    $duration = round((microtime(true) - $startTime) * 1000, 2);
-    
-    Log::channel('slider_debug')->info('Slider soft deleted with files removed', [
-        'request_id' => $requestId,
-        'slider_id' => $id,
-        'slider_name' => $slider->name,
-        'duration_ms' => $duration
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Slider supprimé avec succès !'
-    ]);
-}
-
-/**
- * Force delete slider with immediate file deletion
- */
-public function forceDelete($id)
-{
-    $startTime = microtime(true);
-    $requestId = (string) Str::uuid();
-    
-    Log::channel('slider_debug')->info('Slider force delete started', [
-        'request_id' => $requestId,
-        'slider_id' => $id,
-        'user_id' => auth()->id()
-    ]);
-    
-    $slider = Slider::withTrashed()->findOrFail($id);
-    
-    // Supprimer les fichiers immédiatement
-    $this->deleteFile($slider->image_path, $requestId);
-    $this->deleteFile($slider->video_path, $requestId);
-    $this->deleteFile($slider->thumbnail_path, $requestId);
-    
-    // Force delete l'enregistrement
+    // Suppression definitive de l'enregistrement
     $slider->forceDelete();
     
     $duration = round((microtime(true) - $startTime) * 1000, 2);
     
-    Log::channel('slider_debug')->info('Slider force deleted with files removed', [
+    Log::channel('slider_debug')->info('Slider permanently deleted with files removed', [
         'request_id' => $requestId,
         'slider_id' => $id,
         'slider_name' => $slider->name,
@@ -689,8 +650,16 @@ public function forceDelete($id)
 
     return response()->json([
         'success' => true,
-        'message' => 'Slider définitivement supprimé avec ses fichiers !'
+        'message' => 'Slider supprime definitivement avec succes !'
     ]);
+}
+
+/**
+ * Force delete alias kept for backward compatibility.
+ */
+public function forceDelete($id)
+{
+    return $this->destroy($id);
 }
 
 /**
@@ -738,39 +707,6 @@ private function deleteFile($filePath, $requestId)
         return false;
     }
 }
-
-    /**
-     * Restore soft deleted slider
-     */
-    public function restore($id)
-    {
-        $startTime = microtime(true);
-        $requestId = (string) Str::uuid();
-        
-        Log::channel('slider_debug')->info('Slider restore started', [
-            'request_id' => $requestId,
-            'slider_id' => $id,
-            'user_id' => auth()->id()
-        ]);
-        
-        $slider = Slider::onlyTrashed()->findOrFail($id);
-        $slider->restore();
-        
-        $duration = round((microtime(true) - $startTime) * 1000, 2);
-        
-        Log::channel('slider_debug')->info('Slider restored successfully', [
-            'request_id' => $requestId,
-            'slider_id' => $id,
-            'slider_name' => $slider->name,
-            'duration_ms' => $duration
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Slider restauré avec succès !'
-        ]);
-    }
-
 
     /**
      * Toggle active status
@@ -893,7 +829,7 @@ private function deleteFile($filePath, $requestId)
         $inactive = Slider::where('is_active', false)->count();
         $images = Slider::where('type', 'image')->count();
         $videos = Slider::where('type', 'video')->count();
-        $deleted = Slider::onlyTrashed()->count();
+        $deleted = 0;
         
         $thisMonth = Slider::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)

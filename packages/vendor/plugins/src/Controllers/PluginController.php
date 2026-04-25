@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Plugin;
 use App\Models\PluginCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class PluginController extends Controller
@@ -110,6 +111,11 @@ class PluginController extends Controller
             'icon' => 'nullable|string|max:100',
             'documentation_url' => 'nullable|url',
             'demo_url' => 'nullable|url',
+            'main_media_type' => 'nullable|in:image,video',
+            'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:8192|required_if:main_media_type,image',
+            'main_video' => 'nullable|mimes:mp4,mov,avi,webm|max:51200|required_if:main_media_type,video',
+            'gallery_images' => 'nullable|array',
+            'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:8192',
         ]);
         
         $validated['slug'] = Str::slug($validated['name']);
@@ -125,6 +131,29 @@ class PluginController extends Controller
         if (empty($validated['icon'])) {
             $validated['icon'] = 'fas fa-puzzle-piece';
         }
+
+        $validated['main_media_type'] = $validated['main_media_type'] ?? null;
+        $validated['main_image_path'] = null;
+        $validated['main_video_path'] = null;
+        $validated['gallery_images'] = [];
+
+        if ($request->hasFile('main_image')) {
+            $validated['main_image_path'] = $this->storeUploadedFile($request->file('main_image'), 'plugins/main/images');
+        }
+
+        if ($request->hasFile('main_video')) {
+            $validated['main_video_path'] = $this->storeUploadedFile($request->file('main_video'), 'plugins/main/videos');
+        }
+
+        if ($request->hasFile('gallery_images')) {
+            $gallery = [];
+            foreach ($request->file('gallery_images') as $image) {
+                $gallery[] = $this->storeUploadedFile($image, 'plugins/gallery');
+            }
+            $validated['gallery_images'] = $gallery;
+        }
+
+        unset($validated['main_image'], $validated['main_video']);
         
         $plugin = Plugin::create($validated);
         
@@ -163,9 +192,44 @@ class PluginController extends Controller
             'icon' => 'nullable|string|max:100',
             'documentation_url' => 'nullable|url',
             'demo_url' => 'nullable|url',
+            'main_media_type' => 'nullable|in:image,video',
+            'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:8192',
+            'main_video' => 'nullable|mimes:mp4,mov,avi,webm|max:51200',
+            'gallery_images' => 'nullable|array',
+            'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:8192',
+            'clear_gallery' => 'nullable|boolean',
         ]);
         
         $validated['slug'] = Str::slug($validated['name']);
+
+        if ($request->hasFile('main_image')) {
+            $this->deleteStoredFile($plugin->main_image_path);
+            $validated['main_image_path'] = $this->storeUploadedFile($request->file('main_image'), 'plugins/main/images');
+            $validated['main_media_type'] = 'image';
+        }
+
+        if ($request->hasFile('main_video')) {
+            $this->deleteStoredFile($plugin->main_video_path);
+            $validated['main_video_path'] = $this->storeUploadedFile($request->file('main_video'), 'plugins/main/videos');
+            $validated['main_media_type'] = 'video';
+        }
+
+        if ($request->boolean('clear_gallery')) {
+            foreach (($plugin->gallery_images ?? []) as $oldImage) {
+                $this->deleteStoredFile($oldImage);
+            }
+            $validated['gallery_images'] = [];
+        }
+
+        if ($request->hasFile('gallery_images')) {
+            $gallery = $plugin->gallery_images ?? [];
+            foreach ($request->file('gallery_images') as $image) {
+                $gallery[] = $this->storeUploadedFile($image, 'plugins/gallery');
+            }
+            $validated['gallery_images'] = $gallery;
+        }
+
+        unset($validated['main_image'], $validated['main_video']);
         
         $plugin->update($validated);
         
@@ -243,6 +307,12 @@ class PluginController extends Controller
             ], 403);
         }
         
+        $this->deleteStoredFile($plugin->main_image_path);
+        $this->deleteStoredFile($plugin->main_video_path);
+        foreach (($plugin->gallery_images ?? []) as $galleryImage) {
+            $this->deleteStoredFile($galleryImage);
+        }
+
         $plugin->delete();
         
         return response()->json([
@@ -342,5 +412,31 @@ public function getActivePlugins(Request $request)
         'data' => $plugins->items(),
         'total' => $plugins->total(),
     ]);
+}
+
+/**
+ * Show plugin details page.
+ */
+public function show($id)
+{
+    $plugin = Plugin::with('category')->findOrFail($id);
+    return view('plugins::show', compact('plugin'));
+}
+
+private function storeUploadedFile($file, $folder): string
+{
+    $path = $file->store($folder, 'public');
+    return (string) $path;
+}
+
+private function deleteStoredFile(?string $path): void
+{
+    if (!$path) {
+        return;
+    }
+
+    if (!Str::startsWith($path, ['http://', 'https://']) && Storage::disk('public')->exists($path)) {
+        Storage::disk('public')->delete($path);
+    }
 }
 }

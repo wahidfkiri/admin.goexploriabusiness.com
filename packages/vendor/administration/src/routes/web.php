@@ -34,8 +34,6 @@ Route::prefix('sliders')->group(function () {
     Route::delete('/{id}', [SliderController::class, 'destroy'])->name('sliders.destroy');
     
     // Routes supplémentaires
-    Route::post('/{id}/restore', [SliderController::class, 'restore'])->name('sliders.restore');
-    Route::delete('/{id}/force-delete', [SliderController::class, 'forceDelete'])->name('sliders.force-delete');
     Route::post('/{id}/toggle-status', [SliderController::class, 'toggleStatus'])->name('sliders.toggle-status');
     Route::post('/update-order', [SliderController::class, 'updateOrder'])->name('sliders.update-order');
     Route::get('/statistics/data', [SliderController::class, 'statistics'])->name('sliders.statistics');

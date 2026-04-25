@@ -3,7 +3,6 @@
     let currentFilters = {};
     let allSliders = [];
     let sliderToDelete = null;
-    let sliderToRestore = null;
     let sortable = null;
     let originalOrder = [];
 
@@ -561,12 +560,6 @@
                 statusIcon = 'fa-ban';
             }
             
-            if (slider.deleted_at) {
-                statusClass = 'status-deleted-modern';
-                statusText = 'Supprimé';
-                statusIcon = 'fa-trash';
-            }
-            
             let previewContent = '';
             let imageUrl = '';
             
@@ -620,12 +613,9 @@
                 <td><div>${formattedDate}</div><small class="text-muted">${formatTimeAgo(createdDate)}</small></td>
                 <td style="text-align: center;"><div class="slider-actions-modern">
                     <button class="action-btn-modern preview-btn-modern" title="Aperçu" onclick="previewSlider(${slider.id})"><i class="fas fa-eye"></i></button>
-                    ${slider.deleted_at ? 
-                        `<button class="action-btn-modern restore-btn-modern" title="Restaurer" onclick="showRestoreConfirmation(${slider.id})"><i class="fas fa-undo"></i></button>` :
-                        `<button class="action-btn-modern edit-btn-modern" title="Modifier" onclick="openEditModal(${slider.id})"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn-modern status-btn-modern" title="Changer statut" onclick="toggleSliderStatus(${slider.id})"><i class="fas fa-power-off"></i></button>
-                        <button class="action-btn-modern delete-btn-modern" title="Supprimer" onclick="showDeleteConfirmation(${slider.id})"><i class="fas fa-trash"></i></button>`
-                    }
+                    <button class="action-btn-modern edit-btn-modern" title="Modifier" onclick="openEditModal(${slider.id})"><i class="fas fa-edit"></i></button>
+                    <button class="action-btn-modern status-btn-modern" title="Changer statut" onclick="toggleSliderStatus(${slider.id})"><i class="fas fa-power-off"></i></button>
+                    <button class="action-btn-modern delete-btn-modern" title="Supprimer" onclick="showDeleteConfirmation(${slider.id})"><i class="fas fa-trash"></i></button>
                 </div></td>
             `;
             tbody.appendChild(row);
@@ -851,14 +841,6 @@
         new bootstrap.Modal(document.getElementById('deleteConfirmationModal')).show();
     };
 
-    const showRestoreConfirmation = (sliderId) => {
-        const slider = allSliders.find(s => s.id === sliderId);
-        if (!slider) { showAlert('danger', 'Slider non trouvé'); return; }
-        sliderToRestore = slider;
-        document.getElementById('sliderToRestoreInfo').innerHTML = `<div class="slider-info"><div class="slider-info-icon"><i class="fas fa-sliders-h"></i></div><div><div class="slider-info-name">${slider.name}</div></div></div>`;
-        new bootstrap.Modal(document.getElementById('restoreConfirmationModal')).show();
-    };
-
     const deleteSlider = () => {
         if (!sliderToDelete) return;
         const deleteBtn = document.getElementById('confirmDeleteBtn');
@@ -878,28 +860,6 @@
             },
             error: () => showAlert('danger', 'Erreur lors de la suppression'),
             complete: () => { sliderToDelete = null; }
-        });
-    };
-
-    const restoreSlider = () => {
-        if (!sliderToRestore) return;
-        const restoreBtn = document.getElementById('confirmRestoreBtn');
-        restoreBtn.innerHTML = '<div class="spinner-border spinner-border-sm text-light me-2"></div>Restauration...';
-        restoreBtn.disabled = true;
-        
-        $.ajax({
-            url: `/sliders/${sliderToRestore.id}/restore`,
-            type: 'POST',
-            success: function(response) {
-                bootstrap.Modal.getInstance(document.getElementById('restoreConfirmationModal')).hide();
-                if (response.success) {
-                    loadStatistics();
-                    loadSliders(currentPage, currentFilters);
-                    showAlert('success', response.message);
-                }
-            },
-            error: () => showAlert('danger', 'Erreur lors de la restauration'),
-            complete: () => { sliderToRestore = null; }
         });
     };
 
@@ -1710,7 +1670,6 @@
         document.getElementById('submitSliderBtn')?.addEventListener('click', storeSlider);
         document.getElementById('updateSliderBtn')?.addEventListener('click', updateSlider);
         document.getElementById('confirmDeleteBtn')?.addEventListener('click', deleteSlider);
-        document.getElementById('confirmRestoreBtn')?.addEventListener('click', restoreSlider);
         document.getElementById('toggleOrderView')?.addEventListener('click', toggleOrderView);
         document.getElementById('saveOrderBtn')?.addEventListener('click', saveOrder);
         document.getElementById('saveOrderBtn2')?.addEventListener('click', saveOrder);
@@ -1721,8 +1680,6 @@
             document.getElementById('confirmDeleteBtn').innerHTML = '<span class="btn-text"><i class="fas fa-trash me-2"></i>Supprimer définitivement</span>';
             document.getElementById('confirmDeleteBtn').disabled = false;
         });
-        
-        document.getElementById('restoreConfirmationModal')?.addEventListener('hidden.bs.modal', () => sliderToRestore = null);
         
         document.getElementById('createSliderModal')?.addEventListener('hidden.bs.modal', () => {
             document.getElementById('createSliderForm').reset();

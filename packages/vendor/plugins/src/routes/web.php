@@ -10,6 +10,7 @@ Route::middleware(['web','auth'])->group(function () {
   Route::prefix('modules')->name('modules.')->group(function () {
     // Main view
     Route::get('/', [PluginController::class, 'index'])->name('index');
+    Route::get('/details/{id}', [PluginController::class, 'show'])->name('show');
     
     // AJAX Routes
     Route::get('/get-plugins', [PluginController::class, 'getPlugins'])->name('get-plugins');

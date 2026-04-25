@@ -11,7 +11,7 @@
             </div>
             <div>
                 <h1 class="page-title-modern">Plans d'Abonnement</h1>
-                <p class="page-subtitle">Gérez les offres et tarifs pour vos établissements</p>
+                <p class="page-subtitle">GÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rez les offres et tarifs pour vos ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tablissements</p>
             </div>
         </div>
         <div class="page-header-right">
@@ -59,7 +59,7 @@
             </div>
             <div class="stat-info">
                 <h3 class="stat-value">{{ $activeSubscribers }}</h3>
-                <p class="stat-label">Abonnés actifs</p>
+                <p class="stat-label">AbonnÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s actifs</p>
             </div>
         </div>
     </div>
@@ -81,7 +81,7 @@
                     <option value="">Tous</option>
                     <option value="monthly">Mensuel</option>
                     <option value="yearly">Annuel</option>
-                    <option value="custom">Personnalisé</option>
+                    <option value="custom">PersonnalisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©</option>
                 </select>
             </div>
             <div class="filter-item">
@@ -112,10 +112,10 @@
             <div class="empty-icon">
                 <i class="fas fa-crown"></i>
             </div>
-            <h3>Aucun plan trouvé</h3>
-            <p>Commencez par créer votre premier plan d'abonnement</p>
+            <h3>Aucun plan trouve</h3>
+            <p>Commencez par creer votre premier plan d'abonnement</p>
             <a href="{{ route('plans.create') }}" class="btn-primary-modern">
-                <i class="fas fa-plus-circle me-2"></i>Créer un plan
+                <i class="fas fa-plus-circle me-2"></i>Creer un plan
             </a>
         </div>
     </div>
@@ -123,30 +123,6 @@
 
 <!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
-
-<!-- Delete Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content-modern">
-            <div class="modal-header-modern">
-                <h5 class="modal-title">Confirmer la suppression</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body-modern text-center">
-                <div class="delete-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h4>Êtes-vous sûr ?</h4>
-                <p>Vous allez supprimer le plan <strong id="deletePlanName"></strong></p>
-                <p class="text-danger">Cette action est irréversible !</p>
-            </div>
-            <div class="modal-footer-modern">
-                <button type="button" class="btn-secondary-modern" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" id="confirmDelete" class="btn-danger-modern">Supprimer</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -192,7 +168,7 @@ $(document).ready(function() {
             const statusClass = plan.is_active ? 'status-active' : 'status-inactive';
             const statusText = plan.is_active ? 'Actif' : 'Inactif';
             const priceFormatted = new Intl.NumberFormat('fr-FR').format(plan.price);
-            const cycleText = plan.billing_cycle === 'yearly' ? 'an' : (plan.billing_cycle === 'monthly' ? 'mois' : 'personnalisé');
+            const cycleText = plan.billing_cycle === 'yearly' ? 'an' : (plan.billing_cycle === 'monthly' ? 'mois' : 'personnalisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©');
             
             html += `
                 <div class="plan-card-modern">
@@ -217,7 +193,7 @@ $(document).ready(function() {
                             <i class="fas fa-list-check"></i> Services inclus
                         </div>
                         <div class="services-content">
-                            ${plan.services || '<span class="text-muted">Aucun service spécifié</span>'}
+                            ${plan.services || '<span class="text-muted">Aucun service spÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cifiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©</span>'}
                         </div>
                     </div>
                     
@@ -229,17 +205,17 @@ $(document).ready(function() {
                             </div>
                             <div class="stat-item">
                                 <i class="fas fa-users"></i>
-                                <span>${plan.subscribers_count || 0} abonnés</span>
+                                <span>${plan.subscribers_count || 0} abonnÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s</span>
                             </div>
                         </div>
                         <div class="plan-actions">
                             <a href="/admin/plans/${plan.id}/edit" class="btn-icon edit-btn" title="Modifier">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <button onclick="toggleStatus(${plan.id}, ${plan.is_active})" class="btn-icon status-btn" title="${plan.is_active ? 'Désactiver' : 'Activer'}">
+                            <button onclick="toggleStatus(${plan.id}, ${plan.is_active})" class="btn-icon status-btn" title="${plan.is_active ? 'DÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sactiver' : 'Activer'}">
                                 <i class="fas ${plan.is_active ? 'fa-pause-circle' : 'fa-play-circle'}"></i>
                             </button>
-                            <button onclick="showDeleteModal(${plan.id}, '${escapeHtml(plan.name)}')" class="btn-icon delete-btn" title="Supprimer">
+                            <button onclick="deletePlanWithConfirm(${plan.id}, '${escapeHtml(plan.name)}')" class="btn-icon delete-btn" title="Supprimer">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -277,46 +253,37 @@ $(document).ready(function() {
         });
     };
     
-    let deleteId = null;
-    window.showDeleteModal = function(id, name) {
-        deleteId = id;
-        $('#deletePlanName').text(name);
-        $('#deleteModal').modal('show');
-    };
-    
-    $('#confirmDelete').click(function() {
-        if (deleteId) {
-            $.ajax({
-                url: `/admin/plans/${deleteId}`,
-                type: 'DELETE',
-                data: { _token: '{{ csrf_token() }}' },
-                success: function(response) {
-                    if (response.success) {
-                        $('#deleteModal').modal('hide');
-                        showToast('success', response.message);
-                        loadPlans();
-                    } else {
-                        showToast('error', response.message);
-                        $('#deleteModal').modal('hide');
-                    }
-                },
-                error: function(xhr) {
-                    let message = 'Erreur lors de la suppression';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        message = xhr.responseJSON.message;
-                    }
-                    showToast('error', message);
-                    $('#deleteModal').modal('hide');
+    window.deletePlanWithConfirm = function(id, name) {
+        const confirmed = window.confirm(`Vous allez supprimer le plan "${name}". Cette action est irrÃƒÆ’Ã‚Â©versible. Continuer ?`);
+        if (!confirmed) return;
+
+        $.ajax({
+            url: `/admin/plans/${id}`,
+            type: 'DELETE',
+            data: { _token: '{{ csrf_token() }}' },
+            success: function(response) {
+                if (response.success) {
+                    showToast('success', response.message);
+                    loadPlans();
+                } else {
+                    showToast('error', response.message);
                 }
-            });
-        }
-    });
+            },
+            error: function(xhr) {
+                let message = 'Erreur lors de la suppression';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                showToast('error', message);
+            }
+        });
+    };
     
     // Toast notification system
     function showToast(type, message) {
-        const icon = type === 'success' ? '✓' : '✗';
+        const icon = type === 'success' ? 'ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ' : 'ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â';
         const bgClass = type === 'success' ? 'toast-success' : 'toast-error';
-        const title = type === 'success' ? 'Succès' : 'Erreur';
+        const title = type === 'success' ? 'SuccÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨s' : 'Erreur';
         
         const toast = $(`
             <div class="toast-notification ${bgClass}">
@@ -842,15 +809,18 @@ $(document).ready(function() {
 .modal-content-modern {
     border-radius: 24px;
     border: none;
+    background: #ffffff;
 }
 
 .modal-header-modern {
     padding: 20px 24px;
     border-bottom: 1px solid #f1f5f9;
+    background: #ffffff;
 }
 
 .modal-body-modern {
     padding: 24px;
+    background: #ffffff;
 }
 
 .modal-footer-modern {
@@ -859,6 +829,7 @@ $(document).ready(function() {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+    background: #ffffff;
 }
 
 .delete-icon {
@@ -1012,3 +983,4 @@ $(document).ready(function() {
 }
 </style>
 @endsection
+

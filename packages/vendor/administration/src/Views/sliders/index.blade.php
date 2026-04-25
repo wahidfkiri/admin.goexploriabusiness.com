@@ -41,7 +41,6 @@
                         <option value="">Tous les statuts</option>
                         <option value="active">Actif</option>
                         <option value="inactive">Inactif</option>
-                        <option value="deleted">Supprimé</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -919,36 +918,6 @@
                     <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
                         <span class="btn-text">
                             <i class="fas fa-trash me-2"></i>Supprimer définitivement
-                        </span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- RESTORE CONFIRMATION MODAL -->
-    <div class="modal fade" id="restoreConfirmationModal" tabindex="-1" aria-labelledby="restoreConfirmationModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center py-4">
-                    <div class="restore-icon">
-                        <i class="fas fa-undo"></i>
-                    </div>
-                    <h4 class="restore-title">Restaurer le slider</h4>
-                    <p class="restore-message">Voulez-vous restaurer ce slider ?</p>
-                    
-                    <div class="slider-to-restore" id="sliderToRestoreInfo"></div>
-                </div>
-                <div class="modal-footer border-0 justify-content-center">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>Annuler
-                    </button>
-                    <button type="button" class="btn btn-success" id="confirmRestoreBtn">
-                        <span class="btn-text">
-                            <i class="fas fa-undo me-2"></i>Restaurer
                         </span>
                     </button>
                 </div>

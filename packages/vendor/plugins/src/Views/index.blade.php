@@ -2,6 +2,50 @@
 
 @section('content')
 <link rel="stylesheet" href="{{ asset('vendor/plugins/css/style.css') }}">
+<style>
+.file-input-modern {
+    border: 1px dashed #cfd7e6;
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: #f8faff;
+}
+.file-input-modern input[type="file"] {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    width: 100%;
+}
+.file-preview-modern {
+    margin-top: 10px;
+}
+.file-preview-modern img,
+.file-preview-modern video {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #e5eaf2;
+    background: #fff;
+}
+.gallery-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+}
+.gallery-preview-grid img {
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e5eaf2;
+    background: #fff;
+}
+.existing-gallery-title {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+</style>
 
 <!-- MAIN CONTENT -->
 <main class="dashboard-content">
@@ -225,7 +269,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="addModuleForm">
+                <form id="addModuleForm" enctype="multipart/form-data">
                     @csrf
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -238,7 +282,37 @@
                         </div>
                         <div class="col-md-12 mb-3">
                             <label class="form-label-modern required">Description <span class="text-danger"></span></label>
-                            <textarea class="form-control-modern" name="description" rows="3" required placeholder="Description détaillée..."></textarea>
+                            <textarea class="form-control-modern" id="moduleDescription" name="description" rows="6" required placeholder="Description détaillée..."></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern">Média principal</label>
+                            <select class="form-select-modern" name="main_media_type" id="mainMediaType">
+                                <option value="">Aucun</option>
+                                <option value="image">Image principale</option>
+                                <option value="video">Vidéo principale</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3" id="mainImageField" style="display: none;">
+                            <label class="form-label-modern">Image principale</label>
+                            <div class="file-input-modern">
+                                <input type="file" class="form-control-modern" name="main_image" accept="image/*">
+                            </div>
+                            <div class="file-preview-modern" id="createMainImagePreview"></div>
+                        </div>
+                        <div class="col-md-6 mb-3" id="mainVideoField" style="display: none;">
+                            <label class="form-label-modern">Vidéo principale</label>
+                            <div class="file-input-modern">
+                                <input type="file" class="form-control-modern" name="main_video" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo">
+                            </div>
+                            <div class="file-preview-modern" id="createMainVideoPreview"></div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label-modern">Galerie d'images</label>
+                            <div class="file-input-modern">
+                                <input type="file" class="form-control-modern" name="gallery_images[]" accept="image/*" multiple>
+                            </div>
+                            <small class="text-muted">Vous pouvez sélectionner plusieurs images.</small>
+                            <div class="file-preview-modern gallery-preview-grid" id="createGalleryPreview"></div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label-modern required">Auteur <span class="text-danger"></span></label>
@@ -288,7 +362,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label-modern">URL de démo</label>
-                            <input type="url" class="form-control-modern" name="documentation_url" placeholder="https://demo.example.com">
+                            <input type="url" class="form-control-modern" name="demo_url" placeholder="https://demo.example.com">
                         </div>
                     </div>
                 </form>
@@ -296,6 +370,130 @@
             <div class="modal-footer border-0">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Annuler</button>
                 <button type="button" class="btn btn-primary" id="submitAddModuleBtn"><i class="fas fa-save me-2"></i>Ajouter</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT MODULE MODAL -->
+<div class="modal fade" id="editModuleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content modern-modal">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="fas fa-edit me-2" style="color: var(--primary-color);"></i>Modifier le module</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editModuleForm" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" id="editModuleId" name="id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern required">Nom</label>
+                            <input type="text" class="form-control-modern" id="editName" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern required">Version</label>
+                            <input type="text" class="form-control-modern" id="editVersion" name="version" required>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label-modern required">Description</label>
+                            <textarea class="form-control-modern" id="editModuleDescription" name="description" rows="6" required></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern">Média principal</label>
+                            <select class="form-select-modern" name="main_media_type" id="editMainMediaType">
+                                <option value="">Aucun</option>
+                                <option value="image">Image principale</option>
+                                <option value="video">Vidéo principale</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3" id="editMainImageField" style="display: none;">
+                            <label class="form-label-modern">Remplacer image principale</label>
+                            <div class="file-input-modern">
+                                <input type="file" class="form-control-modern" name="main_image" accept="image/*">
+                            </div>
+                            <div class="file-preview-modern" id="editMainImagePreview"></div>
+                        </div>
+                        <div class="col-md-6 mb-3" id="editMainVideoField" style="display: none;">
+                            <label class="form-label-modern">Remplacer vidéo principale</label>
+                            <div class="file-input-modern">
+                                <input type="file" class="form-control-modern" name="main_video" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo">
+                            </div>
+                            <div class="file-preview-modern" id="editMainVideoPreview"></div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div id="editExistingMediaPreview" class="file-preview-modern"></div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label-modern">Ajouter images à la galerie</label>
+                            <div class="file-input-modern">
+                                <input type="file" class="form-control-modern" name="gallery_images[]" accept="image/*" multiple>
+                            </div>
+                            <div class="file-preview-modern gallery-preview-grid" id="editGalleryPreview"></div>
+                            <div id="editExistingGalleryPreview" class="file-preview-modern"></div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="1" id="editClearGallery" name="clear_gallery">
+                                <label class="form-check-label" for="editClearGallery">
+                                    Vider la galerie actuelle
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern required">Auteur</label>
+                            <input type="text" class="form-control-modern" id="editAuthor" name="author" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern">Site web</label>
+                            <input type="url" class="form-control-modern" id="editAuthorWebsite" name="author_website">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern required">Type</label>
+                            <select class="form-select-modern" id="editType" name="type" required>
+                                <option value="official">Officiel</option>
+                                <option value="third-party">Tiers</option>
+                                <option value="custom">Personnalisé</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern required">Catégorie</label>
+                            <select class="form-select-modern" id="editCategoryId" name="category_id" required>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern required">Type de prix</label>
+                            <select class="form-select-modern" id="editPriceType" name="price_type" required>
+                                <option value="free">Gratuit</option>
+                                <option value="paid">Payant</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3" id="editPriceField" style="display: none;">
+                            <label class="form-label-modern">Prix (€)</label>
+                            <input type="number" class="form-control-modern" id="editPrice" name="price" step="0.01">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern">Icône</label>
+                            <input type="text" class="form-control-modern" id="editIcon" name="icon">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern">Documentation</label>
+                            <input type="url" class="form-control-modern" id="editDocumentationUrl" name="documentation_url">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label-modern">URL de démo</label>
+                            <input type="url" class="form-control-modern" id="editDemoUrl" name="demo_url">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Annuler</button>
+                <button type="button" class="btn btn-primary" id="submitEditModuleBtn"><i class="fas fa-save me-2"></i>Enregistrer</button>
             </div>
         </div>
     </div>
@@ -323,6 +521,7 @@
     </div>
 </div>
 
+<script src="https://cdn.ckeditor.com/ckeditor5/34.0.0/classic/ckeditor.js"></script>
 <script>
 // ============================================
 // CONFIGURATION
@@ -341,11 +540,14 @@ const API = {
     deletePlugin: '{{ route("modules.destroy", "") }}',
     activatePlugin: '{{ route("modules.activate", "") }}',
     deactivatePlugin: '{{ route("modules.deactivate", "") }}',
+    showPlugin: '{{ url("modules/details") }}',
 };
 
 let currentFilters = {
     category: '', status: '', type: '', price: '', sort_by: 'name', sort_order: 'asc', search: ''
 };
+let moduleDescriptionEditor = null;
+let editModuleDescriptionEditor = null;
 
 // ============================================
 // INITIALIZATION
@@ -366,11 +568,19 @@ function setupEventListeners() {
     document.getElementById('toggleFilterBtn').addEventListener('click', toggleFilterSection);
     document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
     document.getElementById('submitAddModuleBtn').addEventListener('click', submitModule);
+    document.getElementById('submitEditModuleBtn').addEventListener('click', submitEditModule);
     document.getElementById('priceType').addEventListener('change', togglePriceField);
+    document.getElementById('mainMediaType').addEventListener('change', toggleMainMediaField);
+    document.getElementById('editPriceType').addEventListener('change', toggleEditPriceField);
+    document.getElementById('editMainMediaType').addEventListener('change', toggleEditMainMediaField);
     
     document.querySelectorAll('.category-filter').forEach(btn => {
         btn.addEventListener('click', () => filterByCategory(btn.dataset.category));
     });
+
+    initializeDescriptionEditor();
+    initializeEditDescriptionEditor();
+    setupFilePreviewHandlers();
 }
 
 // ============================================
@@ -435,8 +645,12 @@ function renderCard(plugin) {
                 <div class="module-badges">${getTypeBadge(plugin.type)}${plugin.price_type === 'paid' ? '<span class="badge-paid">Payant</span>' : ''}</div>
             </div>
             <div class="module-card-body">
-                <h4 class="module-name">${escapeHtml(plugin.name)}</h4>
-                <p class="module-description">${escapeHtml(plugin.description)}</p>
+                <h4 class="module-name">
+                    <a href="${plugin.documentation_url || '#'}" style="color: inherit; text-decoration: none;">
+                        ${escapeHtml(plugin.name)}
+                    </a>
+                </h4>
+                <p class="module-description">${escapeHtml(stripHtml(plugin.description))}</p>
                 <div class="module-meta">
                     <div class="meta-item"><i class="fas fa-code-branch"></i><span>v${plugin.version}</span></div>
                     <div class="meta-item"><i class="fas fa-user"></i><span>${escapeHtml(plugin.author)}</span></div>
@@ -455,7 +669,7 @@ function renderCard(plugin) {
 function renderRow(plugin) {
     return `
         <tr data-id="${plugin.id}">
-            <td><div class="list-module-info"><div class="list-module-icon" style="background: ${getGradient(plugin.type)};"><i class="${plugin.icon || 'fas fa-puzzle-piece'}"></i></div><div><div class="list-module-name">${escapeHtml(plugin.name)}${plugin.type === 'official' ? '<span class="badge-official-sm">Officiel</span>' : ''}</div><div class="list-module-description">${escapeHtml(plugin.description.substring(0, 80))}...</div></div></div></td>
+            <td><div class="list-module-info"><div class="list-module-icon" style="background: ${getGradient(plugin.type)};"><i class="${plugin.icon || 'fas fa-puzzle-piece'}"></i></div><div><div class="list-module-name"><a href="${plugin.documentation_url || '#'}" style="color: inherit; text-decoration: none;">${escapeHtml(plugin.name)}</a>${plugin.type === 'official' ? '<span class="badge-official-sm">Officiel</span>' : ''}</div><div class="list-module-description">${escapeHtml(stripHtml(plugin.description).substring(0, 80))}...</div></div></div></td>
             <td>v${plugin.version}</td><td>${escapeHtml(plugin.author)}</td><td>${formatDate(plugin.installed_at)}</td>
             <td>${getStatusBadge(plugin.status)}</td>
             <td><div class="list-actions">${getActionButtons(plugin, 'list')}</div></td>
@@ -468,7 +682,7 @@ function getActionButtons(plugin, view = 'grid') {
     const isCore = plugin.type === 'core';
     
     if (isCore) {
-        const viewLink = plugin.documentation_url ? plugin.documentation_url : '#';
+        const viewLink = `${API.showPlugin}/${plugin.id}`;
         return `<a href="${viewLink}" class="${btnClass} view-btn" title="Voir"><i class="fas fa-eye"></i></a>`;
     }
     
@@ -476,9 +690,10 @@ function getActionButtons(plugin, view = 'grid') {
         ? `<button class="${btnClass} deactivate-btn" data-id="${plugin.id}" title="Désactiver"><i class="fas fa-pause"></i></button>`
         : `<button class="${btnClass} activate-btn" data-id="${plugin.id}" title="Activer"><i class="fas fa-play"></i></button>`;
     
-    const viewLink = plugin.documentation_url ? plugin.documentation_url : '#';
+    const viewLink = `${API.showPlugin}/${plugin.id}`;
     
     return `${actionBtn}
+            <button class="${btnClass} edit-btn" data-id="${plugin.id}" title="Modifier"><i class="fas fa-edit"></i></button>
             <a href="${viewLink}" class="${btnClass} view-btn" title="Voir"><i class="fas fa-eye"></i></a>
             <button class="${btnClass} delete-btn" data-id="${plugin.id}" title="Supprimer"><i class="fas fa-trash"></i></button>`;
 }
@@ -546,12 +761,224 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function stripHtml(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html || '';
+    return div.textContent || div.innerText || '';
+}
+
 function updateVisibleCount(count) {
     document.getElementById('visibleModulesCount').textContent = count;
 }
 
 function togglePriceField() {
     document.getElementById('priceField').style.display = document.getElementById('priceType').value === 'paid' ? 'block' : 'none';
+}
+
+function toggleMainMediaField() {
+    const selected = document.getElementById('mainMediaType').value;
+    document.getElementById('mainImageField').style.display = selected === 'image' ? 'block' : 'none';
+    document.getElementById('mainVideoField').style.display = selected === 'video' ? 'block' : 'none';
+    if (selected !== 'image') document.getElementById('createMainImagePreview').innerHTML = '';
+    if (selected !== 'video') document.getElementById('createMainVideoPreview').innerHTML = '';
+}
+
+function toggleEditPriceField() {
+    document.getElementById('editPriceField').style.display = document.getElementById('editPriceType').value === 'paid' ? 'block' : 'none';
+}
+
+function toggleEditMainMediaField() {
+    const selected = document.getElementById('editMainMediaType').value;
+    document.getElementById('editMainImageField').style.display = selected === 'image' ? 'block' : 'none';
+    document.getElementById('editMainVideoField').style.display = selected === 'video' ? 'block' : 'none';
+    if (selected !== 'image') document.getElementById('editMainImagePreview').innerHTML = '';
+    if (selected !== 'video') document.getElementById('editMainVideoPreview').innerHTML = '';
+}
+
+function setupFilePreviewHandlers() {
+    const createMainImage = document.querySelector('#addModuleForm input[name="main_image"]');
+    const createMainVideo = document.querySelector('#addModuleForm input[name="main_video"]');
+    const createGallery = document.querySelector('#addModuleForm input[name="gallery_images[]"]');
+    const editMainImage = document.querySelector('#editModuleForm input[name="main_image"]');
+    const editMainVideo = document.querySelector('#editModuleForm input[name="main_video"]');
+    const editGallery = document.querySelector('#editModuleForm input[name="gallery_images[]"]');
+
+    createMainImage?.addEventListener('change', () => previewSingleMedia(createMainImage, 'createMainImagePreview', 'image'));
+    createMainVideo?.addEventListener('change', () => previewSingleMedia(createMainVideo, 'createMainVideoPreview', 'video'));
+    editMainImage?.addEventListener('change', () => previewSingleMedia(editMainImage, 'editMainImagePreview', 'image'));
+    editMainVideo?.addEventListener('change', () => previewSingleMedia(editMainVideo, 'editMainVideoPreview', 'video'));
+
+    createGallery?.addEventListener('change', () => {
+        const files = dedupeFiles(createGallery);
+        previewGalleryFiles(files, 'createGalleryPreview');
+    });
+
+    editGallery?.addEventListener('change', () => {
+        const files = dedupeFiles(editGallery);
+        previewGalleryFiles(files, 'editGalleryPreview');
+    });
+}
+
+function previewSingleMedia(input, targetId, kind) {
+    const container = document.getElementById(targetId);
+    if (!container) return;
+    container.innerHTML = '';
+    const file = input?.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    if (kind === 'video') {
+        container.innerHTML = `<video controls><source src="${url}"></video>`;
+    } else {
+        container.innerHTML = `<img src="${url}" alt="preview">`;
+    }
+}
+
+function previewGalleryFiles(files, targetId) {
+    const container = document.getElementById(targetId);
+    if (!container) return;
+    container.innerHTML = '';
+    (files || []).forEach(file => {
+        const url = URL.createObjectURL(file);
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = 'preview';
+        container.appendChild(img);
+    });
+}
+
+function dedupeFiles(input) {
+    const files = Array.from(input?.files || []);
+    const seen = new Set();
+    const unique = [];
+    let removed = 0;
+
+    files.forEach(file => {
+        const key = `${file.name}-${file.size}-${file.lastModified}`;
+        if (seen.has(key)) {
+            removed += 1;
+            return;
+        }
+        seen.add(key);
+        unique.push(file);
+    });
+
+    if (removed > 0) {
+        showAlert('info', `${removed} fichier(s) doublon retiré(s) de la sélection`);
+    }
+
+    try {
+        const dt = new DataTransfer();
+        unique.forEach(file => dt.items.add(file));
+        input.files = dt.files;
+    } catch (e) {
+        // keep preview even if browser blocks setting input.files
+    }
+
+    return unique;
+}
+
+function mediaUrl(path) {
+    if (!path) return '';
+    return path.startsWith('http') ? path : `/storage/${path}`;
+}
+
+function initializeDescriptionEditor() {
+    if (typeof ClassicEditor === 'undefined') {
+        return;
+    }
+
+    ClassicEditor.create(document.querySelector('#moduleDescription'))
+        .then(editor => {
+            moduleDescriptionEditor = editor;
+        })
+        .catch(() => {
+            moduleDescriptionEditor = null;
+        });
+}
+
+function initializeEditDescriptionEditor() {
+    if (typeof ClassicEditor === 'undefined') {
+        return;
+    }
+
+    ClassicEditor.create(document.querySelector('#editModuleDescription'))
+        .then(editor => {
+            editModuleDescriptionEditor = editor;
+        })
+        .catch(() => {
+            editModuleDescriptionEditor = null;
+        });
+}
+
+function openEditModal(id) {
+    const plugin = currentPluginData.find(p => String(p.id) === String(id));
+    if (!plugin) {
+        showAlert('danger', 'Module introuvable');
+        return;
+    }
+
+    document.getElementById('editModuleId').value = plugin.id;
+    document.getElementById('editName').value = plugin.name || '';
+    document.getElementById('editVersion').value = plugin.version || '';
+    document.getElementById('editAuthor').value = plugin.author || '';
+    document.getElementById('editAuthorWebsite').value = plugin.author_website || '';
+    document.getElementById('editType').value = plugin.type || 'custom';
+    document.getElementById('editCategoryId').value = plugin.category_id || '';
+    document.getElementById('editPriceType').value = plugin.price_type || 'free';
+    document.getElementById('editPrice').value = plugin.price || '';
+    document.getElementById('editIcon').value = plugin.icon || 'fas fa-puzzle-piece';
+    document.getElementById('editDocumentationUrl').value = plugin.documentation_url || '';
+    document.getElementById('editDemoUrl').value = plugin.demo_url || '';
+    document.getElementById('editMainMediaType').value = plugin.main_media_type || '';
+    document.getElementById('editClearGallery').checked = false;
+    document.querySelector('#editModuleForm input[name="main_image"]').value = '';
+    document.querySelector('#editModuleForm input[name="main_video"]').value = '';
+    document.querySelector('#editModuleForm input[name="gallery_images[]"]').value = '';
+    document.getElementById('editMainImagePreview').innerHTML = '';
+    document.getElementById('editMainVideoPreview').innerHTML = '';
+    document.getElementById('editGalleryPreview').innerHTML = '';
+
+    if (editModuleDescriptionEditor) {
+        editModuleDescriptionEditor.setData(plugin.description || '');
+    } else {
+        document.getElementById('editModuleDescription').value = plugin.description || '';
+    }
+
+    toggleEditPriceField();
+    toggleEditMainMediaField();
+    renderExistingEditPreviews(plugin);
+    new bootstrap.Modal(document.getElementById('editModuleModal')).show();
+}
+
+function renderExistingEditPreviews(plugin) {
+    const existingMedia = document.getElementById('editExistingMediaPreview');
+    const existingGallery = document.getElementById('editExistingGalleryPreview');
+    if (!existingMedia || !existingGallery) return;
+
+    existingMedia.innerHTML = '';
+    existingGallery.innerHTML = '';
+
+    if (plugin.main_media_type === 'video' && plugin.main_video_path) {
+        existingMedia.innerHTML = `<div class="existing-gallery-title">Vidéo principale actuelle</div><video controls><source src="${mediaUrl(plugin.main_video_path)}"></video>`;
+    } else if (plugin.main_image_path) {
+        existingMedia.innerHTML = `<div class="existing-gallery-title">Image principale actuelle</div><img src="${mediaUrl(plugin.main_image_path)}" alt="current main image">`;
+    }
+
+    const gallery = Array.isArray(plugin.gallery_images) ? plugin.gallery_images : [];
+    if (gallery.length > 0) {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `<div class="existing-gallery-title">Galerie actuelle (${gallery.length})</div>`;
+        const grid = document.createElement('div');
+        grid.className = 'gallery-preview-grid';
+        gallery.forEach(path => {
+            const img = document.createElement('img');
+            img.src = mediaUrl(path);
+            img.alt = 'existing gallery';
+            grid.appendChild(img);
+        });
+        wrapper.appendChild(grid);
+        existingGallery.appendChild(wrapper);
+    }
 }
 
 // ============================================
@@ -582,6 +1009,9 @@ async function callApi(url, method, successMsg) {
 
 async function submitModule() {
     const form = document.getElementById('addModuleForm');
+    if (moduleDescriptionEditor) {
+        document.getElementById('moduleDescription').value = moduleDescriptionEditor.getData();
+    }
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
@@ -598,8 +1028,8 @@ async function submitModule() {
     try {
         const response = await fetch(API.storePlugin, {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+            body: formData
         });
         const result = await response.json();
         if (result.success) {
@@ -607,6 +1037,14 @@ async function submitModule() {
             bootstrap.Modal.getInstance(document.getElementById('addModuleModal')).hide();
             form.reset();
             document.getElementById('priceField').style.display = 'none';
+            document.getElementById('mainImageField').style.display = 'none';
+            document.getElementById('mainVideoField').style.display = 'none';
+            document.getElementById('createMainImagePreview').innerHTML = '';
+            document.getElementById('createMainVideoPreview').innerHTML = '';
+            document.getElementById('createGalleryPreview').innerHTML = '';
+            if (moduleDescriptionEditor) {
+                moduleDescriptionEditor.setData('');
+            }
             await loadPlugins();
             await loadStats();
         } else {
@@ -614,6 +1052,50 @@ async function submitModule() {
         }
     } catch (error) {
         showAlert('danger', 'Erreur lors de l\'ajout');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function submitEditModule() {
+    const form = document.getElementById('editModuleForm');
+    const moduleId = document.getElementById('editModuleId').value;
+    if (!moduleId) {
+        showAlert('danger', 'Identifiant module manquant');
+        return;
+    }
+
+    if (editModuleDescriptionEditor) {
+        document.getElementById('editModuleDescription').value = editModuleDescriptionEditor.getData();
+    }
+
+    const formData = new FormData(form);
+    const priceType = formData.get('price_type');
+    if (priceType === 'paid' && (!formData.get('price') || Number(formData.get('price')) <= 0)) {
+        showAlert('danger', 'Veuillez entrer un prix valide');
+        return;
+    }
+
+    formData.append('_method', 'PUT');
+
+    showLoading();
+    try {
+        const response = await fetch(`${API.updatePlugin}/${moduleId}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+            body: formData
+        });
+        const result = await response.json();
+        if (result.success) {
+            showAlert('success', 'Module mis à jour avec succès');
+            bootstrap.Modal.getInstance(document.getElementById('editModuleModal')).hide();
+            await loadPlugins();
+            await loadStats();
+        } else {
+            showAlert('danger', result.message || 'Erreur mise à jour');
+        }
+    } catch (error) {
+        showAlert('danger', 'Erreur lors de la mise à jour');
     } finally {
         hideLoading();
     }
@@ -683,6 +1165,7 @@ function confirmDelete() {
 function attachEventListeners() {
     document.querySelectorAll('.activate-btn').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); activatePlugin(btn.dataset.id); }));
     document.querySelectorAll('.deactivate-btn').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); deactivatePlugin(btn.dataset.id); }));
+    document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); openEditModal(btn.dataset.id); }));
     document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); window.currentDeleteId = btn.dataset.id; new bootstrap.Modal(document.getElementById('deleteConfirmationModal')).show(); }));
 }
 
