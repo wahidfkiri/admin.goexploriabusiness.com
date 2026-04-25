@@ -14,9 +14,9 @@
                 <a href="{{ route('regions.index') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-2"></i>Retour à la liste
                 </a>
-                <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editRegionModal">
+                <a href="{{ route('regions.index') }}?open_edit={{ $region->id }}" class="btn btn-warning">
                     <i class="fas fa-edit me-2"></i>Modifier
-                </button>
+                </a>
             </div>
         </div>
 
@@ -293,9 +293,9 @@
                                 <i class="fas fa-mountain fa-3x mb-4"></i>
                                 <h3>Aucune information géographique</h3>
                                 <p>Ajoutez une description géographique pour cette région.</p>
-                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editRegionModal">
+                                <a href="{{ route('regions.index') }}?open_edit={{ $region->id }}" class="btn btn-primary">
                                     <i class="fas fa-edit me-2"></i>Modifier
-                                </button>
+                                </a>
                             </div>
                         @endif
                     </div>
@@ -316,9 +316,9 @@
                                 <i class="fas fa-chart-line fa-3x mb-4"></i>
                                 <h3>Aucune information économique</h3>
                                 <p>Ajoutez une description économique pour cette région.</p>
-                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editRegionModal">
+                                <a href="{{ route('regions.index') }}?open_edit={{ $region->id }}" class="btn btn-primary">
                                     <i class="fas fa-edit me-2"></i>Modifier
-                                </button>
+                                </a>
                             </div>
                         @endif
                     </div>
@@ -339,9 +339,9 @@
                                 <i class="fas fa-camera fa-3x mb-4"></i>
                                 <h3>Aucune information touristique</h3>
                                 <p>Ajoutez une description touristique pour cette région.</p>
-                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editRegionModal">
+                                <a href="{{ route('regions.index') }}?open_edit={{ $region->id }}" class="btn btn-primary">
                                     <i class="fas fa-edit me-2"></i>Modifier
-                                </button>
+                                </a>
                             </div>
                         @endif
                     </div>
@@ -354,7 +354,7 @@
                             <div class="card-modern">
                                 <div class="card-header-modern">
                                     <h3 class="card-title-modern">Villes de la région</h3>
-                                    <a href="{{ route('cities.create') }}?region_id={{ $region->id }}" class="btn btn-sm btn-primary">
+                                    <a href="{{ route('villes.index') }}?region={{ $region->code }}" class="btn btn-sm btn-primary">
                                         <i class="fas fa-plus me-2"></i>Ajouter une ville
                                     </a>
                                 </div>
@@ -378,7 +378,7 @@
                                                         <td>{{ number_format($city->area, 2) }} km²</td>
                                                         <td>{{ $city->type }}</td>
                                                         <td>
-                                                            <a href="{{ route('cities.show', $city->id) }}" class="btn btn-sm btn-outline-primary">
+                                                            <a href="{{ route('villes.show', $city->id) }}" class="btn btn-sm btn-outline-primary">
                                                                 <i class="fas fa-eye"></i>
                                                             </a>
                                                         </td>
@@ -394,7 +394,7 @@
                                 <i class="fas fa-city fa-3x mb-4"></i>
                                 <h3>Aucune ville dans cette région</h3>
                                 <p>Commencez par ajouter des villes à cette région.</p>
-                                <a href="{{ route('cities.create') }}?region_id={{ $region->id }}" class="btn btn-primary">
+                                <a href="{{ route('villes.index') }}?region={{ $region->code }}" class="btn btn-primary">
                                     <i class="fas fa-plus me-2"></i>Ajouter une ville
                                 </a>
                             </div>
@@ -409,9 +409,9 @@
                             <div class="card-modern">
                                 <div class="card-header-modern">
                                     <h3 class="card-title-modern">Secteurs de la région</h3>
-                                    <a href="{{ route('secteurs.create') }}?region_id={{ $region->id }}" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-plus me-2"></i>Ajouter un secteur
-                                    </a>
+                                    <button class="btn btn-sm btn-secondary" type="button" disabled title="Module secteurs non disponible">
+                                        <i class="fas fa-ban me-2"></i>Module secteurs indisponible
+                                    </button>
                                 </div>
                                 <div class="card-body-modern">
                                     <div class="table-container-modern">
@@ -443,7 +443,7 @@
                                                             </div>
                                                         </td>
                                                         <td>
-                                                            <a href="{{ route('secteurs.show', $secteur->id) }}" class="btn btn-sm btn-outline-primary">
+                                                            <a href="javascript:void(0)" class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true" title="Aperçu non disponible">
                                                                 <i class="fas fa-eye"></i>
                                                             </a>
                                                         </td>
@@ -459,9 +459,9 @@
                                 <i class="fas fa-map fa-3x mb-4"></i>
                                 <h3>Aucun secteur dans cette région</h3>
                                 <p>Commencez par ajouter des secteurs à cette région.</p>
-                                <a href="{{ route('secteurs.create') }}?region_id={{ $region->id }}" class="btn btn-primary">
-                                    <i class="fas fa-plus me-2"></i>Ajouter un secteur
-                                </a>
+                                <button class="btn btn-secondary" type="button" disabled title="Module secteurs non disponible">
+                                    <i class="fas fa-ban me-2"></i>Module secteurs indisponible
+                                </button>
                             </div>
                         @endif
                     </div>
@@ -471,7 +471,7 @@
     </main>
 
     <!-- Edit Region Modal (Reuse from index) -->
-    @include('regions.edit-modal')
+    
 
     <!-- Styles spécifiques pour la page show -->
     <style>

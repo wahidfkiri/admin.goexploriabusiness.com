@@ -1360,7 +1360,50 @@ const setupEventListeners = () => {
             background: linear-gradient(135deg, #96ceb4, #7dba9a);
             color: white;
         }
-        
-        /* Autres styles similaires aux précédents */
+
+        .ville-actions-modern {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .action-btn-modern {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            border: 1px solid #e4e8ef;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            color: #4b5563;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+        }
+
+        .action-btn-modern:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.14);
+        }
+
+        .view-btn-modern {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border-color: #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .edit-btn-modern {
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border-color: #fde68a;
+            color: #b45309;
+        }
+
+        .delete-btn-modern {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            border-color: #fecaca;
+            color: #b91c1c;
+        }
     </style>
 @endsection

@@ -188,7 +188,7 @@ class VilleController extends Controller
             'households' => $ville->households,
         ];
         
-        return view('villes.show', compact('ville', 'statistics'));
+        return view('destination::villes.show', compact('ville', 'statistics'));
     }
 
     /**
