@@ -252,38 +252,10 @@ class SliderController extends Controller
                 }
 
                 if (in_array($videoPlatform, ['youtube', 'vimeo'], true)) {
-                    try {
-                        $clipStart = (int) $request->input('clip_start', 0);
-                        $clipDuration = (int) $request->input('clip_duration', 15);
-                        $videoPath = $this->downloadAndClipExternalVideo(
-                            $externalUrl,
-                            $clipStart,
-                            $clipDuration,
-                            $requestId
-                        );
-                        $videoType = 'upload';
-                        $videoUrl = null;
-
-                        Log::channel('slider_debug')->info('External video converted to local upload', [
-                            'request_id' => $requestId,
-                            'platform' => $videoPlatform,
-                            'clip_start' => $clipStart,
-                            'clip_duration' => $clipDuration,
-                            'stored_path' => $videoPath,
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::channel('slider_debug')->error('External video conversion failed', [
-                            'request_id' => $requestId,
-                            'platform' => $videoPlatform,
-                            'url' => $externalUrl,
-                            'error' => $e->getMessage(),
-                        ]);
-
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Erreur lors de la conversion de la vidéo externe: ' . $e->getMessage(),
-                        ], 422);
-                    }
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Méthode 3 active: pour YouTube/Vimeo, téléchargez d\'abord la vidéo puis utilisez "Upload vidéo local".',
+                    ], 422);
                 } else {
                     // Mode URL "other" conservé tel quel
                     $videoUrl = $externalUrl;
@@ -537,34 +509,10 @@ class SliderController extends Controller
                     $videoPlatform = $request->input('edit_video_platform', 'other');
 
                     if (in_array($videoPlatform, ['youtube', 'vimeo'], true)) {
-                        $clipStart = (int) $request->input('edit_clip_start', 0);
-                        $clipDuration = (int) $request->input('edit_clip_duration', 15);
-
-                        try {
-                            $convertedPath = $this->downloadAndClipExternalVideo(
-                                $request->video_url,
-                                $clipStart,
-                                $clipDuration,
-                                $requestId
-                            );
-
-                            $slider->video_path = $convertedPath;
-                            $slider->video_type = 'upload';
-                            $slider->video_url = null;
-                        } catch (\Exception $e) {
-                            Log::channel('slider_debug')->error('External video conversion failed on update', [
-                                'request_id' => $requestId,
-                                'slider_id' => $id,
-                                'platform' => $videoPlatform,
-                                'url' => $request->video_url,
-                                'error' => $e->getMessage(),
-                            ]);
-
-                            return response()->json([
-                                'success' => false,
-                                'message' => 'Erreur lors de la conversion de la vidéo externe: ' . $e->getMessage(),
-                            ], 422);
-                        }
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Méthode 3 active: pour YouTube/Vimeo, téléchargez d\'abord la vidéo puis utilisez "Upload vidéo local".',
+                        ], 422);
                     } else {
                         $slider->video_url = $request->video_url;
                         $slider->video_path = $request->video_url;
