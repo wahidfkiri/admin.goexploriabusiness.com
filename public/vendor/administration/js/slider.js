@@ -1,4 +1,4 @@
-﻿    // Configuration
+    // Configuration
     let currentPage = 1;
     let currentFilters = {};
     let allSliders = [];
@@ -35,7 +35,7 @@
         });
     };
 
-    // ==================== LOCALISATION (HIÃ‰RARCHIQUE) ====================
+    // ==================== LOCALISATION (HIÉRARCHIQUE) ====================
     const loadLocations = () => {
         $.ajax({
             url: '/api/locations/countries',
@@ -56,7 +56,7 @@
         selects.forEach(selectId => {
             const select = document.getElementById(selectId);
             if (select) {
-                select.innerHTML = '<option value="">SÃ©lectionnez un pays...</option>';
+                select.innerHTML = '<option value="">Sélectionnez un pays...</option>';
                 countries.forEach(country => {
                     const option = document.createElement('option');
                     option.value = country.id;
@@ -68,7 +68,7 @@
     };
 
     const setupHierarchicalSelects = () => {
-        // CrÃ©ation modal
+        // Création modal
         const countrySelect = document.getElementById('sliderCountry');
         const provinceSelect = document.getElementById('sliderProvince');
         const regionSelect = document.getElementById('sliderRegion');
@@ -116,7 +116,7 @@
             });
         }
 
-        // Ã‰dition modal
+        // Édition modal
         const editCountrySelect = document.getElementById('editSliderCountry');
         const editProvinceSelect = document.getElementById('editSliderProvince');
         const editRegionSelect = document.getElementById('editSliderRegion');
@@ -220,7 +220,7 @@
             type: 'GET',
             success: function(response) {
                 if (response.success) {
-                    selectElement.innerHTML = '<option value="">SÃ©lectionnez une province...</option>';
+                    selectElement.innerHTML = '<option value="">Sélectionnez une province...</option>';
                     response.data.forEach(province => {
                         const option = document.createElement('option');
                         option.value = province.id;
@@ -240,7 +240,7 @@
             type: 'GET',
             success: function(response) {
                 if (response.success) {
-                    selectElement.innerHTML = '<option value="">SÃ©lectionnez une rÃ©gion...</option>';
+                    selectElement.innerHTML = '<option value="">Sélectionnez une région...</option>';
                     response.data.forEach(region => {
                         const option = document.createElement('option');
                         option.value = region.id;
@@ -260,7 +260,7 @@
             type: 'GET',
             success: function(response) {
                 if (response.success) {
-                    selectElement.innerHTML = '<option value="">SÃ©lectionnez une ville...</option>';
+                    selectElement.innerHTML = '<option value="">Sélectionnez une ville...</option>';
                     response.data.forEach(ville => {
                         const option = document.createElement('option');
                         option.value = ville.id;
@@ -300,7 +300,7 @@
             type: 'GET',
             success: function(response) {
                 if (response.success) {
-                    selectElement.innerHTML = '<option value="">Toutes les rÃ©gions</option>';
+                    selectElement.innerHTML = '<option value="">Toutes les régions</option>';
                     response.data.forEach(region => {
                         const option = document.createElement('option');
                         option.value = region.id;
@@ -335,7 +335,7 @@
 
     const resetSelect = (selectElement) => {
         if (selectElement) {
-            selectElement.innerHTML = '<option value="">SÃ©lectionnez d\'abord...</option>';
+            selectElement.innerHTML = '<option value="">Sélectionnez d\'abord...</option>';
             selectElement.disabled = true;
         }
     };
@@ -533,7 +533,7 @@
             if (slider.type === 'video') {
                 typeClass = 'type-video-modern';
                 typeIcon = 'fa-video';
-                typeText = 'VidÃ©o';
+                typeText = 'Vidéo';
                 
                 if (slider.video_type === 'youtube') {
                     typeText = 'YouTube';
@@ -601,7 +601,7 @@
                 if (slider.province) parts.push(slider.province.name);
                 if (slider.region) parts.push(slider.region.name);
                 if (slider.ville) parts.push(slider.ville.name);
-                fullLocation = parts.join(' â€º ') || 'Non assignÃ©';
+                fullLocation = parts.join(' › ') || 'Non assigné';
             }
             
             row.innerHTML = `
@@ -612,7 +612,7 @@
                 <td><span class="slider-status-modern ${statusClass}"><i class="fas ${statusIcon} me-1"></i>${statusText}</span></td>
                 <td><div>${formattedDate}</div><small class="text-muted">${formatTimeAgo(createdDate)}</small></td>
                 <td style="text-align: center;"><div class="slider-actions-modern">
-                    <button class="action-btn-modern preview-btn-modern" title="AperÃ§u" onclick="previewSlider(${slider.id})"><i class="fas fa-eye"></i></button>
+                    <button class="action-btn-modern preview-btn-modern" title="Aperçu" onclick="previewSlider(${slider.id})"><i class="fas fa-eye"></i></button>
                     <button class="action-btn-modern edit-btn-modern" title="Modifier" onclick="openEditModal(${slider.id})"><i class="fas fa-edit"></i></button>
                     <button class="action-btn-modern status-btn-modern" title="Changer statut" onclick="toggleSliderStatus(${slider.id})"><i class="fas fa-power-off"></i></button>
                     <button class="action-btn-modern delete-btn-modern" title="Supprimer" onclick="showDeleteConfirmation(${slider.id})"><i class="fas fa-trash"></i></button>
@@ -650,7 +650,7 @@
             
             if (slider.type === 'video') {
                 typeIcon = 'fa-video';
-                typeText = 'VidÃ©o';
+                typeText = 'Vidéo';
                 if (slider.video_type === 'youtube') { typeIcon = 'fa-youtube'; typeText = 'YouTube'; }
                 else if (slider.video_type === 'vimeo') { typeIcon = 'fa-vimeo'; typeText = 'Vimeo'; }
             }
@@ -711,7 +711,7 @@
             data: { sliders: slidersData },
             success: function(response) {
                 if (response.success) {
-                    showAlert('success', 'Ordre sauvegardÃ© avec succÃ¨s !');
+                    showAlert('success', 'Ordre sauvegardé avec succès !');
                     loadSliders(currentPage, currentFilters);
                     loadStatistics();
                     toggleOrderView();
@@ -742,7 +742,7 @@
             toggleBtn.innerHTML = '<i class="fas fa-sort me-1"></i>Vue par ordre';
         } else {
             if (allSliders.length === 0) {
-                showAlert('info', 'Aucun slider Ã  rÃ©organiser');
+                showAlert('info', 'Aucun slider à réorganiser');
                 return;
             }
             tableView.style.display = 'none';
@@ -811,20 +811,20 @@
                                     ${slider.button_text && slider.button_url ? `<a href="${slider.button_url}" class="btn btn-primary" target="_blank">${slider.button_text}</a>` : ''}
                                 </div>`;
                         } else {
-                            content = `<div class="slider-preview text-center"><h5>${escapeHtml(slider.name)}</h5><div class="preview-placeholder"><i class="fas fa-video fa-4x mb-3"></i><p>VidÃ©o non disponible</p></div></div>`;
+                            content = `<div class="slider-preview text-center"><h5>${escapeHtml(slider.name)}</h5><div class="preview-placeholder"><i class="fas fa-video fa-4x mb-3"></i><p>Vidéo non disponible</p></div></div>`;
                         }
                     }
                     previewContent.innerHTML = content;
                     new bootstrap.Modal(document.getElementById('previewModal')).show();
                 }
             },
-            error: () => showAlert('danger', 'Erreur lors du chargement de l\'aperÃ§u')
+            error: () => showAlert('danger', 'Erreur lors du chargement de l\'aperçu')
         });
     };
 
     const showDeleteConfirmation = (sliderId) => {
         const slider = allSliders.find(s => s.id === sliderId);
-        if (!slider) { showAlert('danger', 'Slider non trouvÃ©'); return; }
+        if (!slider) { showAlert('danger', 'Slider non trouvé'); return; }
         sliderToDelete = slider;
         
         const createdDate = new Date(slider.created_at);
@@ -832,11 +832,11 @@
         
         document.getElementById('sliderToDeleteInfo').innerHTML = `
             <div class="slider-info"><div class="slider-info-icon"><i class="fas fa-sliders-h"></i></div>
-            <div><div class="slider-info-name">${slider.name}</div><div class="slider-info-type"><span class="badge bg-secondary">${slider.type === 'image' ? 'Image' : 'VidÃ©o'}</span></div></div></div>
+            <div><div class="slider-info-name">${slider.name}</div><div class="slider-info-type"><span class="badge bg-secondary">${slider.type === 'image' ? 'Image' : 'Vidéo'}</span></div></div></div>
             <div class="row small text-muted"><div class="col-6"><strong>ID:</strong> ${slider.id}</div><div class="col-6"><strong>Ordre:</strong> ${slider.order}</div>
-            <div class="col-6"><strong>CrÃ©Ã© le:</strong> ${formattedDate}</div><div class="col-6"><strong>Statut:</strong> ${slider.is_active ? 'Actif' : 'Inactif'}</div></div>`;
+            <div class="col-6"><strong>Créé le:</strong> ${formattedDate}</div><div class="col-6"><strong>Statut:</strong> ${slider.is_active ? 'Actif' : 'Inactif'}</div></div>`;
         
-        document.getElementById('confirmDeleteBtn').innerHTML = `<span class="btn-text"><i class="fas fa-trash me-2"></i>Supprimer dÃ©finitivement</span>`;
+        document.getElementById('confirmDeleteBtn').innerHTML = `<span class="btn-text"><i class="fas fa-trash me-2"></i>Supprimer définitivement</span>`;
         document.getElementById('confirmDeleteBtn').disabled = false;
         new bootstrap.Modal(document.getElementById('deleteConfirmationModal')).show();
     };
@@ -886,14 +886,14 @@
             return;
         }
         
-        // RÃ©cupÃ©rer l'instance Bootstrap
+        // Récupérer l'instance Bootstrap
         let modal = bootstrap.Modal.getInstance(modalElement);
         
         if (!modal) {
             modal = new bootstrap.Modal(modalElement);
         }
         
-        // Ã‰couter l'Ã©vÃ©nement de fermeture
+        // Écouter l'événement de fermeture
         const handleHidden = () => {
             modalElement.removeEventListener('hidden.bs.modal', handleHidden);
             
@@ -910,7 +910,7 @@
         modalElement.addEventListener('hidden.bs.modal', handleHidden);
         modal.hide();
         
-        // Fallback au cas oÃ¹ l'Ã©vÃ©nement ne se dÃ©clenche pas
+        // Fallback au cas où l'événement ne se déclenche pas
         setTimeout(() => {
             modalElement.removeEventListener('hidden.bs.modal', handleHidden);
             resolve();
@@ -935,29 +935,21 @@
             if (videoSourceUrl && videoSourceUrl.checked) {
                 videoSource = 'url';
                 videoUrl = document.getElementById('videoUrl').value;
-                if (!videoUrl) { showAlert('danger', 'Veuillez entrer l\'URL de la vidÃ©o'); return; }
-                if (videoPlatform && !videoPlatform.value) { showAlert('danger', 'Veuillez sÃ©lectionner la plateforme vidÃ©o'); return; }
+                if (!videoUrl) { showAlert('danger', 'Veuillez entrer l\'URL de la vidéo'); return; }
+                if (videoPlatform && !videoPlatform.value) { showAlert('danger', 'Veuillez sélectionner la plateforme vidéo'); return; }
 
-                if (['youtube', 'vimeo'].includes(videoPlatform.value)) {
-                    showAlert('warning', 'Methode 3 active: YouTube/Vimeo en URL est desactive. Telechargez la video puis utilisez Upload video local.');
-                    if (videoSourceUpload) {
-                        videoSourceUpload.checked = true;
-                        videoSourceUpload.dispatchEvent(new Event('change'));
-                    }
-                    return;
-                }
             } else if (videoSourceUpload && videoSourceUpload.checked) {
                 videoSource = 'upload';
                 const videoFile = document.getElementById('videoFile').files[0];
-                if (!videoFile) { showAlert('danger', 'Veuillez sÃ©lectionner un fichier vidÃ©o'); return; }
+                if (!videoFile) { showAlert('danger', 'Veuillez sélectionner un fichier vidéo'); return; }
             } else {
-                showAlert('danger', 'Veuillez choisir une source de vidÃ©o');
+                showAlert('danger', 'Veuillez choisir une source de vidéo');
                 return;
             }
         }
         
         submitBtn.classList.add('btn-processing');
-        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm text-light me-2"></div>CrÃ©ation en cours...';
+        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm text-light me-2"></div>Création en cours...';
         submitBtn.disabled = true;
         
         const formData = new FormData(form);
@@ -966,10 +958,6 @@
             if (videoSource === 'url') {
                 formData.append('video_url', videoUrl);
                 if (videoPlatform) formData.append('video_platform', videoPlatform.value);
-                if (['youtube', 'vimeo'].includes(videoPlatform?.value || '')) {
-                    formData.append('clip_start', document.getElementById('clipStart')?.value || 0);
-                    formData.append('clip_duration', document.getElementById('clipDuration')?.value || 15);
-                }
             }
         }
         
@@ -981,7 +969,7 @@
             processData: false,
             success: async function(response) {
                 submitBtn.classList.remove('btn-processing');
-                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>CrÃ©er le slider';
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Créer le slider';
                 submitBtn.disabled = false;
                 
                 if (response.success) {
@@ -999,19 +987,16 @@
                     document.getElementById('videoFileSection').style.display = 'none';
                     document.getElementById('videoUrl').value = '';
                     document.getElementById('videoFile').value = '';
-                    if (document.getElementById('clipStart')) document.getElementById('clipStart').value = 0;
-                    if (document.getElementById('clipDuration')) document.getElementById('clipDuration').value = 15;
-                    toggleClipFields('create');
                     loadStatistics();
                     loadSliders(1, currentFilters);
-                    showAlert('success', 'Slider crÃ©Ã© avec succÃ¨s !');
+                    showAlert('success', 'Slider créé avec succès !');
                 } else {
-                    showAlert('danger', response.message || 'Erreur lors de la crÃ©ation');
+                    showAlert('danger', response.message || 'Erreur lors de la création');
                 }
             },
             error: function(xhr) {
                 submitBtn.classList.remove('btn-processing');
-                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>CrÃ©er le slider';
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Créer le slider';
                 submitBtn.disabled = false;
                 if (xhr.status === 422) {
                     const responseMessage = xhr.responseJSON?.message;
@@ -1028,11 +1013,11 @@
                             msg += `- ${responseErrors[field].join('<br>')}<br>`;
                         }
                     } else {
-                        msg += '- RequÃªte invalide (422)<br>';
+                        msg += '- Requête invalide (422)<br>';
                     }
                     showAlert('danger', msg);
                 } else {
-                    showAlert('danger', 'Erreur lors de la crÃ©ation');
+                    showAlert('danger', 'Erreur lors de la création');
                 }
             }
         });
@@ -1062,9 +1047,9 @@
     const formData = new FormData(form);
     formData.append('_method', 'PUT');
     
-    // ðŸ”¥ CRUCIAL: GÃ©rer correctement les champs vidÃ©o pour l'Ã©dition
+    // 🔥 CRUCIAL: Gérer correctement les champs vidéo pour l'édition
     if (type === 'video') {
-        // DÃ©terminer la source sÃ©lectionnÃ©e
+        // Déterminer la source sélectionnée
         if (editVideoSourceUrl && editVideoSourceUrl.checked) {
             // Mode URL
             const videoUrl = editVideoUrlInput ? editVideoUrlInput.value : '';
@@ -1075,18 +1060,7 @@
                 if (editVideoPlatform) {
                     formData.append('edit_video_platform', editVideoPlatform.value);
                 }
-                if (editVideoPlatform && ['youtube', 'vimeo'].includes(editVideoPlatform.value)) {
-                    showAlert('warning', 'Methode 3 active: YouTube/Vimeo en URL est desactive. Utilisez Upload video local.');
-                    submitBtn.classList.remove('btn-processing');
-                    submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
-                    submitBtn.disabled = false;
-                    if (editVideoSourceUpload) {
-                        editVideoSourceUpload.checked = true;
-                        editVideoSourceUpload.dispatchEvent(new Event('change'));
-                    }
-                    return;
-                }
-                // Supprimer le fichier vidÃ©o s'il existe
+                // Supprimer le fichier vidéo s'il existe
                 formData.delete('edit_video_file');
             } else {
                 // Pas de nouvelle URL - ne rien envoyer pour garder l'existant
@@ -1099,10 +1073,10 @@
         else if (editVideoSourceUpload && editVideoSourceUpload.checked) {
             // Mode Upload
             if (editVideoFileInput && editVideoFileInput.files.length > 0) {
-                // Nouveau fichier sÃ©lectionnÃ©
+                // Nouveau fichier sélectionné
                 formData.append('edit_video_source', 'upload');
-                // Le fichier est dÃ©jÃ  dans formData via le champ edit_video_file
-                console.log('Nouveau fichier vidÃ©o:', editVideoFileInput.files[0].name);
+                // Le fichier est déjà dans formData via le champ edit_video_file
+                console.log('Nouveau fichier vidéo:', editVideoFileInput.files[0].name);
             } else {
                 // Pas de nouveau fichier - ne rien envoyer pour garder l'existant
                 formData.delete('edit_video_source');
@@ -1112,7 +1086,7 @@
             }
         }
     } else {
-        // Pour les images, supprimer tous les champs vidÃ©o
+        // Pour les images, supprimer tous les champs vidéo
         formData.delete('edit_video_source');
         formData.delete('edit_video_platform');
         formData.delete('video_url');
@@ -1120,7 +1094,7 @@
         formData.delete('video_file');
     }
     
-    // Debug: Afficher ce qui est envoyÃ©
+    // Debug: Afficher ce qui est envoyé
     console.log('=== UPDATE SLIDER DEBUG ===');
     for (let pair of formData.entries()) {
         if (pair[0] !== 'image' && pair[0] !== 'edit_video_file' && pair[0] !== 'video_file') {
@@ -1149,9 +1123,9 @@
                 modal.hide();
                 loadSliders(currentPage, currentFilters);
                 loadStatistics();
-                showAlert('success', response.message || 'Slider mis Ã  jour avec succÃ¨s !');
+                showAlert('success', response.message || 'Slider mis à jour avec succès !');
             } else {
-                showAlert('danger', response.message || 'Erreur lors de la mise Ã  jour');
+                showAlert('danger', response.message || 'Erreur lors de la mise à jour');
             }
         },
         error: function(xhr) {
@@ -1175,13 +1149,13 @@
                         errorMessage += `- ${field}: ${errors[field].join('<br>')}<br>`;
                     }
                 } else {
-                    errorMessage += '- RequÃªte invalide (422)<br>';
+                    errorMessage += '- Requête invalide (422)<br>';
                 }
                 showAlert('danger', errorMessage);
             } else if (xhr.status === 500) {
-                showAlert('danger', 'Erreur serveur. VÃ©rifiez les logs.');
+                showAlert('danger', 'Erreur serveur. Vérifiez les logs.');
             } else {
-                showAlert('danger', 'Erreur lors de la mise Ã  jour: ' + xhr.status);
+                showAlert('danger', 'Erreur lors de la mise à jour: ' + xhr.status);
             }
         }
     });
@@ -1268,7 +1242,7 @@
     };
 
     const toggleEditSections = (type) => {
-    // RÃ©cupÃ©rer les Ã©lÃ©ments avec vÃ©rification d'existence
+    // Récupérer les éléments avec vérification d'existence
     const editImageUploadSection = document.getElementById('editImageUploadSection');
     const editVideoUploadSection = document.getElementById('editVideoUploadSection');
     const currentImageSection = document.getElementById('currentImageSection');
@@ -1372,15 +1346,15 @@
                 switch(platform) {
                     case 'youtube':
                         placeholder = 'https://www.youtube.com/watch?v=xxxxxxxxxxx';
-                        helpText = 'Collez l\'URL complÃ¨te YouTube (ex: https://www.youtube.com/watch?v=dQw4w9WgXcQ)';
+                        helpText = 'Collez l\'URL complète YouTube (ex: https://www.youtube.com/watch?v=dQw4w9WgXcQ)';
                         break;
                     case 'vimeo':
                         placeholder = 'https://vimeo.com/xxxxxxxxx';
-                        helpText = 'Collez l\'URL complÃ¨te Vimeo (ex: https://vimeo.com/123456789)';
+                        helpText = 'Collez l\'URL complète Vimeo (ex: https://vimeo.com/123456789)';
                         break;
                     case 'other':
                         placeholder = 'https://...';
-                        helpText = 'Collez l\'URL complÃ¨te de votre vidÃ©o';
+                        helpText = 'Collez l\'URL complète de votre vidéo';
                         break;
                 }
                 if (videoUrlInput) videoUrlInput.placeholder = placeholder;
@@ -1402,15 +1376,15 @@
                 switch(platform) {
                     case 'youtube':
                         placeholder = 'https://www.youtube.com/watch?v=xxxxxxxxxxx';
-                        helpText = 'Collez l\'URL complÃ¨te YouTube (ex: https://www.youtube.com/watch?v=dQw4w9WgXcQ)';
+                        helpText = 'Collez l\'URL complète YouTube (ex: https://www.youtube.com/watch?v=dQw4w9WgXcQ)';
                         break;
                     case 'vimeo':
                         placeholder = 'https://vimeo.com/xxxxxxxxx';
-                        helpText = 'Collez l\'URL complÃ¨te Vimeo (ex: https://vimeo.com/123456789)';
+                        helpText = 'Collez l\'URL complète Vimeo (ex: https://vimeo.com/123456789)';
                         break;
                     case 'other':
                         placeholder = 'https://...';
-                        helpText = 'Collez l\'URL complÃ¨te de votre vidÃ©o';
+                        helpText = 'Collez l\'URL complète de votre vidéo';
                         break;
                 }
                 if (editVideoUrlInput) editVideoUrlInput.placeholder = placeholder;
@@ -1501,7 +1475,7 @@
 
     const openEditModal = (sliderId) => {
     const slider = allSliders.find(s => s.id === sliderId);
-    if (!slider) { showAlert('danger', 'Slider non trouvÃ©'); return; }
+    if (!slider) { showAlert('danger', 'Slider non trouvé'); return; }
     
     document.getElementById('editSliderId').value = slider.id;
     document.getElementById('editSliderName').value = slider.name;
@@ -1512,7 +1486,7 @@
     document.getElementById('editButtonUrl').value = slider.button_url || '';
     document.getElementById('editSliderIsActive').checked = slider.is_active;
     
-    // Charger la hiÃ©rarchie de localisation
+    // Charger la hiérarchie de localisation
     if (slider.country_id) {
         document.getElementById('editSliderCountry').value = slider.country_id;
         document.getElementById('editSliderCountry').dispatchEvent(new Event('change'));
@@ -1539,7 +1513,7 @@
     }
     
     if (slider.type === 'video') {
-        // DÃ©terminer la source de la vidÃ©o
+        // Déterminer la source de la vidéo
         const isUploaded = slider.video_type === 'upload' || (slider.video_path && !slider.video_url);
         const editVideoTypeInput = document.getElementById('editVideoType');
         
@@ -1550,12 +1524,12 @@
             document.getElementById('editVideoFileSection').style.display = 'block';
             if (editVideoTypeInput) editVideoTypeInput.value = 'upload';
             
-            // Afficher la vidÃ©o actuelle
+            // Afficher la vidéo actuelle
             const currentVideoPreview = document.getElementById('currentVideoPreview');
             currentVideoPreview.innerHTML = `
                 <div class="alert alert-info">
                     <i class="fas fa-file-video me-2"></i>
-                    <strong>VidÃ©o uploadÃ©e:</strong> ${slider.video_path.split('/').pop()}
+                    <strong>Vidéo uploadée:</strong> ${slider.video_path.split('/').pop()}
                 </div>
             `;
         } else {
@@ -1564,10 +1538,10 @@
             document.getElementById('editVideoUrlSection').style.display = 'block';
             document.getElementById('editVideoFileSection').style.display = 'none';
             
-            // DÃ©finir le type de vidÃ©o
+            // Définir le type de vidéo
             if (editVideoTypeInput) editVideoTypeInput.value = slider.video_type || 'youtube';
             
-            // DÃ©finir la plateforme dans le select
+            // Définir la plateforme dans le select
             const platformSelect = document.getElementById('editVideoPlatform');
             if (platformSelect) {
                 let platform = 'other';
@@ -1582,17 +1556,17 @@
             if (editClipStartInput) editClipStartInput.value = 0;
             if (editClipDurationInput) editClipDurationInput.value = 15;
             
-            // DÃ©finir l'URL
+            // Définir l'URL
             const videoUrlInput = document.getElementById('editVideoUrl');
             if (videoUrlInput) videoUrlInput.value = slider.video_url || '';
             
-            // DÃ©clencher l'Ã©vÃ©nement input pour l'aperÃ§u
+            // Déclencher l'événement input pour l'aperçu
             if (videoUrlInput) {
                 const inputEvent = new Event('input', { bubbles: true });
                 videoUrlInput.dispatchEvent(inputEvent);
             }
             
-            // Afficher la vidÃ©o actuelle
+            // Afficher la vidéo actuelle
             const currentVideoPreview = document.getElementById('currentVideoPreview');
             if (slider.video_url) {
                 let platformIcon = 'fa-link';
@@ -1607,7 +1581,7 @@
                     </div>
                 `;
             } else {
-                currentVideoPreview.innerHTML = '<div class="alert alert-warning">Aucune vidÃ©o configurÃ©e</div>';
+                currentVideoPreview.innerHTML = '<div class="alert alert-warning">Aucune vidéo configurée</div>';
             }
         }
         
@@ -1618,7 +1592,7 @@
                 const imageUrl = slider.image_path.startsWith('http') ? slider.image_path : `/storage/${slider.image_path}`;
                 currentThumbnailPreview.innerHTML = `<img src="${imageUrl}" class="img-thumbnail" style="max-width: 200px;">`;
             } else {
-                currentThumbnailPreview.innerHTML = '<div class="text-muted">Aucun thumbnail dÃ©fini</div>';
+                currentThumbnailPreview.innerHTML = '<div class="text-muted">Aucun thumbnail défini</div>';
             }
         }
     } else {
@@ -1644,7 +1618,7 @@
         const paginationInfo = document.getElementById('paginationInfo');
         const start = (response.current_page - 1) * response.per_page + 1;
         const end = Math.min(response.current_page * response.per_page, response.total);
-        paginationInfo.textContent = `Affichage de ${start} Ã  ${end} sur ${response.total} slider${response.total > 1 ? 's' : ''}`;
+        paginationInfo.textContent = `Affichage de ${start} à ${end} sur ${response.total} slider${response.total > 1 ? 's' : ''}`;
         
         let html = '';
         if (response.prev_page_url) html += `<li class="page-item"><a class="page-link-modern" href="#" onclick="changePage(${response.current_page - 1})"><i class="fas fa-chevron-left"></i></a></li>`;
@@ -1744,7 +1718,7 @@
                 const fr = document.getElementById('filterRegion');
                 const fv = document.getElementById('filterVille');
                 if (fp) { fp.innerHTML = '<option value="">Toutes les provinces</option>'; fp.disabled = true; }
-                if (fr) { fr.innerHTML = '<option value="">Toutes les rÃ©gions</option>'; fr.disabled = true; }
+                if (fr) { fr.innerHTML = '<option value="">Toutes les régions</option>'; fr.disabled = true; }
                 if (fv) { fv.innerHTML = '<option value="">Toutes les villes</option>'; fv.disabled = true; }
                 document.getElementById('filterDateFrom').value = '';
                 document.getElementById('filterDateTo').value = '';
@@ -1763,7 +1737,7 @@
         
         document.getElementById('deleteConfirmationModal')?.addEventListener('hidden.bs.modal', () => {
             sliderToDelete = null;
-            document.getElementById('confirmDeleteBtn').innerHTML = '<span class="btn-text"><i class="fas fa-trash me-2"></i>Supprimer dÃ©finitivement</span>';
+            document.getElementById('confirmDeleteBtn').innerHTML = '<span class="btn-text"><i class="fas fa-trash me-2"></i>Supprimer définitivement</span>';
             document.getElementById('confirmDeleteBtn').disabled = false;
         });
         
@@ -1781,7 +1755,7 @@
             toggleClipFields('create');
             const submitBtn = document.getElementById('submitSliderBtn');
             submitBtn.classList.remove('btn-processing');
-            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>CrÃ©er le slider';
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Créer le slider';
             submitBtn.disabled = false;
         });
         
@@ -1792,4 +1766,3 @@
             submitBtn.disabled = false;
         });
     };
-

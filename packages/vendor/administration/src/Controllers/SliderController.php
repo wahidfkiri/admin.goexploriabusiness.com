@@ -251,17 +251,10 @@ class SliderController extends Controller
                     ], 422);
                 }
 
-                if (in_array($videoPlatform, ['youtube', 'vimeo'], true)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Méthode 3 active: pour YouTube/Vimeo, téléchargez d\'abord la vidéo puis utilisez "Upload vidéo local".',
-                    ], 422);
-                } else {
-                    // Mode URL "other" conservé tel quel
-                    $videoUrl = $externalUrl;
-                    $videoPath = $externalUrl;
-                    $videoType = 'other';
-                }
+                // URL directe sans conversion ffmpeg
+                $videoUrl = $externalUrl;
+                $videoPath = $externalUrl;
+                $videoType = in_array($videoPlatform, ['youtube', 'vimeo'], true) ? $videoPlatform : 'other';
                 
             } elseif ($videoSource === 'upload' && $request->hasFile('video_file')) {
                 // Mode Upload local
@@ -508,16 +501,10 @@ class SliderController extends Controller
 
                     $videoPlatform = $request->input('edit_video_platform', 'other');
 
-                    if (in_array($videoPlatform, ['youtube', 'vimeo'], true)) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Méthode 3 active: pour YouTube/Vimeo, téléchargez d\'abord la vidéo puis utilisez "Upload vidéo local".',
-                        ], 422);
-                    } else {
-                        $slider->video_url = $request->video_url;
-                        $slider->video_path = $request->video_url;
-                        $slider->video_type = 'other';
-                    }
+                    // URL directe sans conversion ffmpeg
+                    $slider->video_url = $request->video_url;
+                    $slider->video_path = $request->video_url;
+                    $slider->video_type = in_array($videoPlatform, ['youtube', 'vimeo'], true) ? $videoPlatform : 'other';
                     
                     Log::channel('slider_debug')->info('Video URL updated', [
                         'request_id' => $requestId,
