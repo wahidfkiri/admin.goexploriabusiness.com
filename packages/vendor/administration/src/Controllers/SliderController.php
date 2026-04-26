@@ -1044,9 +1044,11 @@ private function deleteFile($filePath, $requestId)
         $clipPath = $tempDir . DIRECTORY_SEPARATOR . 'clip_' . Str::random(12) . '.mp4';
 
         try {
+            $cookieOption = $this->buildYtDlpCookieOption();
             $downloadCommand = sprintf(
-                '%s -f %s -o %s %s',
+                '%s %s -f %s -o %s %s',
                 $ytDlpBin,
+                $cookieOption,
                 escapeshellarg('best[ext=mp4]/best'),
                 escapeshellarg($sourcePath),
                 escapeshellarg($externalUrl)
@@ -1105,6 +1107,30 @@ private function deleteFile($filePath, $requestId)
         return null;
     }
 
+    private function buildYtDlpCookieOption(): string
+    {
+        $cookiePath = env('YT_DLP_COOKIES_FILE');
+        if (empty($cookiePath)) {
+            return '';
+        }
+
+        $resolvedPath = $cookiePath;
+        if (!str_starts_with($cookiePath, DIRECTORY_SEPARATOR)) {
+            $resolvedPath = base_path($cookiePath);
+        }
+
+        if (!file_exists($resolvedPath)) {
+            Log::channel('slider_debug')->warning('YT_DLP_COOKIES_FILE does not exist', [
+                'configured_path' => $cookiePath,
+                'resolved_path' => $resolvedPath,
+            ]);
+
+            return '';
+        }
+
+        return '--cookies ' . escapeshellarg($resolvedPath);
+    }
+
     private function isCommandAvailable(string $command): bool
     {
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
@@ -1132,6 +1158,17 @@ private function deleteFile($filePath, $requestId)
 
         if ($exitCode !== 0) {
             $errorText = trim(implode(PHP_EOL, $output));
+
+            if (
+                str_contains($errorText, 'Sign in to confirm you') ||
+                str_contains($errorText, '--cookies-from-browser') ||
+                str_contains($errorText, '--cookies for the authentication')
+            ) {
+                throw new \Exception(
+                    'YouTube bloque ce téléchargement anonyme. Configurez YT_DLP_COOKIES_FILE dans .env avec un fichier cookies YouTube valide.'
+                );
+            }
+
             throw new \Exception($errorText !== '' ? $errorText : 'Commande système échouée (' . $context . ').');
         }
     }
