@@ -937,6 +937,19 @@
                 videoUrl = document.getElementById('videoUrl').value;
                 if (!videoUrl) { showAlert('danger', 'Veuillez entrer l\'URL de la vidéo'); return; }
                 if (videoPlatform && !videoPlatform.value) { showAlert('danger', 'Veuillez sélectionner la plateforme vidéo'); return; }
+
+                if (['youtube', 'vimeo'].includes(videoPlatform.value)) {
+                    const clipStart = parseInt(document.getElementById('clipStart')?.value || '0', 10);
+                    const clipDuration = parseInt(document.getElementById('clipDuration')?.value || '0', 10);
+                    if (Number.isNaN(clipStart) || clipStart < 0) {
+                        showAlert('danger', 'Le début de coupe doit être un nombre supérieur ou égal à 0.');
+                        return;
+                    }
+                    if (Number.isNaN(clipDuration) || clipDuration < 1 || clipDuration > 30) {
+                        showAlert('danger', 'La durée de coupe doit être entre 1 et 30 secondes.');
+                        return;
+                    }
+                }
             } else if (videoSourceUpload && videoSourceUpload.checked) {
                 videoSource = 'upload';
                 const videoFile = document.getElementById('videoFile').files[0];
@@ -957,6 +970,10 @@
             if (videoSource === 'url') {
                 formData.append('video_url', videoUrl);
                 if (videoPlatform) formData.append('video_platform', videoPlatform.value);
+                if (['youtube', 'vimeo'].includes(videoPlatform?.value || '')) {
+                    formData.append('clip_start', document.getElementById('clipStart')?.value || 0);
+                    formData.append('clip_duration', document.getElementById('clipDuration')?.value || 15);
+                }
             }
         }
         
@@ -986,6 +1003,9 @@
                     document.getElementById('videoFileSection').style.display = 'none';
                     document.getElementById('videoUrl').value = '';
                     document.getElementById('videoFile').value = '';
+                    if (document.getElementById('clipStart')) document.getElementById('clipStart').value = 0;
+                    if (document.getElementById('clipDuration')) document.getElementById('clipDuration').value = 15;
+                    toggleClipFields('create');
                     loadStatistics();
                     loadSliders(1, currentFilters);
                     showAlert('success', 'Slider créé avec succès !');
@@ -998,8 +1018,22 @@
                 submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Créer le slider';
                 submitBtn.disabled = false;
                 if (xhr.status === 422) {
+                    const responseMessage = xhr.responseJSON?.message;
+                    const responseErrors = xhr.responseJSON?.errors;
+
+                    if (responseMessage && !responseErrors) {
+                        showAlert('danger', responseMessage);
+                        return;
+                    }
+
                     let msg = 'Veuillez corriger les erreurs:<br>';
-                    for (let field in xhr.responseJSON.errors) msg += `- ${xhr.responseJSON.errors[field].join('<br>')}<br>`;
+                    if (responseErrors) {
+                        for (let field in responseErrors) {
+                            msg += `- ${responseErrors[field].join('<br>')}<br>`;
+                        }
+                    } else {
+                        msg += '- Requête invalide (422)<br>';
+                    }
                     showAlert('danger', msg);
                 } else {
                     showAlert('danger', 'Erreur lors de la création');
@@ -1044,6 +1078,27 @@
                 formData.append('edit_video_source', 'url');
                 if (editVideoPlatform) {
                     formData.append('edit_video_platform', editVideoPlatform.value);
+                }
+                if (editVideoPlatform && ['youtube', 'vimeo'].includes(editVideoPlatform.value)) {
+                    const editClipStart = parseInt(document.getElementById('editClipStart')?.value || '0', 10);
+                    const editClipDuration = parseInt(document.getElementById('editClipDuration')?.value || '0', 10);
+                    if (Number.isNaN(editClipStart) || editClipStart < 0) {
+                        showAlert('danger', 'Le début de coupe doit être un nombre supérieur ou égal à 0.');
+                        submitBtn.classList.remove('btn-processing');
+                        submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
+                        submitBtn.disabled = false;
+                        return;
+                    }
+                    if (Number.isNaN(editClipDuration) || editClipDuration < 1 || editClipDuration > 30) {
+                        showAlert('danger', 'La durée de coupe doit être entre 1 et 30 secondes.');
+                        submitBtn.classList.remove('btn-processing');
+                        submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer les modifications';
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
+                    formData.append('edit_clip_start', editClipStart);
+                    formData.append('edit_clip_duration', editClipDuration);
                 }
                 // Supprimer le fichier vidéo s'il existe
                 formData.delete('edit_video_file');
@@ -1120,10 +1175,21 @@
             
             console.error('Update error:', xhr);
             if (xhr.status === 422) {
-                const errors = xhr.responseJSON.errors;
+                const responseMessage = xhr.responseJSON?.message;
+                const errors = xhr.responseJSON?.errors;
+
+                if (responseMessage && !errors) {
+                    showAlert('danger', responseMessage);
+                    return;
+                }
+
                 let errorMessage = 'Erreur de validation:<br>';
-                for (let field in errors) {
-                    errorMessage += `- ${field}: ${errors[field].join('<br>')}<br>`;
+                if (errors) {
+                    for (let field in errors) {
+                        errorMessage += `- ${field}: ${errors[field].join('<br>')}<br>`;
+                    }
+                } else {
+                    errorMessage += '- Requête invalide (422)<br>';
                 }
                 showAlert('danger', errorMessage);
             } else if (xhr.status === 500) {
@@ -1258,9 +1324,11 @@
                     if (videoFileInput) videoFileInput.required = true;
                     if (videoUrlInput) videoUrlInput.value = '';
                 }
+                toggleClipFields('create');
             };
             videoSourceUrl.addEventListener('change', toggle);
             videoSourceUpload.addEventListener('change', toggle);
+            toggle();
         }
         
         const editVideoSourceUrl = document.getElementById('editVideoSourceUrl');
@@ -1277,10 +1345,32 @@
                     editVideoUrlSection.style.display = 'none';
                     editVideoFileSection.style.display = 'block';
                 }
+                toggleClipFields('edit');
             };
             editVideoSourceUrl.addEventListener('change', toggleEdit);
             editVideoSourceUpload.addEventListener('change', toggleEdit);
+            toggleEdit();
         }
+    };
+
+    const toggleClipFields = (scope) => {
+        const isEdit = scope === 'edit';
+        const sourceUrlInput = document.getElementById(isEdit ? 'editVideoSourceUrl' : 'videoSourceUrl');
+        const platformSelect = document.getElementById(isEdit ? 'editVideoPlatform' : 'videoPlatform');
+        const clipStart = document.getElementById(isEdit ? 'editClipStart' : 'clipStart');
+        const clipDuration = document.getElementById(isEdit ? 'editClipDuration' : 'clipDuration');
+
+        if (!clipStart || !clipDuration || !platformSelect || !sourceUrlInput) {
+            return;
+        }
+
+        const isExternalPlatform = ['youtube', 'vimeo'].includes(platformSelect.value);
+        const mustClip = sourceUrlInput.checked && isExternalPlatform;
+
+        clipStart.required = mustClip;
+        clipDuration.required = mustClip;
+        clipStart.disabled = !mustClip;
+        clipDuration.disabled = !mustClip;
     };
 
     const setupVideoPlatformToggle = () => {
@@ -1309,7 +1399,9 @@
                 }
                 if (videoUrlInput) videoUrlInput.placeholder = placeholder;
                 if (videoUrlHelp) videoUrlHelp.innerHTML = helpText;
+                toggleClipFields('create');
             });
+            toggleClipFields('create');
         }
         
         const editVideoPlatform = document.getElementById('editVideoPlatform');
@@ -1337,7 +1429,9 @@
                 }
                 if (editVideoUrlInput) editVideoUrlInput.placeholder = placeholder;
                 if (editVideoUrlHelp) editVideoUrlHelp.innerHTML = helpText;
+                toggleClipFields('edit');
             });
+            toggleClipFields('edit');
         }
     };
 
@@ -1496,6 +1590,11 @@
                 platformSelect.value = platform;
                 platformSelect.dispatchEvent(new Event('change'));
             }
+
+            const editClipStartInput = document.getElementById('editClipStart');
+            const editClipDurationInput = document.getElementById('editClipDuration');
+            if (editClipStartInput) editClipStartInput.value = 0;
+            if (editClipDurationInput) editClipDurationInput.value = 15;
             
             // Définir l'URL
             const videoUrlInput = document.getElementById('editVideoUrl');
@@ -1550,6 +1649,7 @@
     }
     
     toggleEditSections(slider.type);
+    toggleClipFields('edit');
     new bootstrap.Modal(document.getElementById('editSliderModal')).show();
 };
 
@@ -1687,9 +1787,12 @@
             document.getElementById('videoThumbnailPreview').style.display = 'none';
             document.getElementById('imageUploadSection').style.display = 'block';
             document.getElementById('videoUploadSection').style.display = 'none';
+            if (document.getElementById('clipStart')) document.getElementById('clipStart').value = 0;
+            if (document.getElementById('clipDuration')) document.getElementById('clipDuration').value = 15;
             resetSelect(document.getElementById('sliderProvince'));
             resetSelect(document.getElementById('sliderRegion'));
             resetSelect(document.getElementById('sliderVille'));
+            toggleClipFields('create');
             const submitBtn = document.getElementById('submitSliderBtn');
             submitBtn.classList.remove('btn-processing');
             submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Créer le slider';

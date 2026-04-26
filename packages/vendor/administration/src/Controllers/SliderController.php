@@ -9,6 +9,7 @@ use App\Models\Province;
 use App\Models\Region;
 use App\Models\Ville;
 use Illuminate\Http\Request;
+use Illuminate\Http\File as HttpFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
@@ -156,6 +157,8 @@ class SliderController extends Controller
             'video_source' => 'nullable|in:url,upload',
             'video_platform' => 'nullable|in:youtube,vimeo,other',
             'video_url' => 'nullable|url',
+            'clip_start' => 'nullable|integer|min:0',
+            'clip_duration' => 'nullable|integer|min:1|max:30',
             'order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'button_text' => 'nullable|string|max:50',
@@ -238,25 +241,55 @@ class SliderController extends Controller
             $videoSource = $request->video_source;
             
             if ($videoSource === 'url') {
-                // Mode URL (YouTube, Vimeo ou Autre)
-                $videoUrl = $request->video_url;
-                $videoPath = $request->video_url;
                 $videoPlatform = $request->video_platform;
-                
-                if ($videoPlatform === 'youtube') {
-                    $videoType = 'youtube';
-                } elseif ($videoPlatform === 'vimeo') {
-                    $videoType = 'vimeo';
+                $externalUrl = $request->video_url;
+
+                if (empty($externalUrl)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'URL vidéo requise pour la source URL.',
+                    ], 422);
+                }
+
+                if (in_array($videoPlatform, ['youtube', 'vimeo'], true)) {
+                    try {
+                        $clipStart = (int) $request->input('clip_start', 0);
+                        $clipDuration = (int) $request->input('clip_duration', 15);
+                        $videoPath = $this->downloadAndClipExternalVideo(
+                            $externalUrl,
+                            $clipStart,
+                            $clipDuration,
+                            $requestId
+                        );
+                        $videoType = 'upload';
+                        $videoUrl = null;
+
+                        Log::channel('slider_debug')->info('External video converted to local upload', [
+                            'request_id' => $requestId,
+                            'platform' => $videoPlatform,
+                            'clip_start' => $clipStart,
+                            'clip_duration' => $clipDuration,
+                            'stored_path' => $videoPath,
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::channel('slider_debug')->error('External video conversion failed', [
+                            'request_id' => $requestId,
+                            'platform' => $videoPlatform,
+                            'url' => $externalUrl,
+                            'error' => $e->getMessage(),
+                        ]);
+
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Erreur lors de la conversion de la vidéo externe: ' . $e->getMessage(),
+                        ], 422);
+                    }
                 } else {
+                    // Mode URL "other" conservé tel quel
+                    $videoUrl = $externalUrl;
+                    $videoPath = $externalUrl;
                     $videoType = 'other';
                 }
-                
-                Log::channel('slider_debug')->debug('Video URL provided', [
-                    'request_id' => $requestId,
-                    'url' => $videoUrl,
-                    'platform' => $videoPlatform,
-                    'type' => $videoType
-                ]);
                 
             } elseif ($videoSource === 'upload' && $request->hasFile('video_file')) {
                 // Mode Upload local
@@ -396,6 +429,8 @@ class SliderController extends Controller
             'edit_video_source' => 'nullable|in:url,upload',
             'edit_video_platform' => 'nullable|in:youtube,vimeo,other',
             'video_url' => 'nullable|url',
+            'edit_clip_start' => 'nullable|integer|min:0',
+            'edit_clip_duration' => 'nullable|integer|min:1|max:30',
             'order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'button_text' => 'nullable|string|max:50',
@@ -498,16 +533,41 @@ class SliderController extends Controller
                     if ($slider->video_path && $slider->video_type === 'upload') {
                         $this->deleteFile($slider->video_path, $requestId);
                     }
-                    
-                    $slider->video_url = $request->video_url;
-                    $slider->video_path = $request->video_url;
+
                     $videoPlatform = $request->input('edit_video_platform', 'other');
-                    
-                    if ($videoPlatform === 'youtube') {
-                        $slider->video_type = 'youtube';
-                    } elseif ($videoPlatform === 'vimeo') {
-                        $slider->video_type = 'vimeo';
+
+                    if (in_array($videoPlatform, ['youtube', 'vimeo'], true)) {
+                        $clipStart = (int) $request->input('edit_clip_start', 0);
+                        $clipDuration = (int) $request->input('edit_clip_duration', 15);
+
+                        try {
+                            $convertedPath = $this->downloadAndClipExternalVideo(
+                                $request->video_url,
+                                $clipStart,
+                                $clipDuration,
+                                $requestId
+                            );
+
+                            $slider->video_path = $convertedPath;
+                            $slider->video_type = 'upload';
+                            $slider->video_url = null;
+                        } catch (\Exception $e) {
+                            Log::channel('slider_debug')->error('External video conversion failed on update', [
+                                'request_id' => $requestId,
+                                'slider_id' => $id,
+                                'platform' => $videoPlatform,
+                                'url' => $request->video_url,
+                                'error' => $e->getMessage(),
+                            ]);
+
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Erreur lors de la conversion de la vidéo externe: ' . $e->getMessage(),
+                            ], 422);
+                        }
                     } else {
+                        $slider->video_url = $request->video_url;
+                        $slider->video_path = $request->video_url;
                         $slider->video_type = 'other';
                     }
                     
@@ -956,6 +1016,124 @@ private function deleteFile($filePath, $requestId)
         
         // Retourner l'URL complète (pas le chemin relatif)
         return $fullUrl;
+    }
+
+    /**
+     * Download YouTube/Vimeo video, clip 1-30 seconds, then store as local upload.
+     */
+    private function downloadAndClipExternalVideo(string $externalUrl, int $clipStart, int $clipDuration, string $requestId): string
+    {
+        $clipStart = max(0, $clipStart);
+        $clipDuration = max(1, min(30, $clipDuration));
+
+        if (!$this->isCommandAvailable('ffmpeg')) {
+            throw new \Exception('ffmpeg est requis sur le serveur pour couper la vidéo.');
+        }
+
+        $ytDlpBin = $this->resolveYtDlpCommand();
+        if ($ytDlpBin === null) {
+            throw new \Exception('yt-dlp est requis sur le serveur pour télécharger la vidéo externe.');
+        }
+
+        $tempDir = storage_path('app/temp/slider-clips');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0775, true);
+        }
+
+        $sourcePath = $tempDir . DIRECTORY_SEPARATOR . 'source_' . Str::random(12) . '.mp4';
+        $clipPath = $tempDir . DIRECTORY_SEPARATOR . 'clip_' . Str::random(12) . '.mp4';
+
+        try {
+            $downloadCommand = sprintf(
+                '%s -f %s -o %s %s',
+                $ytDlpBin,
+                escapeshellarg('best[ext=mp4]/best'),
+                escapeshellarg($sourcePath),
+                escapeshellarg($externalUrl)
+            );
+
+            $this->runShellCommand($downloadCommand, $requestId, 'yt-dlp download');
+
+            if (!file_exists($sourcePath) || filesize($sourcePath) === 0) {
+                throw new \Exception('Téléchargement vidéo échoué: fichier source introuvable.');
+            }
+
+            $clipCommand = sprintf(
+                'ffmpeg -y -ss %d -i %s -t %d -c:v libx264 -c:a aac -movflags +faststart %s',
+                $clipStart,
+                escapeshellarg($sourcePath),
+                $clipDuration,
+                escapeshellarg($clipPath)
+            );
+
+            $this->runShellCommand($clipCommand, $requestId, 'ffmpeg clip');
+
+            if (!file_exists($clipPath) || filesize($clipPath) === 0) {
+                throw new \Exception('Découpe vidéo échouée: fichier de sortie introuvable.');
+            }
+
+            $fileName = 'clip_' . now()->format('Ymd_His') . '_' . Str::random(8) . '.mp4';
+            $relativePath = 'sliders/videos/' . $fileName;
+
+            Storage::disk('public')->putFileAs(
+                'sliders/videos',
+                new HttpFile($clipPath),
+                $fileName
+            );
+
+            return $this->storageUrl . $relativePath;
+        } finally {
+            if (file_exists($sourcePath)) {
+                @unlink($sourcePath);
+            }
+            if (file_exists($clipPath)) {
+                @unlink($clipPath);
+            }
+        }
+    }
+
+    private function resolveYtDlpCommand(): ?string
+    {
+        if ($this->isCommandAvailable('yt-dlp')) {
+            return 'yt-dlp';
+        }
+
+        if ($this->isCommandAvailable('yt_dlp')) {
+            return 'yt_dlp';
+        }
+
+        return null;
+    }
+
+    private function isCommandAvailable(string $command): bool
+    {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            @exec('where ' . $command . ' 2>NUL', $output, $exitCode);
+            return $exitCode === 0;
+        }
+
+        @exec('command -v ' . escapeshellarg($command) . ' >/dev/null 2>&1', $output, $exitCode);
+        return $exitCode === 0;
+    }
+
+    private function runShellCommand(string $command, string $requestId, string $context): void
+    {
+        $output = [];
+        $exitCode = 0;
+        @exec($command . ' 2>&1', $output, $exitCode);
+
+        Log::channel('slider_debug')->info('Shell command executed', [
+            'request_id' => $requestId,
+            'context' => $context,
+            'exit_code' => $exitCode,
+            'command' => $command,
+            'output' => implode(PHP_EOL, $output),
+        ]);
+
+        if ($exitCode !== 0) {
+            $errorText = trim(implode(PHP_EOL, $output));
+            throw new \Exception($errorText !== '' ? $errorText : 'Commande système échouée (' . $context . ').');
+        }
     }
     
     /**

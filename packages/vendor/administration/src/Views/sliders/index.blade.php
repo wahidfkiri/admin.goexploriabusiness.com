@@ -436,6 +436,28 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <div class="label-with-info">
+                                        <label for="clipStart" class="form-label-modern">Début de la coupe (sec) *</label>
+                                        <div class="info-bull" data-tooltip="Moment de départ dans la vidéo source (en secondes). Exemple: 0, 5, 12.">
+                                            <i class="fas fa-info-circle"></i>
+                                        </div>
+                                    </div>
+                                    <input type="number" class="form-control-modern" id="clipStart" name="clip_start" min="0" step="1" value="0">
+                                    <div class="form-text-modern">Position de départ du segment à extraire</div>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <div class="label-with-info">
+                                        <label for="clipDuration" class="form-label-modern">Durée du segment (1-30 sec) *</label>
+                                        <div class="info-bull" data-tooltip="Durée du clip final. Entre 1 et 30 secondes.">
+                                            <i class="fas fa-info-circle"></i>
+                                        </div>
+                                    </div>
+                                    <input type="number" class="form-control-modern" id="clipDuration" name="clip_duration" min="1" max="30" step="1" value="15">
+                                    <div class="form-text-modern">Le système coupe et stocke localement cette durée</div>
+                                </div>
                             </div>
                             
                             <!-- Video File Upload Section -->
@@ -769,6 +791,28 @@
                                             <span id="editVideoUrlPreviewText"></span>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <div class="label-with-info">
+                                        <label for="editClipStart" class="form-label-modern">Début de la coupe (sec)</label>
+                                        <div class="info-bull" data-tooltip="Moment de départ pour extraire le clip depuis YouTube/Vimeo.">
+                                            <i class="fas fa-info-circle"></i>
+                                        </div>
+                                    </div>
+                                    <input type="number" class="form-control-modern" id="editClipStart" name="edit_clip_start" min="0" step="1" value="0">
+                                    <div class="form-text-modern">Utilisé uniquement pour YouTube/Vimeo</div>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <div class="label-with-info">
+                                        <label for="editClipDuration" class="form-label-modern">Durée du segment (1-30 sec)</label>
+                                        <div class="info-bull" data-tooltip="Durée finale du clip extrait. Doit être entre 1 et 30 secondes.">
+                                            <i class="fas fa-info-circle"></i>
+                                        </div>
+                                    </div>
+                                    <input type="number" class="form-control-modern" id="editClipDuration" name="edit_clip_duration" min="1" max="30" step="1" value="15">
+                                    <div class="form-text-modern">Utilisé uniquement pour YouTube/Vimeo</div>
                                 </div>
                             </div>
                             
