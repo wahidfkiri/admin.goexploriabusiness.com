@@ -2,6 +2,7 @@
     let currentPage = 1;
     let currentFilters = {};
     let allSliders = [];
+    let orderSliders = [];
     let sliderToDelete = null;
     let sortable = null;
     let originalOrder = [];
@@ -604,8 +605,27 @@
                 fullLocation = parts.join(' › ') || 'Non assigné';
             }
             
+            const isFirstRow = index === 0;
+            const isLastRow = index === (sliders.length - 1);
+            let orderActionsHtml = '';
+
+            if (isFirstRow) {
+                orderActionsHtml = `<button class="table-order-btn flash-arrow" title="Descendre" onclick="moveOrderQuick(${slider.id}, 1)">&darr;</button>`;
+            } else if (isLastRow) {
+                orderActionsHtml = `<button class="table-order-btn flash-arrow" title="Monter" onclick="moveOrderQuick(${slider.id}, -1)">&uarr;</button>`;
+            } else {
+                orderActionsHtml = `
+                    <button class="table-order-btn flash-arrow" title="Monter" onclick="moveOrderQuick(${slider.id}, -1)">&uarr;</button>
+                    <button class="table-order-btn flash-arrow" title="Descendre" onclick="moveOrderQuick(${slider.id}, 1)">&darr;</button>
+                `;
+            }
+
             row.innerHTML = `
-                <td style="width: 50px;"><div class="order-badge" data-id="${slider.id}"><i class="fas fa-arrows-alt me-1"></i>${slider.order}</div></td>
+                <td style="width: 72px;">
+                    <div class="table-order-actions">
+                        ${orderActionsHtml}
+                    </div>
+                </td>
                 <td class="slider-name-cell"><div class="slider-name-modern"><div class="slider-icon-modern">${previewContent}</div><div><div class="slider-name-text">${escapeHtml(slider.name)}</div><small class="text-muted">ID: ${slider.id}</small></div></div></td>
                 <td><span class="slider-type-modern ${typeClass}"><i class="fab ${typeIcon} me-1"></i>${typeText}</span></td>
                 <td><span class="slider-region-modern"><i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(fullLocation)}</span></td>
@@ -655,11 +675,19 @@
                 else if (slider.video_type === 'vimeo') { typeIcon = 'fa-vimeo'; typeText = 'Vimeo'; }
             }
             
-            const imageUrl = slider.image_path ? `/storage/${slider.image_path}` : 'https://via.placeholder.com/60';
+            let imageUrl = 'https://via.placeholder.com/60';
+            if (slider.thumbnail_path) {
+                imageUrl = slider.thumbnail_path.startsWith('http') ? slider.thumbnail_path : `/storage/${slider.thumbnail_path}`;
+            } else if (slider.image_path) {
+                imageUrl = slider.image_path.startsWith('http') ? slider.image_path : `/storage/${slider.image_path}`;
+            }
             
             item.innerHTML = `
                 <div class="sortable-item-content">
-                    <div class="sortable-handle"><i class="fas fa-arrows-alt"></i></div>
+                    <div class="sortable-actions" title="Déplacer">
+                        <button type="button" class="order-action-btn move-up" title="Monter"><i class="fas fa-chevron-up"></i></button>
+                        <button type="button" class="order-action-btn move-down" title="Descendre"><i class="fas fa-chevron-down"></i></button>
+                    </div>
                     <div class="sortable-image"><img src="${imageUrl}" alt="${slider.name}"></div>
                     <div class="sortable-info">
                         <div class="sortable-name">${slider.name}</div>
@@ -673,16 +701,15 @@
             `;
             sortableList.appendChild(item);
         });
-        
-        if (sortable) sortable.destroy();
-        sortable = new Sortable(sortableList, {
-            animation: 150,
-            handle: '.sortable-handle',
-            ghostClass: 'sortable-ghost',
-            chosenClass: 'sortable-chosen',
-            dragClass: 'sortable-drag',
-            onEnd: () => updateOrderNumbers()
+
+        sortableList.querySelectorAll('.move-up').forEach(btn => {
+            btn.addEventListener('click', () => moveSortableItem(btn.closest('.sortable-item'), -1));
         });
+        sortableList.querySelectorAll('.move-down').forEach(btn => {
+            btn.addEventListener('click', () => moveSortableItem(btn.closest('.sortable-item'), +1));
+        });
+
+        updateOrderNumbers();
     };
 
     const updateOrderNumbers = () => {
@@ -690,6 +717,61 @@
             item.querySelector('.order-badge').textContent = index + 1;
         });
     };
+
+    const moveSortableItem = (item, direction) => {
+        if (!item) return;
+        const parent = item.parentElement;
+        if (!parent) return;
+
+        if (direction < 0) {
+            const prev = item.previousElementSibling;
+            if (prev) parent.insertBefore(item, prev);
+        } else {
+            const next = item.nextElementSibling;
+            if (next) parent.insertBefore(next, item);
+        }
+
+        updateOrderNumbers();
+    };
+
+    async function moveOrderQuick(sliderId, direction) {
+        try {
+            const sliders = await loadAllSlidersForOrdering(currentFilters);
+            const sorted = [...sliders].sort((a, b) => a.order - b.order);
+            const idx = sorted.findIndex(s => parseInt(s.id) === parseInt(sliderId));
+            if (idx === -1) return;
+
+            const target = idx + direction;
+            if (target < 0 || target >= sorted.length) return;
+
+            const tmp = sorted[idx];
+            sorted[idx] = sorted[target];
+            sorted[target] = tmp;
+
+            const payload = sorted.map((s, i) => ({ id: parseInt(s.id), order: i + 1 }));
+
+            $.ajax({
+                url: '/sliders/update-order',
+                type: 'POST',
+                data: { sliders: payload },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('success', 'Ordre mis a jour');
+                        loadSliders(currentPage, currentFilters);
+                        loadStatistics();
+                    } else {
+                        showAlert('danger', response.message || 'Erreur lors de la sauvegarde');
+                    }
+                },
+                error: function() {
+                    showAlert('danger', 'Erreur lors de la sauvegarde');
+                }
+            });
+        } catch (e) {
+            showAlert('danger', e.message || 'Erreur lors du chargement');
+        }
+    }
+    window.moveOrderQuick = moveOrderQuick;
 
     const saveOrder = () => {
         const items = document.querySelectorAll('.sortable-item');
@@ -729,7 +811,34 @@
         });
     };
 
-    const toggleOrderView = () => {
+    const loadAllSlidersForOrdering = (filters = {}) => {
+        return new Promise((resolve, reject) => {
+            const searchTerm = document.getElementById('searchInput')?.value || '';
+            $.ajax({
+                url: '/sliders',
+                type: 'GET',
+                data: {
+                    page: 1,
+                    per_page: 1000,
+                    search: searchTerm,
+                    ...filters,
+                    ajax: true
+                },
+                success: function(response) {
+                    if (response.success) {
+                        resolve(response.data || []);
+                    } else {
+                        reject(new Error(response.message || 'Erreur lors du chargement des sliders'));
+                    }
+                },
+                error: function() {
+                    reject(new Error('Erreur de connexion au serveur'));
+                }
+            });
+        });
+    };
+
+    const toggleOrderView = async () => {
         const tableView = document.getElementById('tableView');
         const orderContainer = document.getElementById('orderContainer');
         const toggleBtn = document.getElementById('toggleOrderView');
@@ -741,15 +850,27 @@
             saveBtn.style.display = 'none';
             toggleBtn.innerHTML = '<i class="fas fa-sort me-1"></i>Vue par ordre';
         } else {
-            if (allSliders.length === 0) {
-                showAlert('info', 'Aucun slider à réorganiser');
-                return;
+            const initialBtn = '<i class="fas fa-sort me-1"></i>Vue par ordre';
+            toggleBtn.disabled = true;
+            toggleBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Chargement...';
+            try {
+                orderSliders = await loadAllSlidersForOrdering(currentFilters);
+                if (orderSliders.length === 0) {
+                    showAlert('info', 'Aucun slider a reorganiser');
+                    toggleBtn.innerHTML = initialBtn;
+                    return;
+                }
+                tableView.style.display = 'none';
+                orderContainer.style.display = 'block';
+                saveBtn.style.display = 'inline-block';
+                toggleBtn.innerHTML = '<i class="fas fa-list me-1"></i>Vue tableau';
+                setupSortable(orderSliders);
+            } catch (error) {
+                showAlert('danger', error.message || 'Erreur lors du chargement');
+                toggleBtn.innerHTML = initialBtn;
+            } finally {
+                toggleBtn.disabled = false;
             }
-            tableView.style.display = 'none';
-            orderContainer.style.display = 'block';
-            saveBtn.style.display = 'inline-block';
-            toggleBtn.innerHTML = '<i class="fas fa-list me-1"></i>Vue tableau';
-            setupSortable(allSliders);
         }
     };
 
@@ -758,7 +879,7 @@
         document.getElementById('orderContainer').style.display = 'none';
         document.getElementById('saveOrderBtn').style.display = 'none';
         document.getElementById('toggleOrderView').innerHTML = '<i class="fas fa-sort me-1"></i>Vue par ordre';
-        setupSortable(allSliders);
+        orderSliders = [];
     };
 
     const previewSlider = (sliderId) => {

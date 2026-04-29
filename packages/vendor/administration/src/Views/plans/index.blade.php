@@ -15,6 +15,9 @@
             </div>
         </div>
         <div class="page-header-right">
+            <a href="{{ route('plan-services.create') }}" class="btn-secondary-modern me-2">
+                <i class="fas fa-concierge-bell me-2"></i>Nouveau Service
+            </a>
             <a href="{{ route('plans.create') }}" class="btn-primary-modern">
                 <i class="fas fa-plus-circle me-2"></i>Nouveau Plan
             </a>
@@ -209,6 +212,9 @@ $(document).ready(function() {
                             </div>
                         </div>
                         <div class="plan-actions">
+                            <a href="/admin/plan-services/create?plan_id=${plan.id}" class="btn-icon" title="Nouveau service">
+                                <i class="fas fa-concierge-bell"></i>
+                            </a>
                             <a href="/admin/plans/${plan.id}/edit" class="btn-icon edit-btn" title="Modifier">
                                 <i class="fas fa-edit"></i>
                             </a>

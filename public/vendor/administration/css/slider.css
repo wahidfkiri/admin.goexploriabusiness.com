@@ -50,58 +50,79 @@
         color: #ef6c00;
     }
     
-    .order-badge {
+.order-badge {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 32px;
+        min-width: 44px;
         height: 32px;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        border-radius: 50%;
-        font-weight: bold;
-        font-size: 0.9em;
-        cursor: move;
+        padding: 0 10px;
+        background: linear-gradient(135deg, #1f3c88 0%, #2563eb 100%);
+        color: #fff;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.85em;
+        box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+        letter-spacing: 0.2px;
     }
     
     /* Sortable list styles */
     .sortable-list {
-        min-height: 100px;
-        padding: 10px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border: 2px dashed #dee2e6;
+        min-height: 120px;
+        padding: 14px;
+        background:
+            radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.28) 1px, transparent 0);
+        background-size: 14px 14px;
+        border-radius: 14px;
+        border: 2px dashed #cbd5e1;
     }
     
     .sortable-item {
-        background: white;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        padding: 12px;
-        cursor: move;
-        transition: all 0.3s ease;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        padding: 12px 14px;
+        transition: all 0.22s ease;
     }
     
     .sortable-item:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+        border-color: #cbd5e1;
+        transform: translateY(-1px);
     }
     
     .sortable-item-content {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
     }
     
-    .sortable-handle {
-        color: #6c757d;
-        cursor: grab;
-        padding: 8px;
+    .sortable-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
     }
-    
-    .sortable-handle:active {
-        cursor: grabbing;
+
+    .order-action-btn {
+        width: 30px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #334155;
+        background: #f1f5f9;
+        border: 1px solid #dbe3ee;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 0;
+    }
+
+    .order-action-btn:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+        transform: scale(1.03);
     }
     
     .sortable-image {
@@ -133,24 +154,26 @@
     }
     
     .sortable-order {
-        font-weight: bold;
-        color: #667eea;
-        font-size: 1.1em;
+        font-weight: 700;
+        color: #1d4ed8;
+        font-size: 1.05em;
     }
     
     .sortable-ghost {
-        opacity: 0.4;
-        background: #c8c8c8;
+        opacity: 0.45;
+        background: #dbeafe;
+        border-color: #93c5fd;
     }
     
     .sortable-chosen {
-        background: #f8f9fa;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        background: #eff6ff;
+        box-shadow: 0 10px 28px rgba(37, 99, 235, 0.2);
+        border-color: #60a5fa;
     }
     
     .sortable-drag {
-        opacity: 0.8;
-        transform: rotate(3deg);
+        opacity: 0.92;
+        transform: rotate(1.2deg) scale(1.01);
     }
     
     .order-container {
@@ -1237,4 +1260,45 @@
         max-width: 140px;
         min-width: 80px;
     }
+}
+
+.table-order-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.table-order-btn {
+    width: 34px;
+    height: 26px;
+    border: 1px solid #cbd5e1;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    color: #1d4ed8;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    padding: 0;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.table-order-btn:hover {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border-color: #93c5fd;
+    transform: translateY(-1px);
+}
+
+.flash-arrow {
+    animation: flashArrow 1.2s ease-in-out infinite;
+}
+
+@keyframes flashArrow {
+    0%, 100% { box-shadow: 0 0 0 rgba(37, 99, 235, 0.0); }
+    50% { box-shadow: 0 0 12px rgba(37, 99, 235, 0.45); }
 }

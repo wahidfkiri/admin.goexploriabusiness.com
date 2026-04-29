@@ -156,6 +156,11 @@ class Plan extends Model
         return $this->hasMany(PlanDestination::class)->orderBy('sort_order');
     }
 
+    public function servicesItems()
+    {
+        return $this->hasMany(PlanService::class)->orderBy('sort_order')->orderBy('id', 'desc');
+    }
+
     /**
      * Active destinations for this plan
      */

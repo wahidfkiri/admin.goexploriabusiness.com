@@ -9,6 +9,7 @@ use Vendor\Administration\Controllers\BlockController;
 use Vendor\Administration\Controllers\TemplateController;
 use Vendor\Administration\Controllers\LocationController;
 use Vendor\Administration\Controllers\PlanController;
+use Vendor\Administration\Controllers\PlanServiceController;
 use Vendor\Administration\Controllers\AbonnementController;
 
 
@@ -89,6 +90,8 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::resource('plans', PlanController::class);
     Route::post('/plans/{id}/toggle-status', [PlanController::class, 'toggleStatus'])->name('plans.toggle-status');
     Route::post('/plans/reorder', [PlanController::class, 'reorder'])->name('plans.reorder');
+    Route::get('/plan-services/create', [PlanServiceController::class, 'create'])->name('plan-services.create');
+    Route::post('/plan-services', [PlanServiceController::class, 'store'])->name('plan-services.store');
 
 
 // Plan media management
